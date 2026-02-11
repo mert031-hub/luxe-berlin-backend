@@ -1,47 +1,51 @@
 const nodemailer = require('nodemailer');
 const dns = require('dns');
 
-// KRİTİK: Tüm Node.js sürecini IPv4 öncelikli hale getirir. 
-// Render'daki ENETUNREACH hatasını çözmek için en kesin yöntem budur.
+// 1. KRİTİK: Render ağındaki IPv6 (ENETUNREACH) hatalarını önlemek için 
+// tüm Node.js DNS sorgularını IPv4 öncelikli yapar.
 dns.setDefaultResultOrder('ipv4first');
 
-// .env dosyasındaki bilgileri çekiyoruz
 const transporter = nodemailer.createTransport({
     host: 'smtp.gmail.com',
     port: 587,
-    secure: false, // 587 portu için false olmalı (STARTTLS)
+    secure: false, // 587 için false (STARTTLS)
     auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS
     },
-    family: 4, // IPv4 zorlaması
+    // 2. KRİTİK: Bağlantı seviyesinde IPv4 zorlaması
+    family: 4,
+    connectionTimeout: 10000, // 10 saniye sonra pes et (Sunucuyu kilitleme)
+    greetingTimeout: 10000,
     tls: {
-        // Bazı ağ kısıtlamalarını aşmak için sertifika kontrolünü esnetiyoruz
-        rejectUnauthorized: false
-    }
-});
-
-// Sunucu başladığında bağlantıyı test et
-transporter.verify((error, success) => {
-    if (error) {
-        console.error("❌ E-posta Sunucusu Hatası:", error.message);
-    } else {
-        console.log("✅ E-posta Sunucusu Gönderime Hazır!");
+        // Render ve Gmail arasındaki el sıkışma sorunlarını minimize eder
+        rejectUnauthorized: false,
+        minVersion: 'TLSv1.2'
     }
 });
 
 /**
+ * SUNUCU AÇILIŞ TESTİ (NON-BLOCKING)
+ * .verify() fonksiyonunu bekletmiyoruz. Hata alsa bile sunucu "Live" olur.
+ */
+transporter.verify()
+    .then(() => console.log("✅ E-posta Sunucusu Gönderime Hazır (Port: 587)"))
+    .catch((err) => {
+        console.warn("⚠️ E-posta testi başarısız: Render ağ kısıtlaması olabilir.");
+        console.warn("Detay:", err.message);
+        // Hata sunucuyu durdurmaz, sadece log düşer.
+    });
+
+/**
  * Sipariş durumuna göre mail içeriğini hazırlayıp gönderen fonksiyon
- * Controller içinde kullanılır: await sendStatusEmail(updatedOrder, newStatus);
  */
 async function sendStatusEmail(order, newStatus) {
+    if (!order) return;
+
     let subject = "";
     let message = "";
-
-    // Küçük/Büyük harf duyarlılığını kaldırmak için
     const status = newStatus ? newStatus.toLowerCase() : '';
 
-    // Sipariş durumuna göre mail içeriğini belirle
     if (status === 'pending' || status === 'eingegangen') {
         subject = "Ihre Bestellung bei LUXE BERLIN";
         message = "Wir haben Ihre Bestellung erhalten und bereiten sie vor.";
@@ -73,7 +77,7 @@ async function sendStatusEmail(order, newStatus) {
                 <h2 style="text-align: center;">Bestellstatus-Update</h2>
                 <p style="font-size: 16px; line-height: 1.6;">${message}</p>
                 <div style="text-align: center; margin-top: 30px;">
-                    <a href="https://luxeberlin.com/track.html?id=${order._id}" 
+                    <a href="https://luxe-berlin-backend.onrender.com/track.html?id=${order._id}" 
                        style="background: #1c2541; color: white; padding: 15px 25px; text-decoration: none; border-radius: 50px; font-weight: bold; display: inline-block;">
                         BESTELLUNG VERFOLGEN
                     </a>
@@ -84,10 +88,12 @@ async function sendStatusEmail(order, newStatus) {
     };
 
     try {
+        // Gönderim işlemini yapıyoruz
         await transporter.sendMail(mailOptions);
         console.log(`✅ Mail başarıyla gönderildi: ${newStatus} (#${order._id.toString().slice(-6).toUpperCase()})`);
     } catch (error) {
-        console.error("❌ Mail gönderim hatası:", error);
+        // Hata durumunda sadece log basıyoruz, sipariş sürecini bozmuyoruz
+        console.error("❌ Arka plan mail gönderim hatası:", error.message);
     }
 }
 
