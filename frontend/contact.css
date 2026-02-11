@@ -1,0 +1,84 @@
+:root {
+  --gold: #c5a059;
+  --navy: #1c2541;
+  --platinum: #f8f9fa;
+}
+
+body {
+  font-family: "Montserrat", sans-serif;
+  background-color: var(--platinum);
+  color: var(--navy);
+}
+
+.navbar-brand {
+  font-family: "Playfair Display", serif;
+  letter-spacing: 2px;
+}
+.navbar-brand span {
+  color: var(--gold);
+}
+
+/* İletişim Kartı Tasarımı */
+.success-card {
+  background: white;
+  border-radius: 30px;
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.1);
+}
+
+/* Sol Panel: Navy & Gold Gradient */
+.contact-info-panel {
+  background: linear-gradient(135deg, var(--navy) 0%, #2c3e50 100%);
+  color: white;
+}
+
+.info-icon {
+  width: 45px;
+  height: 45px;
+  background: rgba(197, 160, 89, 0.2);
+  border: 1px solid var(--gold);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 15px;
+  font-size: 1.2rem;
+}
+
+.social-links a {
+  color: var(--gold);
+  text-decoration: none;
+  font-size: 0.8rem;
+  font-weight: 700;
+  transition: 0.3s;
+}
+
+.social-links a:hover {
+  color: white;
+}
+
+/* Form Tasarımı */
+.form-control,
+.form-select {
+  border: 1px solid #eee;
+  padding: 14px 18px;
+  border-radius: 12px;
+  background-color: #fdfdfd;
+}
+
+.form-control:focus {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 4px rgba(197, 160, 89, 0.1);
+}
+
+.btn-gold {
+  background: var(--gold);
+  color: white;
+  border-radius: 15px;
+  transition: 0.4s;
+  border: none;
+}
+
+.btn-gold:hover {
+  background: var(--navy);
+  transform: translateY(-5px);
+}

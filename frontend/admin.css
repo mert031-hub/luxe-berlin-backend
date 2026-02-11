@@ -1,0 +1,110 @@
+:root {
+  --gold: #c5a059;
+  --navy: #1c2541;
+  --light-grey: #f8f9fa;
+}
+
+body {
+  background-color: #f0f2f5;
+  font-family: "Montserrat", sans-serif;
+}
+
+.navbar {
+  background-color: var(--navy);
+  border-bottom: 3px solid var(--gold);
+}
+
+.navbar-brand span {
+  color: var(--gold);
+}
+
+/* İstatistik Kartları */
+.stat-card {
+  padding: 30px;
+  border-radius: 20px;
+  color: white;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
+  transition: transform 0.3s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-5px);
+}
+.bg-navy {
+  background: linear-gradient(135deg, #1c2541, #3a506b);
+}
+.bg-gold {
+  background: linear-gradient(135deg, #c5a059, #e2c08d);
+}
+.bg-dark-grey {
+  background: linear-gradient(135deg, #212529, #495057);
+}
+
+.stat-card p {
+  opacity: 0.8;
+  font-size: 0.9rem;
+  margin-bottom: 5px;
+  text-transform: uppercase;
+}
+
+/* Tablo */
+.table thead th {
+  border: none;
+  color: #666;
+  padding: 15px 10px;
+}
+.table tbody td {
+  padding: 20px 10px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.status-select {
+  border-radius: 30px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 5px 15px;
+  border: 1px solid #dee2e6;
+  background-color: #fdfdfd;
+}
+
+#adminSearch {
+  border-radius: 30px;
+  padding: 12px 25px;
+  border: 1px solid #eee;
+}
+
+/* Silme Butonu */
+.btn-delete {
+  color: #dc3545;
+  background: #fff5f5;
+  border: none;
+  width: 35px;
+  height: 35px;
+  border-radius: 50%;
+  transition: 0.3s;
+}
+
+.btn-delete:hover {
+  background: #dc3545;
+  color: white;
+}
+/* admin.css veya index.html style içine ekle */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.4s ease forwards;
+}
+
+#mainSearchInput:focus {
+  background-color: #fff !important;
+  border-color: var(--gold) !important;
+}

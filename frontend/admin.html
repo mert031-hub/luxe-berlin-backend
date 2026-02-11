@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="de">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LUXE BERLIN | Master Admin</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Playfair+Display:wght@700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="admin.css">
+    <style>
+        /* Kaydırılabilir Tablo Kapsayıcısı */
+        .table-scroll-container {
+            max-height: 450px;
+            overflow-y: auto;
+            border-radius: 8px;
+            border: 1px solid #eee;
+        }
+
+        /* Tablo Başlıklarını Sabitleme */
+        .table-scroll-container thead th {
+            position: sticky;
+            top: 0;
+            background-color: #f8f9fa;
+            z-index: 10;
+            border-bottom: 2px solid #dee2e6;
+        }
+
+        .sticky-card {
+            position: sticky;
+            top: 90px;
+            max-height: calc(100vh - 110px);
+            overflow-y: auto;
+            padding-right: 5px;
+        }
+
+        /* Custom Scrollbar */
+        .table-scroll-container::-webkit-scrollbar,
+        .sticky-card::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .table-scroll-container::-webkit-scrollbar-thumb,
+        .sticky-card::-webkit-scrollbar-thumb {
+            background: #c5a059;
+            border-radius: 10px;
+        }
+
+        .product-img-box-small {
+            width: 40px;
+            height: 40px;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            border: 1px solid #eee;
+        }
+
+        .product-img-box-small img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .grayscale {
+            filter: grayscale(1);
+            opacity: 0.5;
+        }
+
+        .sticky-log-header {
+            position: sticky;
+            top: 0;
+            background: #f8f9fa;
+            z-index: 5;
+        }
+
+        .btn-chart-toggle.active {
+            background-color: #1c2541 !important;
+            color: white !important;
+        }
+
+        /* Admin Cevap Stili */
+        .admin-reply-badge {
+            font-size: 0.7rem;
+            padding: 3px 8px;
+            border-radius: 50px;
+            background: rgba(197, 160, 89, 0.1);
+            color: #c5a059;
+            font-weight: 700;
+        }
+    </style>
+</head>
+
+<body class="bg-light">
+
+    <nav class="navbar navbar-expand-lg navbar-dark sticky-top"
+        style="background-color: #1c2541; border-bottom: 3px solid #c5a059;">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="#">LUXE<span style="color:#c5a059;">BERLIN</span> ADMIN</a>
+            <div class="ms-auto">
+                <button class="btn btn-outline-warning btn-sm me-2" onclick="logout()">Abmelden</button>
+                <a href="index.html" class="btn btn-outline-light btn-sm px-3">Storefront</a>
+            </div>
+        </div>
+    </nav>
+
+    <main id="adminMainContent" class="container py-5 d-none">
+        <div class="row g-4 mb-4 text-center text-white">
+            <div class="col-md-4">
+                <div class="p-4 rounded-4 shadow-sm" style="background:#1c2541;">
+                    <p class="small text-uppercase mb-1 opacity-75">Bestellungen</p>
+                    <h2 id="stat-count" class="fw-bold">0</h2>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="p-4 rounded-4 shadow-sm" style="background:#c5a059;">
+                    <p class="small text-uppercase mb-1 opacity-75">Umsatz</p>
+                    <h2 id="stat-revenue" class="fw-bold">0,00 €</h2>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="p-4 rounded-4 shadow-sm" style="background:#212529;">
+                    <p class="small text-uppercase mb-1 opacity-75">Kunden</p>
+                    <h2 id="stat-customers" class="fw-bold">0</h2>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mb-5">
+            <div class="col-12">
+                <div class="card border-0 shadow-sm rounded-4 p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h5 class="fw-bold mb-0 text-navy">📈 Verkaufsstatistik</h5>
+                        <div class="btn-group btn-group-sm shadow-sm">
+                            <button class="btn btn-outline-dark btn-chart-toggle px-3"
+                                onclick="changeChartMode('daily')">Tag</button>
+                            <button class="btn btn-outline-dark btn-chart-toggle px-3"
+                                onclick="changeChartMode('weekly')">Woche</button>
+                            <button class="btn btn-outline-dark btn-chart-toggle px-3 active" id="btn-monthly"
+                                onclick="changeChartMode('monthly')">Monat</button>
+                        </div>
+                    </div>
+                    <div style="height: 300px;"><canvas id="salesChart"></canvas></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm rounded-4 mb-5">
+            <div class="card-body p-4">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h4 class="fw-bold mb-0">Bestellungsverwaltung</h4>
+                    <input type="text" id="orderSearch" class="form-control w-50 rounded-pill"
+                        placeholder="Müşteri adına göre ara...">
+                </div>
+                <div class="table-scroll-container">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="small fw-bold text-uppercase">
+                            <tr>
+                                <th>Datum</th>
+                                <th>Kunde</th>
+                                <th>Details</th>
+                                <th>Zahlung</th>
+                                <th>Betrag</th>
+                                <th>Status</th>
+                                <th class="text-end">Aktion</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-order-list"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm rounded-4 mb-5">
+            <div class="card-body p-4">
+                <h4 class="fw-bold mb-4">Rezensionen verwalten (Yorumlar)</h4>
+                <div class="table-scroll-container">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="small fw-bold text-uppercase">
+                            <tr>
+                                <th>Datum</th>
+                                <th>Name</th>
+                                <th>Bewertung</th>
+                                <th>Kommentar</th>
+                                <th>Antwort</th>
+                                <th class="text-end">Aktion</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-review-list"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <section class="row g-4 mb-5">
+            <div class="col-lg-4">
+                <div class="card p-4 shadow-sm border-0 rounded-4 sticky-card">
+                    <h5 id="productFormTitle" class="fw-bold mb-3 text-navy">Produkt verwalten</h5>
+                    <form id="productForm">
+                        <input type="hidden" id="pId">
+                        <div class="mb-2"><input type="text" id="pName" class="form-control" placeholder="Name"
+                                required></div>
+                        <div class="mb-2"><input type="number" id="pPrice" class="form-control" placeholder="Preis (€)"
+                                step="0.01" required></div>
+                        <div class="mb-2">
+                            <label class="small fw-bold opacity-75 mb-1 text-navy">Lagerbestand (Stok)</label>
+                            <input type="number" id="pStock" class="form-control border-primary-subtle"
+                                placeholder="Anzahl" min="0" required>
+                        </div>
+                        <div class="mb-2"><label class="small fw-bold opacity-75 mb-1">Produktbild</label><input
+                                type="file" id="pImageFile" class="form-control" accept="image/*"></div>
+                        <div id="imagePreview" class="mb-3 text-center d-none"><img src="" id="previewImg" width="100"
+                                class="rounded border shadow-sm"></div>
+                        <div class="mb-3"><textarea id="pDesc" class="form-control" placeholder="Beschreibung" rows="3"
+                                required></textarea></div>
+                        <button type="submit" id="productSubmitBtn" class="btn btn-dark w-100 rounded-pill">Produkt
+                            Speichern</button>
+                        <button type="button" id="cancelEditBtn" class="btn btn-link btn-sm w-100 mt-2 d-none"
+                            onclick="resetProductForm()">Abbrechen</button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="col-lg-8">
+                <div class="card p-4 shadow-sm border-0 rounded-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="fw-bold mb-0">Inventar & Bestand</h5>
+                        <input type="text" id="productSearch" class="form-control w-50 rounded-pill"
+                            placeholder="Ürün adına göre ara...">
+                    </div>
+                    <div class="table-scroll-container" style="max-height: 400px;">
+                        <table class="table align-middle mb-0">
+                            <thead class="small text-muted text-uppercase">
+                                <tr>
+                                    <th>Bild</th>
+                                    <th>Name</th>
+                                    <th>Preis</th>
+                                    <th>Lager (Stok)</th>
+                                    <th class="text-end">Aktion</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-product-list"></tbody>
+                        </table>
+                    </div>
+
+                    <div class="mt-5 pt-4 border-top">
+                        <h6 class="fw-bold text-danger mb-3">🗑️ Archivierte Produkte</h6>
+                        <div class="table-scroll-container" style="max-height: 200px;">
+                            <table class="table table-sm align-middle mb-0">
+                                <tbody id="admin-archived-list"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <div class="card border-0 shadow-sm rounded-4 mb-5">
+            <div class="card-body p-4">
+                <h5 class="fw-bold mb-3 text-navy">🖥️ System-Aktivitätsprotokoll</h5>
+                <div class="table-responsive"
+                    style="max-height: 250px; overflow-y: auto; border: 1px solid #eee; border-radius: 8px;">
+                    <table class="table table-sm small mb-0">
+                        <thead class="bg-light sticky-log-header fw-bold">
+                            <tr>
+                                <th>Zeitpunkt</th>
+                                <th>Aktion</th>
+                                <th>Benutzer</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-activity-logs"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <section class="row g-4 pt-5 border-top">
+            <div class="col-lg-4">
+                <div class="card p-4 shadow-sm border-0 rounded-4">
+                    <h5 class="fw-bold mb-3">Admin hinzufügen</h5>
+                    <form id="addAdminForm">
+                        <input type="text" id="newAdminUser" class="form-control mb-2" placeholder="Benutzername"
+                            required>
+                        <input type="password" id="newAdminPass" class="form-control mb-3" placeholder="Passwort"
+                            required>
+                        <button type="submit" class="btn btn-dark w-100 rounded-pill">Registrieren</button>
+                    </form>
+                </div>
+            </div>
+            <div class="col-lg-8">
+                <div class="card p-4 shadow-sm border-0 rounded-4 h-100">
+                    <h5 class="fw-bold mb-3">Aktive Administratoren</h5>
+                    <div class="table-scroll-container" style="max-height: 250px;">
+                        <table class="table align-middle mb-0">
+                            <tbody id="admin-list-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <div class="modal fade" id="orderDetailModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg rounded-4">
+                <div class="modal-header bg-dark text-white rounded-top-4">
+                    <h5 class="modal-title fw-bold">Bestellungsdetails</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div id="modal-content-area" class="modal-body p-4"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="replyModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg rounded-4">
+                <div class="modal-header bg-navy text-white" style="background: #1c2541;">
+                    <h5 class="modal-title">Antworten (Cevapla)</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="replyReviewId">
+                    <label class="small fw-bold text-muted mb-2">Deine Antwort:</label>
+                    <textarea id="adminReplyText" class="form-control" rows="4"
+                        placeholder="Schreiben Sie eine Antwort..."></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Schließen</button>
+                    <button type="button" class="btn btn-gold px-4" onclick="submitReply()">Senden</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="admin.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            if (localStorage.getItem('adminToken')) {
+                document.getElementById('adminMainContent').classList.remove('d-none');
+            }
+        });
+    </script>
+</body>
+
+</html>

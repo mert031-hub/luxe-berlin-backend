@@ -1,0 +1,200 @@
+:root {
+  --gold: #c5a059;
+  --navy: #1c2541;
+  --platinum: #f8f9fa;
+  --gold-shadow: rgba(197, 160, 89, 0.4);
+}
+
+body {
+  font-family: "Montserrat", sans-serif;
+  background-color: var(--platinum);
+  color: var(--navy);
+  -webkit-font-smoothing: antialiased;
+}
+
+.navbar-brand {
+  font-family: "Playfair Display", serif;
+  letter-spacing: 2px;
+}
+
+.navbar-brand span {
+  color: var(--gold);
+}
+
+.track-card {
+  background: white;
+  border: none;
+  border-radius: 30px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.04);
+  padding: 50px;
+  margin-top: 30px;
+}
+
+/* Arama Kutusu Efekti */
+.tracking-search-box {
+  transition: all 0.3s ease;
+  border: 1px solid #eee !important;
+}
+
+.tracking-search-box:focus-within {
+  border-color: var(--gold) !important;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.08) !important;
+}
+
+.btn-gold {
+  background: var(--gold);
+  color: white;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: none;
+}
+
+.btn-gold:hover {
+  background: var(--navy);
+  transform: scale(1.02);
+}
+
+/* --- PROGRESS TRACKER --- */
+.track-container {
+  margin: 60px 0;
+  display: flex;
+  justify-content: space-between;
+  position: relative;
+}
+
+.track-container::before {
+  content: "";
+  position: absolute;
+  top: 30px;
+  left: 5%;
+  right: 5%;
+  height: 3px;
+  background: #f0f0f0;
+  z-index: 1;
+  border-radius: 10px;
+}
+
+.progress-line-fill {
+  position: absolute;
+  top: 30px;
+  left: 5%;
+  width: 0%;
+  height: 3px;
+  background: var(--gold);
+  z-index: 2;
+  transition: width 1.5s cubic-bezier(0.65, 0, 0.35, 1);
+  box-shadow: 0 0 10px var(--gold-shadow);
+}
+
+.step {
+  z-index: 3;
+  text-align: center;
+  width: 20%;
+}
+
+.step-icon {
+  width: 65px;
+  height: 65px;
+  background: white;
+  border: 2px solid #eee;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 15px;
+  font-size: 1.6rem;
+  transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+}
+
+.step.active .step-icon {
+  border-color: var(--gold);
+  background: var(--gold);
+  color: white;
+  transform: scale(1.15);
+  box-shadow: 0 0 30px var(--gold-shadow);
+  animation: pulse-gold 2s infinite;
+}
+
+.step.completed .step-icon {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: white;
+  opacity: 1;
+}
+
+.step-text {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: #aaa;
+  font-weight: 600;
+  letter-spacing: 1px;
+  transition: color 0.4s ease;
+}
+
+.step.active .step-text,
+.step.completed .step-text {
+  color: var(--navy);
+  font-weight: 700;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.result-animation {
+  animation: fadeInUp 0.8s ease forwards;
+}
+.staggered-item {
+  animation: fadeInUp 0.8s ease both;
+  animation-delay: 0.3s;
+}
+
+@keyframes pulse-gold {
+  0% {
+    box-shadow: 0 0 0 0 rgba(197, 160, 89, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 15px rgba(197, 160, 89, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(197, 160, 89, 0);
+  }
+}
+
+.order-details-box {
+  background: #fdfdfd;
+  border: 1px solid #f0f0f0;
+  border-radius: 20px;
+  padding: 30px;
+  margin-top: 40px;
+}
+
+.product-item {
+  border-bottom: 1px solid #f5f5f5;
+  padding: 15px 0;
+  transition: background 0.2s ease;
+}
+
+.product-item:hover {
+  background: rgba(248, 249, 250, 0.5);
+}
+.product-item:last-child {
+  border-bottom: none;
+}
+
+.product-thumb {
+  width: 65px;
+  height: 65px;
+  object-fit: cover;
+  border-radius: 12px;
+  border: 1px solid #eee;
+  background-color: #f8f9fa;
+  margin-right: 15px;
+}
