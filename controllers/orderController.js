@@ -1,72 +1,39 @@
 const Order = require("../models/Order");
 const Product = require("../models/Product");
-
-// SADECE mail fonksiyonunu alıyoruz
 const { sendStatusEmail } = require("../config/mailer");
 
 /**
  * 1️⃣ SİPARİŞ OLUŞTURMA
- * - Stok kontrolü
- * - Sipariş kaydı
- * - Stok düşme
- * - Onay maili (arka planda / Resend)
  */
 exports.createOrder = async (req, res) => {
     try {
         const { customer, items, totalAmount, paymentMethod } = req.body;
 
-        // A. STOK KONTROLÜ
         for (const item of items) {
             const product = await Product.findById(item.productId);
-
-            if (!product) {
-                return res.status(404).json({
-                    message: "Produkt nicht gefunden."
-                });
-            }
-
+            if (!product) return res.status(404).json({ message: "Produkt nicht gefunden." });
             if (product.stock < item.qty) {
-                return res.status(400).json({
-                    message: `Leider ist nicht mehr genügend Lagerbestand für ${product.name} vorhanden.`
-                });
+                return res.status(400).json({ message: `Nicht genügend Lagerbestand für ${product.name}.` });
             }
         }
 
-        // B. SİPARİŞİ KAYDET
         const newOrder = new Order({
-            customer: {
-                firstName: customer.firstName,
-                lastName: customer.lastName,
-                email: customer.email,
-                phone: customer.phone,
-                address: customer.address
-            },
-            items,
-            totalAmount,
+            customer, items, totalAmount,
             paymentMethod: paymentMethod || "Unbekannt"
         });
 
         await newOrder.save();
 
-        // C. STOKLARI DÜŞ
         for (const item of items) {
-            await Product.findByIdAndUpdate(item.productId, {
-                $inc: { stock: -item.qty }
-            });
+            await Product.findByIdAndUpdate(item.productId, { $inc: { stock: -item.qty } });
         }
 
-        // D. ONAY MAİLİ (ARKA PLANDA)
-        // TEST MODUNDA SADECE SABİT MAİL'E GİDER
+        // Resend üzerinden arka planda mail gönder
         sendStatusEmail(newOrder, "pending").catch(err =>
-            console.error("❌ Onay maili gönderilemedi:", err.message)
+            console.error("❌ Onay maili hatası:", err.message)
         );
 
-        // KULLANICIYA GÖSTERİLECEK ID
-        const shortId = `LB-${newOrder._id
-            .toString()
-            .slice(-6)
-            .toUpperCase()}`;
-
+        const shortId = `LB-${newOrder._id.toString().slice(-6).toUpperCase()}`;
         console.log(`✅ Sipariş oluşturuldu: #${shortId}`);
 
         res.status(201).json({
@@ -74,50 +41,89 @@ exports.createOrder = async (req, res) => {
             orderId: newOrder._id,
             shortId
         });
-
     } catch (err) {
         console.error("❌ Sipariş oluşturma hatası:", err);
-        res.status(500).json({
-            message: "Sipariş oluşturulamadı!",
-            error: err.message
-        });
+        res.status(500).json({ message: "Sipariş oluşturulamadı!", error: err.message });
     }
 };
 
 /**
- * 2️⃣ SİPARİŞ DURUM GÜNCELLEME
- * - Status değişince otomatik mail gider
+ * 2️⃣ TÜM SİPARİŞLERİ GETİR (Admin Panel)
+ */
+exports.getAllOrders = async (req, res) => {
+    try {
+        const orders = await Order.find().sort({ date: -1 });
+        res.json(orders);
+    } catch (err) {
+        res.status(500).json({ message: "Hata", error: err.message });
+    }
+};
+
+/**
+ * 3️⃣ TEK SİPARİŞ GETİR (Tracking)
+ */
+exports.getOrderById = async (req, res) => {
+    try {
+        let { id } = req.params;
+        id = id.replace('#', '').replace('LB-', '').toUpperCase();
+
+        // Hem tam ID hem de kısa ID ile arama mantığı
+        const isObjectId = /^[0-9a-fA-F]{24}$/.test(id);
+        let order;
+
+        if (isObjectId) {
+            order = await Order.findById(id).populate('items.productId');
+        } else {
+            const allOrders = await Order.find().populate('items.productId');
+            order = allOrders.find(o => o._id.toString().toUpperCase().endsWith(id));
+        }
+
+        if (!order) return res.status(404).json({ message: "Sipariş bulunamadı." });
+        res.json(order);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+};
+
+/**
+ * 4️⃣ DURUM GÜNCELLEME
  */
 exports.updateOrderStatus = async (req, res) => {
     try {
         const { status } = req.body;
+        const updatedOrder = await Order.findByIdAndUpdate(req.params.id, { status }, { new: true });
 
-        const updatedOrder = await Order.findByIdAndUpdate(
-            req.params.id,
-            { status },
-            { new: true }
-        );
-
-        if (!updatedOrder) {
-            return res.status(404).json({
-                message: "Sipariş bulunamadı"
-            });
+        if (updatedOrder) {
+            sendStatusEmail(updatedOrder, status).catch(err =>
+                console.error("❌ Durum maili hatası:", err.message)
+            );
         }
-
-        // Durum maili (arka planda)
-        sendStatusEmail(updatedOrder, status).catch(err =>
-            console.error("❌ Durum maili gönderilemedi:", err.message)
-        );
-
         res.json(updatedOrder);
-
     } catch (err) {
-        console.error("❌ Durum güncelleme hatası:", err);
-        res.status(500).json({
-            message: "Güncellenemedi",
-            error: err.message
-        });
+        res.status(500).json({ message: "Güncellenemedi", error: err.message });
     }
 };
 
-// getOrderById, getAllOrders, deleteOrder, archiveOrder aynı kalabilir
+/**
+ * 5️⃣ SİPARİŞ SİLME
+ */
+exports.deleteOrder = async (req, res) => {
+    try {
+        await Order.findByIdAndDelete(req.params.id);
+        res.json({ message: "Sipariş silindi" });
+    } catch (err) {
+        res.status(500).json({ message: "Silinemedi", error: err.message });
+    }
+};
+
+/**
+ * 6️⃣ SİPARİŞ ARŞİVLEME
+ */
+exports.archiveOrder = async (req, res) => {
+    try {
+        await Order.findByIdAndUpdate(req.params.id, { isArchived: true });
+        res.json({ message: "Sipariş arşivlendi." });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+};
