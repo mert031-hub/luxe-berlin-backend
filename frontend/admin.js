@@ -3,8 +3,12 @@ if (!localStorage.getItem('adminToken')) {
     window.location.href = 'login.html';
 }
 
-// --- GLOBAL YAPILANDIRMA ---
-const API_URL = '/api';
+// --- GLOBAL YAPILANDIRMA (DİNAMİK URL GÜNCELLEMESİ) ---
+// Sitenin nerede çalıştığını otomatik algılar ve doğru API'ye bağlanır
+const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    ? 'http://localhost:5000/api'
+    : '/api'; // Render üzerinde kendi domaini üzerinden çalışır
+
 const API = API_URL;
 const UPLOADS_URL = '';
 const euro = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' });
@@ -175,7 +179,6 @@ window.deleteOrder = async (id) => {
     }
 };
 
-// GÜNCELLENDİ: Telefon ve Email bilgilerini gösteren yeni detay yapısı
 window.viewDetails = async (id) => {
     const res = await fetch(`${API_URL}/orders`, {
         headers: { 'x-auth-token': getAuthToken() }
