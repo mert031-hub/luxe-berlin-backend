@@ -5,7 +5,7 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 
 /**
  * Sipariş durumuna göre mail gönderen servis
- * TEST MODUNDA: Sadece doğrulanmış dmero904@gmail.com adresine gider.
+ * TEST MODUNDA: Sadece doğrulanmış demirmustafamrt7@gmail.com adresine gider.
  */
 async function sendStatusEmail(order, newStatus) {
     if (!order) return;
@@ -17,11 +17,11 @@ async function sendStatusEmail(order, newStatus) {
     // Sipariş durumuna göre içerik ve konu belirleme
     if (status === "pending" || status === "eingegangen") {
         subject = "Bestellbestätigung - LUXE BERLIN";
-        message = "Wir haben Ihre Bestellung erhalten ve bereiten sie mit Sorgfalt vor.";
+        message = "Wir haben Ihre Bestellung erhalten und bereiten sie mit Sorgfalt vor.";
     }
     else if (status === "processing" || status === "in bearbeitung") {
         subject = "Ihre Bestellung wird bearbeitet";
-        message = "Ihre exklusiven Stücke werden nun geprüft ve für den Versand vorbereitet.";
+        message = "Ihre exklusiven Stücke werden nun geprüft und für den Versand vorbereitet.";
     }
     else if (status === "shipped" || status === "versandt") {
         subject = "Ihre Bestellung ist auf dem Weg!";
@@ -39,7 +39,7 @@ async function sendStatusEmail(order, newStatus) {
     try {
         const { data, error } = await resend.emails.send({
             from: "LUXE BERLIN <onboarding@resend.dev>",
-            to: ["dmero904@gmail.com"], // Yeni hedef adres ✅
+            to: ["demirmustafamrt7@gmail.com"], // Yeni hedef adres ✅
             subject: subject,
             html: `
                 <!DOCTYPE html>
@@ -67,7 +67,7 @@ async function sendStatusEmail(order, newStatus) {
                         </div>
                         <div class="content">
                             <div class="status-badge">Bestell-Update</div>
-                            <div class="order-id">Sipariş No: #LB-${order._id.toString().slice(-6).toUpperCase()}</div>
+                            <div class="order-id">Bestellnummer: #LB-${order._id.toString().slice(-6).toUpperCase()}</div>
                             <h2 style="font-family: 'Playfair Display', serif; margin-bottom: 20px; color: #1c2541;">Hallo!</h2>
                             <div class="message-box">
                                 ${message}
@@ -90,7 +90,7 @@ async function sendStatusEmail(order, newStatus) {
             return;
         }
 
-        console.log("✅ Mail başarıyla gönderildi | Alıcı: dmero904@gmail.com | ID:", data.id);
+        console.log("✅ Mail başarıyla gönderildi | Alıcı: demirmustafamrt7@gmail.com | ID:", data.id);
     } catch (err) {
         console.error("❌ Mail gönderim hatası:", err.message);
     }
