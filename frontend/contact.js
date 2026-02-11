@@ -1,7 +1,9 @@
-// contact.js
+// LUXE BERLIN - CONTACT LOGIC (FIXED)
 
-// Backend adresini merkezi olarak tanımlıyoruz
-const API_URL = 'http://localhost:5000/api';
+// Backend adresini dinamik olarak tanımlıyoruz
+const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    ? 'http://localhost:5000/api'
+    : '/api';
 
 document.getElementById('contactForm')?.addEventListener('submit', async (e) => {
     e.preventDefault();

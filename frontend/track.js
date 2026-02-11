@@ -1,8 +1,11 @@
 /**
- * LUXE BERLIN - ADVANCED TRACKING LOGIC
+ * LUXE BERLIN - ADVANCED TRACKING LOGIC (FIXED)
  */
 
-const API_URL = '/api';
+const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    ? 'http://localhost:5000/api'
+    : '/api';
+
 const UPLOADS_URL = '';
 const euro = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' });
 
