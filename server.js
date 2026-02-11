@@ -2,37 +2,43 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const dns = require('dns'); // 1. DNS modülünü ekledik
 const connectDB = require('./config/db');
+
+// 2. KRİTİK: Render üzerindeki IPv6 (ENETUNREACH) hatalarını önlemek için 
+// tüm dış bağlantı isteklerini IPv4 öncelikli yapar.
+dns.setDefaultResultOrder('ipv4first');
 
 const app = express();
 
-// 1. Veritabanı Bağlantısını Başlat
+// 3. Veritabanı Bağlantısını Başlat
 connectDB();
 
-// 2. Middleware'ler
-app.use(cors());
-app.use(express.json());
+// 4. Middleware'ler
+app.use(cors()); // Tüm kökenlerden gelen isteklere izin verir
+app.use(express.json()); // JSON gövdelerini işler
 
-// Resim dosyalarına erişim
+// Resim dosyalarına (uploads klasörü) dışarıdan erişim sağlar
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Frontend dosyalarını sun
+// Statik frontend dosyalarını sunar
 app.use(express.static(path.join(__dirname, 'frontend')));
 
-// 3. API ROTALARI
+// 5. API ROTALARI
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/products', require('./routes/productRoutes'));
 app.use('/api/orders', require('./routes/orderRoutes'));
 app.use('/api/contact', require('./routes/contactRoutes'));
-app.use('/api/reviews', require('./routes/reviewRoutes')); // YENİ: Yorum sistemi rotası eklendi 🚀
+app.use('/api/reviews', require('./routes/reviewRoutes'));
 app.use('/api', require('./routes/testRoutes'));
 
-// API Durum Kontrolü
+// API Durum Kontrolü (Sağlık Testi)
 app.get('/api-status', (req, res) => {
     res.send('Luxe Berlin API Çalışıyor! 🚀');
 });
 
-// --- 4. 404 SAYFA BULUNAMADI ---
+// --- 6. 404 SAYFA BULUNAMADI ---
+// Eğer bir rota bulunamazsa kullanıcıya 404.html gönderir veya JSON döner
 app.use((req, res) => {
     res.status(404);
     if (req.accepts('html')) {
@@ -42,7 +48,8 @@ app.use((req, res) => {
     res.json({ success: false, message: "Resource not found" });
 });
 
-// --- 5. GLOBAL HATA YAKALAYICI ---
+// --- 7. GLOBAL HATA YAKALAYICI ---
+// Beklenmedik sunucu hatalarını yakalar ve 500.html gönderir
 app.use((err, req, res, next) => {
     console.error("CRITICAL SERVER ERROR:", err.stack);
     res.status(500);
@@ -57,9 +64,10 @@ app.use((err, req, res, next) => {
     });
 });
 
-// 6. Sunucuyu Başlat
+// 8. Sunucuyu Başlat
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
     console.log(`🚀 Sunucu ${PORT} portunda aktif.`);
     console.log(`📂 Frontend klasör yolu: ${path.join(__dirname, 'frontend')}`);
+    console.log(`📧 E-posta sistemi: Resend API aktif.`);
 });

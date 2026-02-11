@@ -1,5 +1,5 @@
 /**
- * LUXE BERLIN - ADVANCED TRACKING LOGIC (FIXED)
+ * LUXE BERLIN - ADVANCED TRACKING LOGIC (OPTIMIZED)
  */
 
 const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
@@ -15,9 +15,7 @@ async function trackOrder() {
     const itemsList = document.getElementById('order-items-list');
     const header = document.getElementById('status-header');
 
-    // Girişi temizliyoruz (# ve LB- kısımlarını atıyoruz)
     const id = rawId.replace('#', '').replace('LB-', '').toUpperCase();
-
     if (!id) return alert("Bitte geben Sie eine gültige Bestellnummer ein!");
 
     try {
@@ -26,17 +24,13 @@ async function trackOrder() {
 
         if (res.ok && order) {
             resultArea.classList.add('d-none');
-            setTimeout(() => {
-                resultArea.classList.remove('d-none');
-            }, 50);
+            setTimeout(() => { resultArea.classList.remove('d-none'); }, 50);
 
-            // 1. Üst Bilgi Alanını Güncelle
             header.innerHTML = `
                 <h6 class="text-muted mb-1">Bestellnummer: #LB-${id.slice(-6).toUpperCase()}</h6>
                 <h4 class="fw-bold">Status: <span style="color:#c5a059;">${translateStatus(order.status || 'Pending')}</span></h4>
             `;
 
-            // 2. Ürün Listesi
             itemsList.innerHTML = (order.items || []).map((item, index) => {
                 let imgPath = item.productId?.image;
                 let finalImgSrc = 'https://via.placeholder.com/60';
@@ -59,16 +53,14 @@ async function trackOrder() {
                 `;
             }).join('');
 
-            // 3. Adres ve Toplam
             document.getElementById('display-address').innerText = `📍 ${order.customer?.address || 'K.A.'}`;
             document.getElementById('display-total').innerText = euro.format(order.totalAmount || 0);
 
-            // 4. İlerleme Güncelleme
             updateProgressSteps(order.status || 'Pending');
             resultArea.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
         } else {
-            alert("Bestellung nicht gefunden! Bitte prüfen Sie Ihre Nummer.");
+            alert("Bestellung nicht gefunden!");
             resultArea.classList.add('d-none');
         }
     } catch (err) {
@@ -98,12 +90,21 @@ function updateProgressSteps(status) {
     const progressLine = document.getElementById('progress-line');
 
     const statusMap = { 'Pending': 0, 'Processing': 1, 'Shipped': 2, 'Delivered': 3 };
-    const progressWidths = { 'Pending': 0, 'Processing': 33, 'Shipped': 66, 'Delivered': 100 };
+    // Mobilde çizgiyi tam doldurmak için 0, 33, 66, 100 oranları
+    const progressPercentages = { 'Pending': 0, 'Processing': 33, 'Shipped': 66, 'Delivered': 100 };
 
     const currentIndex = statusMap[status] !== undefined ? statusMap[status] : 0;
 
     if (progressLine) {
-        progressLine.style.width = `${progressWidths[status] || 0}%`;
+        if (window.innerWidth < 768) {
+            // Mobil: Dikey yükseklik
+            progressLine.style.width = "3px";
+            progressLine.style.height = `${progressPercentages[status] || 0}%`;
+        } else {
+            // Desktop: Yatay genişlik
+            progressLine.style.height = "3px";
+            progressLine.style.width = `${progressPercentages[status] || 0}%`;
+        }
     }
 
     steps.forEach((step, index) => {
@@ -116,12 +117,3 @@ function updateProgressSteps(status) {
         }
     });
 }
-
-document.addEventListener('DOMContentLoaded', () => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const orderIdFromUrl = urlParams.get('id');
-    if (orderIdFromUrl) {
-        document.getElementById('orderIdInput').value = orderIdFromUrl.replace('#', '');
-        trackOrder();
-    }
-});

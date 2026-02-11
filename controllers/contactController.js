@@ -1,57 +1,53 @@
-const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
 
-// .env dosyasındaki değişkenleri kullanarak taşıyıcıyı oluşturuyoruz
-const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS
-    }
-});
-
-// Taşıyıcının (SMTP) çalışıp çalışmadığını sunucu başında kontrol et
-transporter.verify((error, success) => {
-    if (error) {
-        console.error("❌ E-posta Sunucusu Bağlantı Hatası:", error.message);
-    } else {
-        console.log("✅ E-posta Sunucusu (Nodemailer) Hazır!");
-    }
-});
+// Resend API anahtarını başlatıyoruz
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 exports.sendContactMail = async (req, res) => {
     const { name, email, subject, message } = req.body;
 
     try {
-        const mailOptions = {
-            // Gönderen kısmında Luxe Berlin ismi görünür
-            from: `"LUXE Kontakt Form" <${process.env.EMAIL_USER}>`,
-            // Mesaj senin deneme e-posta adresine gider
-            to: process.env.EMAIL_USER,
-            // 'Cevapla' butonuna basıldığında formu dolduran kişinin maili seçilir
-            replyTo: email,
+        const { data, error } = await resend.emails.send({
+            // Domain onaylanana kadar sabit onboarding adresi
+            from: "LUXE Kontakt <onboarding@resend.dev>",
+
+            // Mesajın gideceği adres (Senin kendi mailin)
+            to: ["kocyigit.trade@gmail.com"],
+
+            // Kullanıcıya direkt cevap yazabilmen için replyTo ayarı
+            reply_to: email,
+
             subject: `Neue Kontaktanfrage: ${subject}`,
             html: `
-                <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+                <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: auto;">
                     <h2 style="color: #1c2541; border-bottom: 2px solid #c5a059; padding-bottom: 10px;">
-                        Neue Nachricht von ${name}
+                        LUXE BERLIN - Neue Nachricht
                     </h2>
-                    <p><strong>Absender E-Mail:</strong> ${email}</p>
-                    <p><strong>Betreff:</strong> ${subject}</p>
-                    <p><strong>Nachricht:</strong></p>
-                    <div style="background:#f9f9f9; padding:20px; border-left: 5px solid #c5a059; border-radius:5px;">
-                        ${message}
+                    <div style="background:#f9f9f9; padding:20px; border-radius:10px; border-left: 5px solid #c5a059;">
+                        <p><strong>Absender Name:</strong> ${name}</p>
+                        <p><strong>Absender E-Mail:</strong> ${email}</p>
+                        <p><strong>Betreff:</strong> ${subject}</p>
+                        <hr style="border:none; border-top: 1px solid #ddd; margin: 20px 0;">
+                        <p><strong>Nachricht:</strong></p>
+                        <p style="white-space: pre-wrap;">${message}</p>
                     </div>
-                    <p style="font-size: 0.8em; color: #777; margin-top: 20px;">
-                        Diese E-Mail wurde automatisch über das Luxe Berlin Kontaktformular gesendet.
+                    <p style="font-size: 0.8em; color: #777; margin-top: 20px; text-align: center;">
+                        Diese E-Mail wurde über das Luxe Berlin Kontaktformular gesendet.
                     </p>
                 </div>
             `
-        };
+        });
 
-        await transporter.sendMail(mailOptions);
+        if (error) {
+            console.error("❌ Resend API Hatası (Kontakt):", error);
+            return res.status(500).json({ message: "Mesaj gönderilemedi." });
+        }
+
+        console.log("✅ İletişim maili Resend ile uçuruldu! ID:", data.id);
         res.status(200).json({ message: "Nachricht erfolgreich gesendet" });
+
     } catch (err) {
-        console.error("Mail Gönderim Hatası:", err);
-        res.status(500).json({ message: "Mail gönderilemedi: " + err.message });
+        console.error("❌ İletişim Formu Catch Hatası:", err.message);
+        res.status(500).json({ message: "Sunucu hatası: " + err.message });
     }
 };

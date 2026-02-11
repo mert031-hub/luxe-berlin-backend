@@ -1,17 +1,29 @@
-const Order = require('../models/Order');
-const Product = require('../models/Product');
-// Sadece sendStatusEmail fonksiyonunu çekmemiz yeterli
-const { sendStatusEmail } = require('../config/mailer');
+const Order = require("../models/Order");
+const Product = require("../models/Product");
 
-// 1. SİPARİŞ OLUŞTURMA, STOK KONTROLÜ VE MAİL
+// SADECE mail fonksiyonunu alıyoruz
+const { sendStatusEmail } = require("../config/mailer");
+
+/**
+ * 1️⃣ SİPARİŞ OLUŞTURMA
+ * - Stok kontrolü
+ * - Sipariş kaydı
+ * - Stok düşme
+ * - Onay maili (arka planda / Resend)
+ */
 exports.createOrder = async (req, res) => {
     try {
         const { customer, items, totalAmount, paymentMethod } = req.body;
 
-        // --- A. STOK KONTROLÜ ---
+        // A. STOK KONTROLÜ
         for (const item of items) {
             const product = await Product.findById(item.productId);
-            if (!product) return res.status(404).json({ message: "Produkt nicht gefunden." });
+
+            if (!product) {
+                return res.status(404).json({
+                    message: "Produkt nicht gefunden."
+                });
+            }
 
             if (product.stock < item.qty) {
                 return res.status(400).json({
@@ -20,7 +32,7 @@ exports.createOrder = async (req, res) => {
             }
         }
 
-        // --- B. SİPARİŞİ KAYDET ---
+        // B. SİPARİŞİ KAYDET
         const newOrder = new Order({
             customer: {
                 firstName: customer.firstName,
@@ -36,62 +48,76 @@ exports.createOrder = async (req, res) => {
 
         await newOrder.save();
 
-        // --- C. STOKLARI DB'DEN DÜŞ ---
+        // C. STOKLARI DÜŞ
         for (const item of items) {
             await Product.findByIdAndUpdate(item.productId, {
                 $inc: { stock: -item.qty }
             });
         }
 
-        // --- D. ONAY MAİLİ (RESEND İLE ARKA PLANDA) ---
-        // Artık mailOptions oluşturmaya gerek yok, mailer içindeki fonksiyonu çağırıyoruz
-        sendStatusEmail(newOrder, 'pending').catch(err =>
-            console.error("❌ Onay maili arka planda başarısız oldu:", err.message)
+        // D. ONAY MAİLİ (ARKA PLANDA)
+        // TEST MODUNDA SADECE SABİT MAİL'E GİDER
+        sendStatusEmail(newOrder, "pending").catch(err =>
+            console.error("❌ Onay maili gönderilemedi:", err.message)
         );
 
-        const orderIdShort = newOrder._id.toString().slice(-6).toUpperCase();
-        const displayId = `LB-${orderIdShort}`;
+        // KULLANICIYA GÖSTERİLECEK ID
+        const shortId = `LB-${newOrder._id
+            .toString()
+            .slice(-6)
+            .toUpperCase()}`;
 
-        console.log(`✅ Sipariş veritabanına kaydedildi: #${displayId}`);
+        console.log(`✅ Sipariş oluşturuldu: #${shortId}`);
 
-        // Kullanıcıyı hemen başarı sayfasına yolluyoruz
         res.status(201).json({
             message: "Sipariş başarılı!",
             orderId: newOrder._id,
-            shortId: displayId
+            shortId
         });
 
     } catch (err) {
-        console.error("Sipariş Hatası:", err);
-        res.status(500).json({ message: "Sipariş oluşturulamadı!", error: err.message });
+        console.error("❌ Sipariş oluşturma hatası:", err);
+        res.status(500).json({
+            message: "Sipariş oluşturulamadı!",
+            error: err.message
+        });
     }
 };
 
-// ... getOrderById, getAllOrders fonksiyonları aynı kalıyor ...
-
-// DURUM GÜNCELLEME VE OTOMATİK MAİL TETİKLEYİCİ
+/**
+ * 2️⃣ SİPARİŞ DURUM GÜNCELLEME
+ * - Status değişince otomatik mail gider
+ */
 exports.updateOrderStatus = async (req, res) => {
     try {
-        const newStatus = req.body.status;
+        const { status } = req.body;
 
         const updatedOrder = await Order.findByIdAndUpdate(
             req.params.id,
-            { status: newStatus },
+            { status },
             { new: true }
         );
 
-        if (updatedOrder) {
-            // Durum güncellendiğinde müşteriye otomatik mail gider (Arka planda)
-            sendStatusEmail(updatedOrder, newStatus).catch(err =>
-                console.error("❌ Durum maili hatası:", err.message)
-            );
+        if (!updatedOrder) {
+            return res.status(404).json({
+                message: "Sipariş bulunamadı"
+            });
         }
 
+        // Durum maili (arka planda)
+        sendStatusEmail(updatedOrder, status).catch(err =>
+            console.error("❌ Durum maili gönderilemedi:", err.message)
+        );
+
         res.json(updatedOrder);
+
     } catch (err) {
-        console.error("Güncelleme Hatası:", err);
-        res.status(500).json({ message: "Güncellenemedi", error: err.message });
+        console.error("❌ Durum güncelleme hatası:", err);
+        res.status(500).json({
+            message: "Güncellenemedi",
+            error: err.message
+        });
     }
 };
 
-// ... deleteOrder ve archiveOrder aynı kalıyor ...
+// getOrderById, getAllOrders, deleteOrder, archiveOrder aynı kalabilir
