@@ -1,13 +1,11 @@
 const { Resend } = require("resend");
 
-// Render panelinde tanımlı olmalı:
-// RESEND_API_KEY=rs_xxxxxxxxx
+// Render panelinde tanımlı olmalı: RESEND_API_KEY
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 /**
  * Sipariş durumuna göre mail gönderen servis
- * ŞU AN TEST MODUNDADIR
- * Domain doğrulanana kadar SADECE kendi mailine gönderir
+ * TEST MODUNDA: Sadece doğrulanmış dmero904@gmail.com adresine gider.
  */
 async function sendStatusEmail(order, newStatus) {
     if (!order) return;
@@ -16,63 +14,74 @@ async function sendStatusEmail(order, newStatus) {
     let message = "";
     const status = newStatus ? newStatus.toLowerCase() : "";
 
-    // Sipariş durumuna göre içerik
+    // Sipariş durumuna göre içerik ve konu belirleme
     if (status === "pending" || status === "eingegangen") {
-        subject = "Ihre Bestellung bei LUXE BERLIN";
-        message = "Wir haben Ihre Bestellung erhalten und bereiten sie vor.";
+        subject = "Bestellbestätigung - LUXE BERLIN";
+        message = "Wir haben Ihre Bestellung erhalten ve bereiten sie mit Sorgfalt vor.";
     }
     else if (status === "processing" || status === "in bearbeitung") {
-        subject = "Ihre Bestellung wird jetzt bearbeitet";
-        message = "Ihre Bestellung wird sorgfältig geprüft und verpackt.";
+        subject = "Ihre Bestellung wird bearbeitet";
+        message = "Ihre exklusiven Stücke werden nun geprüft ve für den Versand vorbereitet.";
     }
     else if (status === "shipped" || status === "versandt") {
         subject = "Ihre Bestellung ist auf dem Weg!";
-        message = `Ihre Bestellung #LB-${order._id
-            .toString()
-            .slice(-6)
-            .toUpperCase()} wurde an den Versanddienstleister übergeben.`;
+        message = `Gute Nachrichten! Ihre Bestellung #LB-${order._id.toString().slice(-6).toUpperCase()} wurde an den Versanddienstleister übergeben.`;
     }
     else if (status === "delivered" || status === "geliefert") {
         subject = "Ihre Bestellung wurde zugestellt";
-        message =
-            "Vielen Dank, dass Sie sich für LUXE BERLIN entschieden haben. Viel Freude mit Ihrem Produkt!";
+        message = "Vielen Dank für Ihr Vertrauen in LUXE BERLIN. Wir hoffen, dass Sie viel Freude mit Ihrem Kauf haben!";
     }
     else {
         subject = "Update zu Ihrer Bestellung";
-        message = `Der aktuelle Status Ihrer Bestellung ist: ${newStatus}`;
+        message = `Der aktuelle Status Ihrer Bestellung wurde aktualisiert: ${newStatus}`;
     }
 
     try {
         const { data, error } = await resend.emails.send({
-            // Domain doğrulanana kadar SADECE bu adres kullanılabilir
             from: "LUXE BERLIN <onboarding@resend.dev>",
-
-            // TEST MAIL – sabit olmalı
-            to: ["kocyigit.trade@gmail.com"],
-
+            to: ["dmero904@gmail.com"], // Yeni hedef adres ✅
             subject: subject,
             html: `
-                <div style="font-family: Arial, sans-serif; padding: 30px; max-width: 600px; margin: auto; color: #1c2541;">
-                    <h1 style="color: #c5a059; text-align: center;">LUXE BERLIN</h1>
-                    <h2 style="text-align: center;">Bestellstatus-Update</h2>
-
-                    <p style="font-size: 16px; line-height: 1.6;">
-                        ${message}
-                    </p>
-
-                    <div style="text-align: center; margin-top: 30px;">
-                        <a href="https://luxe-berlin-backend.onrender.com/track.html?id=${order._id}"
-                           style="background: #1c2541; color: #ffffff; padding: 14px 24px; text-decoration: none; border-radius: 30px; font-weight: bold;">
-                            BESTELLUNG VERFOLGEN
-                        </a>
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <style>
+                        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Montserrat:wght@400;600&display=swap');
+                        body { margin: 0; padding: 0; background-color: #f8f9fa; font-family: 'Montserrat', sans-serif; }
+                        .container { max-width: 600px; margin: 20px auto; background-color: #ffffff; border-radius: 15px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
+                        .header { background-color: #1c2541; padding: 40px 20px; text-align: center; }
+                        .logo { font-family: 'Playfair Display', serif; color: #ffffff; font-size: 28px; letter-spacing: 4px; text-decoration: none; }
+                        .logo span { color: #c5a059; }
+                        .content { padding: 40px 30px; color: #1c2541; line-height: 1.8; }
+                        .status-badge { display: inline-block; padding: 8px 20px; background-color: #c5a059; color: #ffffff; border-radius: 50px; font-weight: 600; font-size: 11px; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 1px; }
+                        .order-id { color: #6c757d; font-size: 13px; margin-bottom: 10px; font-weight: 600; }
+                        .message-box { font-size: 16px; margin-bottom: 30px; border-left: 3px solid #c5a059; padding-left: 20px; font-style: italic; }
+                        .cta-button { display: inline-block; padding: 16px 35px; background-color: #1c2541; color: #ffffff !important; text-decoration: none; border-radius: 8px; font-weight: 700; font-size: 13px; letter-spacing: 1px; text-align: center; }
+                        .footer { background-color: #f1f3f5; padding: 30px; text-align: center; color: #adb5bd; font-size: 12px; }
+                    </style>
+                </head>
+                <body>
+                    <div class="container">
+                        <div class="header">
+                            <div class="logo">LUXE<span>BERLIN</span></div>
+                        </div>
+                        <div class="content">
+                            <div class="status-badge">Bestell-Update</div>
+                            <div class="order-id">Sipariş No: #LB-${order._id.toString().slice(-6).toUpperCase()}</div>
+                            <h2 style="font-family: 'Playfair Display', serif; margin-bottom: 20px; color: #1c2541;">Hallo!</h2>
+                            <div class="message-box">
+                                ${message}
+                            </div>
+                            <div style="text-align: center; margin-top: 40px;">
+                                <a href="https://luxe-berlin-backend.onrender.com/track.html?id=${order._id}" class="cta-button">BESTELLUNG VERFOLGEN</a>
+                            </div>
+                        </div>
+                        <div class="footer">
+                            <p>&copy; 2026 LUXE BERLIN. Alle Rechte vorbehalten.<br>Kurfürstendamm 21, 10719 Berlin</p>
+                        </div>
                     </div>
-
-                    <hr style="margin-top: 40px; border: none; border-top: 1px solid #eee;" />
-
-                    <p style="font-size: 12px; color: #777; text-align: center;">
-                        © 2026 LUXE BERLIN. Alle Rechte vorbehalten.
-                    </p>
-                </div>
+                </body>
+                </html>
             `
         });
 
@@ -81,14 +90,9 @@ async function sendStatusEmail(order, newStatus) {
             return;
         }
 
-        if (!data) {
-            console.error("❌ Resend: data boş döndü");
-            return;
-        }
-
-        console.log("✅ Mail başarıyla gönderildi | Resend ID:", data.id);
+        console.log("✅ Mail başarıyla gönderildi | Alıcı: dmero904@gmail.com | ID:", data.id);
     } catch (err) {
-        console.error("❌ Mail gönderim catch hatası:", err.message);
+        console.error("❌ Mail gönderim hatası:", err.message);
     }
 }
 
