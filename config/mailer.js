@@ -1,12 +1,17 @@
 const nodemailer = require('nodemailer');
 
 // .env dosyasındaki bilgileri çekiyoruz
+// GÜNCELLEME: Render/Bulut sunucularındaki IPv6 (ENETUNREACH) hatasını çözmek için 
+// 'service' yerine manuel host/port ve 'family: 4' yapılandırmasına geçtik.
 const transporter = nodemailer.createTransport({
-    service: 'gmail',
+    host: 'smtp.gmail.com',
+    port: 465,
+    secure: true, // Port 465 için true
     auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS
-    }
+    },
+    family: 4 // KRİTİK: IPv4 kullanımını zorunlu kılar, bağlantı hatasını çözer 🚀
 });
 
 // Sunucu başladığında bağlantıyı test et
@@ -63,7 +68,7 @@ async function sendStatusEmail(order, newStatus) {
                 <div style="text-align: center; margin-top: 30px;">
                     <a href="https://luxeberlin.com/track.html?id=${order._id}" 
                        style="background: #1c2541; color: white; padding: 15px 25px; text-decoration: none; border-radius: 50px; font-weight: bold; display: inline-block;">
-                       BESTELLUNG VERFOLGEN
+                        BESTELLUNG VERFOLGEN
                     </a>
                 </div>
                 <hr style="margin-top: 40px; border: 0; border-top: 1px solid #eee;">
