@@ -1,7 +1,11 @@
 let products = [];
 let cart = JSON.parse(localStorage.getItem('luxeCartArray')) || [];
 
-const API_URL = '/api';
+// --- GLOBAL YAPILANDIRMA (DİNAMİK URL GÜNCELLEMESİ) ---
+const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    ? 'http://localhost:5000/api'
+    : '/api';
+
 const UPLOADS_URL = '';
 const euro = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' });
 
@@ -91,31 +95,26 @@ window.removeFromCart = (id) => {
 document.getElementById('checkoutForm')?.addEventListener('submit', async (e) => {
     e.preventDefault();
 
-    // 1. INPUT VALİDASYONU (Rastgele doldurmayı önleme)
     const firstName = document.getElementById('orderFirstName').value.trim();
     const lastName = document.getElementById('orderLastName').value.trim();
     const email = document.getElementById('orderEmail').value.trim();
     const phone = document.getElementById('orderPhone').value.trim();
     const address = document.getElementById('orderAddress').value.trim();
 
-    // İsim Kontrolü (Minimum 2 harf, sayı içermemeli)
     const nameRegex = /^[A-Za-zÀ-ž\s]{2,}$/;
     if (!nameRegex.test(firstName) || !nameRegex.test(lastName)) {
         return alert("Bitte geben Sie einen gültigen Namen ein (nur Buchstaben, mind. 2 Zeichen).");
     }
 
-    // Telefon Kontrolü (Sadece rakam ve +, min 7 haneli)
     const phoneRegex = /^\+?[0-9]{7,15}$/;
     if (!phoneRegex.test(phone.replace(/\s/g, ""))) {
         return alert("Bitte geben Sie eine gültige Telefonnummer ein.");
     }
 
-    // Adres Kontrolü (Çok kısa adresleri reddet)
     if (address.length < 10) {
         return alert("Bitte geben Sie eine vollständige Lieferadresse ein.");
     }
 
-    // 2. YASAL ONAY KONTROLÜ
     if (!document.getElementById('checkAGB').checked || !document.getElementById('checkPrivacy').checked) {
         return alert("Bitte akzeptieren Sie die AGB und Datenschutzbestimmungen.");
     }
@@ -147,12 +146,14 @@ document.getElementById('checkoutForm')?.addEventListener('submit', async (e) =>
         const result = await response.json();
         if (response.ok) {
             localStorage.removeItem('luxeCartArray');
+            // Sipariş sonrası yönlendirme
             window.location.href = `./success.html?orderId=${result.orderId}&displayId=${result.shortId}`;
         } else {
             alert("Fehler: " + (result.message || "Bestellung fehlgeschlagen."));
         }
     } catch (err) {
-        alert("Serververbindung fehlgeschlagen.");
+        console.error("Ödeme hatası:", err);
+        alert("Serververbindung fehlgeschlagen. Bitte versuchen Sie es später erneut.");
     } finally {
         if (btn) { btn.disabled = false; btn.innerText = "ZAHLUNGSPFLICHTIG BESTELLEN"; }
     }

@@ -1,17 +1,24 @@
 const nodemailer = require('nodemailer');
+const dns = require('dns');
+
+// KRİTİK: Tüm Node.js sürecini IPv4 öncelikli hale getirir. 
+// Render'daki ENETUNREACH hatasını çözmek için en kesin yöntem budur.
+dns.setDefaultResultOrder('ipv4first');
 
 // .env dosyasındaki bilgileri çekiyoruz
-// GÜNCELLEME: Render/Bulut sunucularındaki IPv6 (ENETUNREACH) hatasını çözmek için 
-// 'service' yerine manuel host/port ve 'family: 4' yapılandırmasına geçtik.
 const transporter = nodemailer.createTransport({
     host: 'smtp.gmail.com',
-    port: 465,
-    secure: true, // Port 465 için true
+    port: 587,
+    secure: false, // 587 portu için false olmalı (STARTTLS)
     auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS
     },
-    family: 4 // KRİTİK: IPv4 kullanımını zorunlu kılar, bağlantı hatasını çözer 🚀
+    family: 4, // IPv4 zorlaması
+    tls: {
+        // Bazı ağ kısıtlamalarını aşmak için sertifika kontrolünü esnetiyoruz
+        rejectUnauthorized: false
+    }
 });
 
 // Sunucu başladığında bağlantıyı test et

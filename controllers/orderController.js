@@ -22,7 +22,6 @@ exports.createOrder = async (req, res) => {
         }
 
         // --- B. SİPARİŞİ KAYDET ---
-        // DÜZELTME: Telefon numarasının kesin olarak kaydedilmesi için customer nesnesini açıkça tanımlıyoruz
         const newOrder = new Order({
             customer: {
                 firstName: customer.firstName,
@@ -90,9 +89,13 @@ exports.createOrder = async (req, res) => {
                 </div>`
         };
 
-        await transporter.sendMail(mailOptions);
-        console.log(`✅ Sipariş Onayı Gönderildi: #${displayId}`);
+        // --- KRİTİK DÜZELTME: AWAIT KALDIRILDI ---
+        // Mail gönderme işlemini bekletmiyoruz, arka planda denemeye devam etsin.
+        transporter.sendMail(mailOptions).catch(err => console.error("❌ Onay maili arka planda başarısız oldu:", err.message));
 
+        console.log(`✅ Sipariş veritabanına kaydedildi: #${displayId}`);
+
+        // Kullanıcıya hemen cevap dönüyoruz (Artık donmayacak! 🚀)
         res.status(201).json({
             message: "Sipariş başarılı!",
             orderId: newOrder._id,
@@ -147,7 +150,6 @@ exports.updateOrderStatus = async (req, res) => {
     try {
         const newStatus = req.body.status;
 
-        // KRİTİK: Mail gönderebilmek için sipariş verisini çekiyoruz
         const updatedOrder = await Order.findByIdAndUpdate(
             req.params.id,
             { status: newStatus },
@@ -155,8 +157,9 @@ exports.updateOrderStatus = async (req, res) => {
         );
 
         if (updatedOrder) {
-            // Fonksiyonu tetikliyoruz
-            await sendStatusEmail(updatedOrder, newStatus);
+            // KRİTİK DÜZELTME: AWAIT KALDIRILDI
+            // Admin panelinde durum güncellerken panelin donmasını engeller.
+            sendStatusEmail(updatedOrder, newStatus).catch(err => console.error("❌ Durum maili hatası:", err.message));
         }
 
         res.json(updatedOrder);

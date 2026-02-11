@@ -7,16 +7,17 @@ let products = [];
 let cart = JSON.parse(localStorage.getItem('luxeCartArray')) || [];
 const euro = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' });
 let selectedProduct = null, currentQty = 1;
-let shownReviewsCount = 6; // Başlangıçta gösterilecek yorum sayısı
+let shownReviewsCount = 6;
 
-// Yapılandırma
-const API_URL = '/api';
+// --- DİNAMİK API YAPILANDIRMASI ---
+const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    ? 'http://localhost:5000/api'
+    : '/api';
 const UPLOADS_URL = '';
 
-// Sansür Listesi
 const badWords = ["küfür1", "küfür2", "argo1", "argo2", "idiot", "badword", "scheiße"];
 
-// --- YENİ: LUXE TOAST BİLDİRİM FONKSİYONU (Eksiksiz Eklendi) ---
+// --- 1. LUXE TOAST BİLDİRİM FONKSİYONU ---
 function showLuxeAlert(message, type = 'success') {
     const container = document.getElementById('luxe-toast-container');
     if (!container) return;
@@ -42,7 +43,7 @@ function showLuxeAlert(message, type = 'success') {
     }, 4000);
 }
 
-// --- 1. TEMA YÖNETİMİ ---
+// --- 2. TEMA YÖNETİMİ ---
 function initTheme() {
     const themeToggleBtn = document.getElementById('theme-toggle');
     const themeIcon = document.getElementById('theme-icon');
@@ -68,7 +69,7 @@ function initTheme() {
     });
 }
 
-// --- 2. ÜRÜN İŞLEMLERİ ---
+// --- 3. ÜRÜN İŞLEMLERİ ---
 async function fetchProducts() {
     try {
         const response = await fetch(`${API_URL}/products`);
@@ -123,7 +124,7 @@ window.filterProducts = function () {
     renderProducts(filtered);
 }
 
-// --- 3. YORUM SİSTEMİ (API ENTEGRASYONU & ADMIN CEVAPLARI) ---
+// --- 4. YORUM SİSTEMİ ---
 let testimonials = [];
 
 function censorText(text) {
@@ -241,7 +242,6 @@ document.getElementById('reviewForm')?.addEventListener('submit', async (e) => {
             if (reviewCount === 2) {
                 new bootstrap.Modal(document.getElementById('reviewLimitModal')).show();
             } else {
-                // ALERT YERİNE TOAST GÜNCELLEMESİ
                 showLuxeAlert("Vielen Dank für Ihre Bewertung!", "success");
             }
         }
@@ -250,7 +250,7 @@ document.getElementById('reviewForm')?.addEventListener('submit', async (e) => {
     }
 });
 
-// --- 4. MODAL & MİKTAR MANTIĞI ---
+// --- 5. MODAL & MİKTAR MANTIĞI ---
 window.setupModal = function (id) {
     selectedProduct = products.find(p => p.id === id);
     if (!selectedProduct) return;
@@ -319,7 +319,7 @@ window.blockNonIntegers = function (e) {
     if ([".", ",", "e", "E", "+", "-"].includes(e.key)) e.preventDefault();
 }
 
-// --- 5. SEPET YÖNETİMİ (GÜNCEL YÜZEN SEPET) ---
+// --- 6. SEPET YÖNETİMİ ---
 window.addToCart = function () {
     if (currentQty <= 0) return;
 
@@ -337,7 +337,6 @@ window.addToCart = function () {
     const luxeModal = bootstrap.Modal.getInstance(document.getElementById('luxeModal'));
     if (luxeModal) luxeModal.hide();
 
-    // ALERT YERİNE TOAST GÜNCELLEMESİ
     showLuxeAlert("Artikel zum Warenkorb hinzugefügt.", "success");
 }
 
