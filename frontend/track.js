@@ -1,5 +1,6 @@
 /**
  * LUXE BERLIN - ADVANCED TRACKING LOGIC (FULL & CANCEL-READY)
+ * Yorum satırlarından arındırılmış ve eksiksiz tam sürümdür.
  */
 
 const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
@@ -25,9 +26,12 @@ async function trackOrder() {
 
         if (res.ok && order) {
             resultArea.classList.add('d-none');
-            dynamicArea.innerHTML = ""; // Temizle
+            dynamicArea.innerHTML = "";
 
-            setTimeout(() => { resultArea.classList.remove('d-none'); }, 50);
+            setTimeout(() => {
+                resultArea.classList.remove('d-none');
+                if (typeof AOS !== 'undefined') { AOS.refresh(); }
+            }, 50);
 
             header.innerHTML = `
                 <h6 class="text-muted mb-1">Bestellnummer: #LB-${id.slice(-6).toUpperCase()}</h6>
@@ -37,7 +41,9 @@ async function trackOrder() {
             itemsList.innerHTML = (order.items || []).map((item, index) => {
                 let imgPath = item.productId?.image;
                 let finalImgSrc = 'https://via.placeholder.com/60';
-                if (imgPath) { finalImgSrc = imgPath.startsWith('http') ? imgPath : `${UPLOADS_URL}/${imgPath}`; }
+                if (imgPath) {
+                    finalImgSrc = imgPath.startsWith('http') ? imgPath : `${UPLOADS_URL}/${imgPath}`;
+                }
 
                 return `
                     <div class="product-item d-flex justify-content-between align-items-center py-3" 
@@ -57,17 +63,29 @@ async function trackOrder() {
             document.getElementById('display-total').innerText = euro.format(order.totalAmount || 0);
 
             updateProgressSteps(order.status || 'Pending');
-            resultArea.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+            setTimeout(() => {
+                resultArea.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }, 300);
 
         } else {
             alert("Bestellung nicht gefunden!");
             resultArea.classList.add('d-none');
         }
-    } catch (err) { console.error("Tracking Error:", err); }
+    } catch (err) {
+        console.error("Tracking Error:", err);
+        alert("Ein Fehler ist aufgetreten.");
+    }
 }
 
 function translateStatus(status) {
-    const map = { 'Pending': 'Eingegangen', 'Processing': 'Verarbeitung', 'Shipped': 'Versandt', 'Delivered': 'Geliefert', 'Cancelled': 'Storniert' };
+    const map = {
+        'Pending': 'Eingegangen',
+        'Processing': 'Verarbeitung',
+        'Shipped': 'Versandt',
+        'Delivered': 'Geliefert',
+        'Cancelled': 'Storniert'
+    };
     return map[status] || 'Eingegangen';
 }
 
@@ -82,10 +100,12 @@ function updateProgressSteps(status) {
     const container = document.getElementById('track-container');
     const dynamicArea = document.getElementById('dynamic-info-area');
 
-    // --- İPTAL DURUMU KONTROLÜ ---
     if (status === 'Cancelled') {
         container.classList.add('is-cancelled');
-        progressLine.style.width = "0%"; progressLine.style.height = "0%";
+        if (progressLine) {
+            progressLine.style.width = "0%";
+            progressLine.style.height = "0%";
+        }
 
         steps.forEach((step, index) => {
             step.classList.remove('active', 'completed');
@@ -97,7 +117,7 @@ function updateProgressSteps(status) {
         });
 
         dynamicArea.innerHTML = `
-            <div class="cancel-notice shadow-sm staggered-item">
+            <div class="cancel-notice shadow-sm staggered-item" style="animation: fadeInUp 0.8s ease forwards;">
                 <div class="me-3 fs-3">⚠️</div>
                 <div>
                     <strong class="d-block">Bestellung Storniert</strong>
@@ -107,9 +127,7 @@ function updateProgressSteps(status) {
         return;
     }
 
-    // --- NORMAL AKIŞ ---
     container.classList.remove('is-cancelled');
-    // İkonları orijinal haline geri getir (İptalden normale dönerse diye)
     const originalIcons = ["⏳", "⚙️", "🚚", "✅"];
     const originalTexts = ["Eingegangen", "Verarbeitung", "Versandt", "Geliefert"];
 
@@ -119,9 +137,11 @@ function updateProgressSteps(status) {
 
     if (progressLine) {
         if (window.innerWidth < 768) {
-            progressLine.style.width = "3px"; progressLine.style.height = `${progressPercentages[status]}%`;
+            progressLine.style.width = "3px";
+            progressLine.style.height = `${progressPercentages[status]}%`;
         } else {
-            progressLine.style.height = "3px"; progressLine.style.width = `${progressPercentages[status]}%`;
+            progressLine.style.height = "3px";
+            progressLine.style.width = `${progressPercentages[status]}%`;
         }
     }
 
@@ -130,20 +150,14 @@ function updateProgressSteps(status) {
         step.querySelector('.step-icon').innerHTML = originalIcons[index];
         step.querySelector('.step-text').innerText = originalTexts[index];
 
-        if (index < currentIndex) { step.classList.add('completed'); }
-        else if (index === currentIndex) { step.classList.add('active'); }
+        if (index < currentIndex) {
+            step.classList.add('completed');
+        } else if (index === currentIndex) {
+            step.classList.add('active');
+        }
     });
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const orderIdFromUrl = urlParams.get('id');
-    if (orderIdFromUrl) {
-        document.getElementById('orderIdInput').value = orderIdFromUrl;
-        trackOrder();
-    }
-});
-/* --- PRELOADER & AOS SYNC LOGIC --- */
 window.addEventListener("load", function () {
     const preloader = document.getElementById("preloader");
     if (preloader) {
@@ -159,13 +173,17 @@ window.addEventListener("load", function () {
                     });
                     AOS.refresh();
                 }
-                const adminContent = document.getElementById('adminMainContent');
-                if (adminContent && localStorage.getItem('adminToken')) {
-                    adminContent.classList.remove('d-none');
-                    setTimeout(() => AOS.refresh(), 100);
-                }
                 preloader.style.display = "none";
             }, 1000);
         }, 1200);
+    }
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const orderIdFromUrl = urlParams.get('id');
+    if (orderIdFromUrl) {
+        document.getElementById('orderIdInput').value = orderIdFromUrl;
+        setTimeout(() => { trackOrder(); }, 1500);
     }
 });

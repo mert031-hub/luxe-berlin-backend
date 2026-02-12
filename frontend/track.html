@@ -14,6 +14,13 @@
 </head>
 
 <body>
+    <div id="preloader">
+        <div class="preloader-content">
+            <div class="preloader-logo">LUXE<span>BERLIN</span></div>
+            <div class="preloader-bar"></div>
+            <p class="preloader-text">Exklusive Mode wird geladen...</p>
+        </div>
+    </div>
 
     <nav class="navbar navbar-light bg-white py-3 shadow-sm">
         <div class="container justify-content-center">
@@ -23,24 +30,22 @@
 
     <div class="container pb-5">
         <div class="row justify-content-center">
-            <div class="col-md-10 col-lg-8" data-aos="fade-up">
-                <div class="track-card text-center">
+            <div class="col-md-10 col-lg-8">
+                <div class="track-card text-center" data-aos="fade-up">
                     <h2 class="fw-bold mb-2" style="font-family: 'Playfair Display';">Bestellverfolgung</h2>
                     <p class="text-muted small mb-4">Verfolgen Sie Ihre Bestellung in Echtzeit.</p>
 
                     <div class="input-group mb-4 shadow-sm rounded-pill overflow-hidden border mx-auto tracking-search-box"
                         style="max-width: 500px;">
                         <input type="text" id="orderIdInput" class="form-control border-0 px-4"
-                            placeholder="Bestellnummer eingeben..." style="height: 55px; outline: none;">
+                            placeholder="Bestellnummer..." style="height: 55px; outline: none;">
                         <button class="btn btn-gold px-4 fw-bold" onclick="trackOrder()">STATUS PRÜFEN</button>
                     </div>
 
                     <div id="track-result" class="d-none mt-5 result-animation">
                         <div id="status-header" class="mb-4 text-start border-bottom pb-3"></div>
-
-                        <div class="track-container" id="track-container" data-aos="fade-in">
+                        <div class="track-container" id="track-container">
                             <div class="progress-line-fill" id="progress-line"></div>
-
                             <div class="step" id="step-pending">
                                 <div class="step-icon">⏳</div>
                                 <div class="step-text">Eingegangen</div>
@@ -58,13 +63,10 @@
                                 <div class="step-text">Geliefert</div>
                             </div>
                         </div>
-
                         <div id="dynamic-info-area"></div>
-
-                        <div class="order-details-box text-start staggered-item" data-aos="fade-up">
+                        <div class="order-details-box text-start">
                             <h5 class="fw-bold mb-3 border-bottom pb-2">Bestellte Produkte</h5>
                             <div id="order-items-list"></div>
-
                             <div class="mt-4 pt-3 border-top d-flex justify-content-between align-items-center">
                                 <div>
                                     <p class="mb-0 small text-muted">Lieferadresse:</p>
@@ -76,9 +78,7 @@
                                 </div>
                             </div>
                         </div>
-
-                        <p class="mt-5 small text-muted italic staggered-item">Vielen Dank für Ihr Vertrauen in LUXE
-                            BERLIN! ✨</p>
+                        <p class="mt-5 small text-muted italic">Vielen Dank für Ihr Vertrauen in LUXE BERLIN! ✨</p>
                     </div>
                 </div>
             </div>
@@ -87,16 +87,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
-    <script>
-    </script>
     <script src="track.js"></script>
 </body>
-<div id="preloader">
-    <div class="preloader-content">
-        <div class="preloader-logo">LUXE<span>BERLIN</span></div>
-        <div class="preloader-bar"></div>
-        <p class="preloader-text">Exklusive Mode wird geladen...</p>
-    </div>
-</div>
 
 </html>
