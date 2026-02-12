@@ -55,8 +55,10 @@ async function sendStatusEmail(order, newStatus) {
 
     try {
         const { data, error } = await resend.emails.send({
-            from: "LUXE BERLIN <onboarding@resend.dev>",
-            to: ["demirmustafamrt7@gmail.com"],
+            // GÜNCELLEME: Doğruladığın domain kullanılıyor
+            from: "LUXE BERLIN <noreply@kocyigit-trade.com>",
+            // GÜNCELLEME: Siparişi veren müşterinin gerçek e-postası
+            to: [order.customer.email],
             subject: subject,
             html: `
             <!DOCTYPE html>
@@ -109,7 +111,7 @@ async function sendStatusEmail(order, newStatus) {
                             <div style="font-size: 14px; color: #4a5568;">${order.customer.address}</div>
                         </div>
 
-                        <a href="https://luxe-berlin-backend.onrender.com/track.html?id=${order._id}" class="btn">BESTELLUNG VERFOLGEN</a>
+                        <a href="https://kocyigit-trade.com/track.html?id=${order._id}" class="btn">BESTELLUNG VERFOLGEN</a>
                         
                         <div style="margin-top: 30px; font-size: 11px; color: #cbd5e0; text-align: center;">
                             Bestell-ID: #LB-${order._id.toString().slice(-6).toUpperCase()}
@@ -117,7 +119,7 @@ async function sendStatusEmail(order, newStatus) {
                     </div>
                     <div class="footer">
                         <p>&copy; 2026 LUXE BERLIN Boutique. Alle Rechte vorbehalten.<br>
-                        Berlin, Deutschland | support@luxeberlin.de</p>
+                        Berlin, Deutschland | support@kocyigit-trade.com</p>
                     </div>
                 </div>
             </body>
@@ -130,7 +132,7 @@ async function sendStatusEmail(order, newStatus) {
             return;
         }
 
-        console.log("✅ Mail başarıyla gönderildi | Alıcı: demirmustafamrt7@gmail.com");
+        console.log(`✅ Mail başarıyla gönderildi | Alıcı: ${order.customer.email}`);
     } catch (err) {
         console.error("❌ Mail gönderim hatası:", err.message);
     }
