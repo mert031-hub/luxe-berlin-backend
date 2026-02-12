@@ -7,6 +7,7 @@
 body {
   background-color: #f0f2f5;
   font-family: "Montserrat", sans-serif;
+  overflow-x: hidden;
 }
 
 .navbar {
@@ -14,6 +15,9 @@ body {
   border-bottom: 3px solid var(--gold);
 }
 
+.navbar-brand {
+  font-size: 1.25rem;
+}
 .navbar-brand span {
   color: var(--gold);
 }
@@ -24,12 +28,16 @@ body {
   border-radius: 20px;
   color: white;
   box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
-  transition: transform 0.3s ease;
+  transition:
+    transform 0.3s ease,
+    box-shadow 0.3s ease;
 }
 
 .stat-card:hover {
   transform: translateY(-5px);
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
 }
+
 .bg-navy {
   background: linear-gradient(135deg, #1c2541, #3a506b);
 }
@@ -42,53 +50,65 @@ body {
 
 .stat-card p {
   opacity: 0.8;
-  font-size: 0.9rem;
+  font-size: 0.8rem;
   margin-bottom: 5px;
   text-transform: uppercase;
+  letter-spacing: 1px;
 }
 
-/* Tablo */
+/* Tablo Optimizasyonu */
 .table thead th {
   border: none;
-  color: #666;
-  padding: 15px 10px;
+  color: #888;
+  padding: 12px 10px;
+  font-size: 0.75rem;
+  letter-spacing: 0.5px;
 }
+
 .table tbody td {
-  padding: 20px 10px;
+  padding: 15px 10px;
   border-bottom: 1px solid #f0f0f0;
+  font-size: 0.9rem;
 }
 
 .status-select {
   border-radius: 30px;
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   font-weight: 600;
-  padding: 5px 15px;
+  padding: 4px 12px;
   border: 1px solid #dee2e6;
   background-color: #fdfdfd;
+  width: 140px;
 }
 
-#adminSearch {
-  border-radius: 30px;
-  padding: 12px 25px;
-  border: 1px solid #eee;
+@media (max-width: 768px) {
+  .table tbody td {
+    white-space: nowrap;
+  }
 }
 
-/* Silme Butonu */
 .btn-delete {
   color: #dc3545;
   background: #fff5f5;
   border: none;
-  width: 35px;
-  height: 35px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
-  transition: 0.3s;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .btn-delete:hover {
   background: #dc3545;
   color: white;
 }
-/* admin.css veya index.html style içine ekle */
+.btn-gold {
+  background-color: var(--gold);
+  color: white;
+}
+
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -104,7 +124,13 @@ body {
   animation: fadeIn 0.4s ease forwards;
 }
 
-#mainSearchInput:focus {
-  background-color: #fff !important;
-  border-color: var(--gold) !important;
+.form-control:focus {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 0.25rem rgba(197, 160, 89, 0.25);
+}
+
+@media (max-width: 576px) {
+  .modal-fullscreen-sm-down .modal-content {
+    border-radius: 0;
+  }
 }

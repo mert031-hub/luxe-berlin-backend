@@ -172,7 +172,7 @@ window.deleteOrder = async (id) => {
                 headers: { 'x-auth-token': getAuthToken() }
             }).then(handleAuthError);
             if (res && res.ok) {
-                window.logActivity("Bestellung Gelöscht", "Admin", "Deleted");
+                window.logActivity(`Bestellung #LB-${id.slice(-6).toUpperCase()} gelöscht`, "Admin", "Deleted");
                 await window.loadOrders();
             }
         } catch (err) { console.error(err); }
@@ -236,6 +236,8 @@ window.updateStatus = async (id, status) => {
         body: JSON.stringify({ status })
     }).then(handleAuthError);
     window.loadOrders();
+    // DETAYLI LOG EKLEMESİ
+    window.logActivity(`Bestellung #LB-${id.slice(-6).toUpperCase()} Status -> ${status}`, "Admin", "Success");
 };
 
 // --- 3. ÜRÜN YÖNETİMİ ---
@@ -282,6 +284,7 @@ window.restoreProduct = async (id) => {
         method: 'PUT',
         headers: { 'x-auth-token': getAuthToken() }
     }).then(handleAuthError);
+    window.logActivity(`Produkt wiederhergestellt (ID: ${id.slice(-4)})`, "Admin", "Success");
     await loadDashboard();
 };
 
@@ -291,6 +294,7 @@ window.deleteProduct = async (id) => {
             method: 'DELETE',
             headers: { 'x-auth-token': getAuthToken() }
         }).then(handleAuthError);
+        window.logActivity(`Produkt archiviert (ID: ${id.slice(-4)})`, "Admin", "Deleted");
         await loadDashboard();
     }
 };
@@ -320,7 +324,12 @@ document.getElementById('productForm')?.addEventListener('submit', async (e) => 
         headers: { 'x-auth-token': getAuthToken() }
     }).then(handleAuthError);
 
-    if (res && res.ok) { alert("Erfolgreich!"); window.resetProductForm(); loadDashboard(); }
+    if (res && res.ok) {
+        alert("Erfolgreich!");
+        window.logActivity(id ? `Produkt aktualisiert: ${getValue('pName')}` : `Neues Produkt erstellt: ${getValue('pName')}`, "Admin", "Success");
+        window.resetProductForm();
+        loadDashboard();
+    }
 });
 
 window.editProduct = async (id) => {
@@ -409,11 +418,11 @@ window.loadReviews = async () => {
 
         reviews.forEach(r => {
             list.innerHTML += `
-                <tr>
+                <tr class="review-row">
                     <td class="small text-muted">${new Date(r.createdAt).toLocaleDateString('de-DE')}</td>
-                    <td class="fw-bold">${r.name}</td>
+                    <td class="reviewer-name fw-bold">${r.name}</td>
                     <td>${"⭐".repeat(r.stars)}</td>
-                    <td class="small" style="max-width: 200px;">${r.text}</td>
+                    <td class="review-text small" style="max-width: 200px;">${r.text}</td>
                     <td>
                         ${r.adminReply
                     ? `<span class="admin-reply-badge">Beantwortet ✓</span><br><small class="text-muted">${r.adminReply.substring(0, 20)}...</small>`
@@ -450,7 +459,7 @@ window.submitReply = async () => {
     if (res && res.ok) {
         bootstrap.Modal.getInstance(document.getElementById('replyModal')).hide();
         window.loadReviews();
-        window.logActivity("Rezension Beantwortet", "Admin", "Success");
+        window.logActivity(`Antwort auf Rezension ID: ${id.slice(-4)} gesendet`, "Admin", "Success");
     }
 };
 
@@ -463,7 +472,7 @@ window.deleteReview = async (id) => {
 
         if (res && res.ok) {
             window.loadReviews();
-            window.logActivity("Rezension Gelöscht", "Admin", "Deleted");
+            window.logActivity(`Rezension ID: ${id.slice(-4)} gelöscht`, "Admin", "Deleted");
         }
     }
 };
@@ -494,7 +503,11 @@ document.getElementById('addAdminForm')?.addEventListener('submit', async (e) =>
         },
         body: JSON.stringify({ username, password })
     }).then(handleAuthError);
-    if (res && res.ok) { alert("Admin registriert!"); window.loadAdmins(); }
+    if (res && res.ok) {
+        alert("Admin registriert!");
+        window.logActivity(`Neuer Admin registriert: ${username}`, "Master Admin", "Success");
+        window.loadAdmins();
+    }
 });
 
 window.deleteAdmin = async (id) => {
@@ -504,6 +517,7 @@ window.deleteAdmin = async (id) => {
                 method: 'DELETE',
                 headers: { 'x-auth-token': getAuthToken() }
             }).then(handleAuthError);
+            window.logActivity(`Admin-Konto entfernt (ID: ${id.slice(-4)})`, "Admin", "Deleted");
             window.loadAdmins();
         } catch (err) { console.error(err); }
     }
@@ -512,7 +526,7 @@ window.deleteAdmin = async (id) => {
 window.logActivity = (action, user, status) => {
     const list = document.getElementById('admin-activity-logs');
     if (!list) return;
-    const row = `<tr><td>${new Date().toLocaleTimeString()}</td><td>${action}</td><td>${user}</td><td><span class="badge ${status === 'Success' ? 'bg-success' : 'bg-primary'}">${status}</span></td></tr>`;
+    const row = `<tr><td>${new Date().toLocaleTimeString()}</td><td>${action}</td><td>${user}</td><td><span class="badge ${status === 'Success' ? 'bg-success' : (status === 'Deleted' ? 'bg-danger' : 'bg-primary')}">${status}</span></td></tr>`;
     list.insertAdjacentHTML('afterbegin', row);
 };
 
@@ -530,6 +544,16 @@ document.getElementById('productSearch')?.addEventListener('input', (e) => {
     document.querySelectorAll('.product-row').forEach(row => {
         const productName = row.querySelector('.product-name')?.innerText.toLowerCase() || "";
         row.style.display = productName.includes(term) ? "" : "none";
+    });
+});
+
+// YENİ: Yorumlarda Kelime/İsim Arama Filtresi
+document.getElementById('reviewSearch')?.addEventListener('input', (e) => {
+    const term = e.target.value.toLowerCase();
+    document.querySelectorAll('.review-row').forEach(row => {
+        const reviewerName = row.querySelector('.reviewer-name')?.innerText.toLowerCase() || "";
+        const reviewText = row.querySelector('.review-text')?.innerText.toLowerCase() || "";
+        row.style.display = (reviewerName.includes(term) || reviewText.includes(term)) ? "" : "none";
     });
 });
 

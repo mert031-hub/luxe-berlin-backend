@@ -16,33 +16,22 @@ body {
   font-family: "Playfair Display", serif;
   letter-spacing: 2px;
 }
-
 .navbar-brand span {
   color: var(--gold);
 }
 
 .track-card {
   background: white;
-  border: none;
   border-radius: 30px;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.04);
-  padding: 40px 25px; /* Mobilde daraltıldı */
-  margin-top: 20px;
+  padding: 50px;
+  margin-top: 30px;
 }
 
-@media (min-width: 768px) {
-  .track-card {
-    padding: 50px;
-    margin-top: 30px;
-  }
-}
-
-/* Arama Kutusu */
 .tracking-search-box {
   transition: all 0.3s ease;
   border: 1px solid #eee !important;
 }
-
 .tracking-search-box:focus-within {
   border-color: var(--gold) !important;
   box-shadow: 0 10px 20px rgba(0, 0, 0, 0.08) !important;
@@ -55,54 +44,45 @@ body {
   border: none;
 }
 
-.btn-gold:hover {
-  background: var(--navy);
-  transform: scale(1.02);
-}
-
-/* --- PROGRESS TRACKER (RESPONSIVE) --- */
+/* --- PROGRESS TRACKER --- */
 .track-container {
-  margin: 40px 0;
+  margin: 60px 0;
   display: flex;
-  flex-direction: column; /* Mobilde dikey */
-  gap: 30px;
+  flex-direction: column;
   position: relative;
+  gap: 45px;
 }
 
 @media (min-width: 768px) {
   .track-container {
-    flex-direction: row; /* Masaüstünde yatay */
+    flex-direction: row;
     justify-content: space-between;
-    margin: 60px 0;
     gap: 0;
   }
 }
 
-/* Yatay Çizgi (Desktop) */
-@media (min-width: 768px) {
-  .track-container::before {
-    content: "";
-    position: absolute;
-    top: 32px;
-    left: 10%;
-    right: 10%;
-    height: 3px;
-    background: #f0f0f0;
-    z-index: 1;
-  }
+.track-container::before {
+  content: "";
+  position: absolute;
+  background: #f0f0f0;
+  z-index: 1;
+  border-radius: 10px;
 }
 
-/* Dikey Çizgi (Mobile) */
 @media (max-width: 767px) {
   .track-container::before {
-    content: "";
-    position: absolute;
-    top: 30px;
-    left: 31px;
-    bottom: 30px;
+    top: 10px;
+    bottom: 10px;
+    left: 32px;
     width: 3px;
-    background: #f0f0f0;
-    z-index: 1;
+  }
+}
+@media (min-width: 768px) {
+  .track-container::before {
+    top: 32px;
+    left: 5%;
+    right: 5%;
+    height: 3px;
   }
 }
 
@@ -111,71 +91,66 @@ body {
   background: var(--gold);
   z-index: 2;
   transition: all 1.5s cubic-bezier(0.65, 0, 0.35, 1);
-  box-shadow: 0 0 10px var(--gold-shadow);
-}
-
-/* Progress Line Boyutlandırma */
-@media (min-width: 768px) {
-  .progress-line-fill {
-    top: 32px;
-    left: 10%;
-    height: 3px;
-    width: 0%; /* JS ile kontrol edilecek */
-  }
+  box-shadow: 0 0 15px var(--gold-shadow);
 }
 
 @media (max-width: 767px) {
   .progress-line-fill {
-    top: 30px;
-    left: 31px;
+    left: 32px;
+    top: 10px;
     width: 3px;
-    height: 0%; /* JS ile kontrol edilecek */
+    height: 0%;
   }
+}
+@media (min-width: 768px) {
+  .progress-line-fill {
+    top: 32px;
+    left: 5%;
+    height: 3px;
+    width: 0%;
+  }
+}
+
+/* İPTAL DURUMU (IS-CANCELLED) */
+.track-container.is-cancelled::before,
+.track-container.is-cancelled .progress-line-fill {
+  background: #e9ecef !important;
+  box-shadow: none !important;
 }
 
 .step {
   z-index: 3;
   display: flex;
   align-items: center;
-  text-align: left;
 }
-
 @media (min-width: 768px) {
   .step {
     flex-direction: column;
     text-align: center;
-    width: 25%;
+    width: 20%;
   }
 }
 
 .step-icon {
-  width: 60px;
-  height: 60px;
+  width: 65px;
+  height: 65px;
   background: white;
   border: 2px solid #eee;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.4rem;
+  font-size: 1.6rem;
   transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
   flex-shrink: 0;
-}
-
-@media (min-width: 768px) {
-  .step-icon {
-    width: 65px;
-    height: 65px;
-    margin: 0 auto 15px;
-  }
 }
 
 .step.active .step-icon {
   border-color: var(--gold);
   background: var(--gold);
   color: white;
-  transform: scale(1.1);
+  transform: scale(1.15);
   box-shadow: 0 0 30px var(--gold-shadow);
   animation: pulse-gold 2s infinite;
 }
@@ -186,19 +161,27 @@ body {
   color: white;
 }
 
+/* İPTAL ADIMI STİLİ */
+.step.cancelled-step .step-icon {
+  background: #6c757d !important;
+  border-color: #6c757d !important;
+  color: white !important;
+  transform: scale(1.1);
+  animation: none;
+}
+
 .step-text {
   font-size: 0.75rem;
   text-transform: uppercase;
   color: #aaa;
   font-weight: 600;
   letter-spacing: 1px;
-  margin-left: 15px; /* Mobilde yan yana */
+  margin-left: 20px;
 }
-
 @media (min-width: 768px) {
   .step-text {
     margin-left: 0;
-    margin-top: 5px;
+    margin-top: 15px;
   }
 }
 
@@ -207,8 +190,44 @@ body {
   color: var(--navy);
   font-weight: 700;
 }
+.step.cancelled-step .step-text {
+  color: #dc3545 !important;
+  font-weight: 800;
+}
 
-/* Animasyonlar */
+/* İptal Uyarı Kutusu */
+.cancel-notice {
+  background: #fff5f5;
+  border: 1px solid #feb2b2;
+  color: #c53030;
+  padding: 20px;
+  border-radius: 15px;
+  margin: 30px 0;
+  display: flex;
+  align-items: center;
+  text-align: left;
+}
+
+/* Diğer detaylar */
+.order-details-box {
+  background: #fdfdfd;
+  border: 1px solid #f0f0f0;
+  border-radius: 20px;
+  padding: 30px;
+  margin-top: 40px;
+}
+.product-item {
+  border-bottom: 1px solid #f5f5f5;
+  padding: 15px 0;
+}
+.product-thumb {
+  width: 65px;
+  height: 65px;
+  object-fit: cover;
+  border-radius: 12px;
+  border: 1px solid #eee;
+}
+
 @keyframes fadeInUp {
   from {
     opacity: 0;
@@ -219,11 +238,6 @@ body {
     transform: translateY(0);
   }
 }
-
-.result-animation {
-  animation: fadeInUp 0.8s ease forwards;
-}
-
 @keyframes pulse-gold {
   0% {
     box-shadow: 0 0 0 0 rgba(197, 160, 89, 0.7);
@@ -236,30 +250,10 @@ body {
   }
 }
 
-.order-details-box {
-  background: #fdfdfd;
-  border: 1px solid #f0f0f0;
-  border-radius: 20px;
-  padding: 20px;
-  margin-top: 30px;
+.result-animation {
+  animation: fadeInUp 0.8s ease forwards;
 }
-
-@media (min-width: 768px) {
-  .order-details-box {
-    padding: 30px;
-    margin-top: 40px;
-  }
-}
-
-.product-item {
-  border-bottom: 1px solid #f5f5f5;
-  padding: 15px 0;
-}
-
-.product-thumb {
-  width: 60px;
-  height: 60px;
-  object-fit: cover;
-  border-radius: 12px;
-  border: 1px solid #eee;
+.staggered-item {
+  animation: fadeInUp 0.8s ease both;
+  animation-delay: 0.3s;
 }

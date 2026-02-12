@@ -1,5 +1,5 @@
 /**
- * LUXE BERLIN - ADVANCED TRACKING LOGIC (OPTIMIZED)
+ * LUXE BERLIN - ADVANCED TRACKING LOGIC (FULL & CANCEL-READY)
  */
 
 const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
@@ -14,9 +14,10 @@ async function trackOrder() {
     const resultArea = document.getElementById('track-result');
     const itemsList = document.getElementById('order-items-list');
     const header = document.getElementById('status-header');
+    const dynamicArea = document.getElementById('dynamic-info-area');
 
     const id = rawId.replace('#', '').replace('LB-', '').toUpperCase();
-    if (!id) return alert("Bitte geben Sie eine gültige Bestellnummer ein!");
+    if (!id) return alert("Bitte geben Sie eine Bestellnummer ein!");
 
     try {
         const res = await fetch(`${API_URL}/orders/${id}`);
@@ -24,19 +25,19 @@ async function trackOrder() {
 
         if (res.ok && order) {
             resultArea.classList.add('d-none');
+            dynamicArea.innerHTML = ""; // Temizle
+
             setTimeout(() => { resultArea.classList.remove('d-none'); }, 50);
 
             header.innerHTML = `
                 <h6 class="text-muted mb-1">Bestellnummer: #LB-${id.slice(-6).toUpperCase()}</h6>
-                <h4 class="fw-bold">Status: <span style="color:#c5a059;">${translateStatus(order.status || 'Pending')}</span></h4>
+                <h4 class="fw-bold">Status: <span style="color:#c5a059;">${translateStatus(order.status)}</span></h4>
             `;
 
             itemsList.innerHTML = (order.items || []).map((item, index) => {
                 let imgPath = item.productId?.image;
                 let finalImgSrc = 'https://via.placeholder.com/60';
-                if (imgPath) {
-                    finalImgSrc = imgPath.startsWith('http') ? imgPath : `${UPLOADS_URL}/${imgPath}`;
-                }
+                if (imgPath) { finalImgSrc = imgPath.startsWith('http') ? imgPath : `${UPLOADS_URL}/${imgPath}`; }
 
                 return `
                     <div class="product-item d-flex justify-content-between align-items-center py-3" 
@@ -48,9 +49,8 @@ async function trackOrder() {
                                 <span class="small fw-semibold">${item.name}</span>
                             </div>
                         </div>
-                        <div class="fw-bold text-navy">${euro.format((item.price || 0) * (item.qty || 0))}</div>
-                    </div>
-                `;
+                        <div class="fw-bold text-navy">${euro.format(item.price * item.qty)}</div>
+                    </div>`;
             }).join('');
 
             document.getElementById('display-address').innerText = `📍 ${order.customer?.address || 'K.A.'}`;
@@ -63,20 +63,11 @@ async function trackOrder() {
             alert("Bestellung nicht gefunden!");
             resultArea.classList.add('d-none');
         }
-    } catch (err) {
-        console.error("Tracking Error:", err);
-        alert("Ein technischer Fehler ist aufgetreten.");
-    }
+    } catch (err) { console.error("Tracking Error:", err); }
 }
 
 function translateStatus(status) {
-    const map = {
-        'Pending': 'Eingegangen',
-        'Processing': 'In Verarbeitung',
-        'Shipped': 'Versandt',
-        'Delivered': 'Geliefert',
-        'Cancelled': 'Storniert'
-    };
+    const map = { 'Pending': 'Eingegangen', 'Processing': 'Verarbeitung', 'Shipped': 'Versandt', 'Delivered': 'Geliefert', 'Cancelled': 'Storniert' };
     return map[status] || 'Eingegangen';
 }
 
@@ -88,32 +79,67 @@ function updateProgressSteps(status) {
         document.getElementById('step-delivered')
     ];
     const progressLine = document.getElementById('progress-line');
+    const container = document.getElementById('track-container');
+    const dynamicArea = document.getElementById('dynamic-info-area');
+
+    // --- İPTAL DURUMU KONTROLÜ ---
+    if (status === 'Cancelled') {
+        container.classList.add('is-cancelled');
+        progressLine.style.width = "0%"; progressLine.style.height = "0%";
+
+        steps.forEach((step, index) => {
+            step.classList.remove('active', 'completed');
+            if (index === 0) {
+                step.classList.add('cancelled-step');
+                step.querySelector('.step-icon').innerHTML = "✕";
+                step.querySelector('.step-text').innerText = "Storniert";
+            }
+        });
+
+        dynamicArea.innerHTML = `
+            <div class="cancel-notice shadow-sm staggered-item">
+                <div class="me-3 fs-3">⚠️</div>
+                <div>
+                    <strong class="d-block">Bestellung Storniert</strong>
+                    <span class="small">Diese Bestellung wurde storniert. Bei Fragen kontaktieren Sie unseren Support.</span>
+                </div>
+            </div>`;
+        return;
+    }
+
+    // --- NORMAL AKIŞ ---
+    container.classList.remove('is-cancelled');
+    // İkonları orijinal haline geri getir (İptalden normale dönerse diye)
+    const originalIcons = ["⏳", "⚙️", "🚚", "✅"];
+    const originalTexts = ["Eingegangen", "Verarbeitung", "Versandt", "Geliefert"];
 
     const statusMap = { 'Pending': 0, 'Processing': 1, 'Shipped': 2, 'Delivered': 3 };
-    // Mobilde çizgiyi tam doldurmak için 0, 33, 66, 100 oranları
     const progressPercentages = { 'Pending': 0, 'Processing': 33, 'Shipped': 66, 'Delivered': 100 };
-
     const currentIndex = statusMap[status] !== undefined ? statusMap[status] : 0;
 
     if (progressLine) {
         if (window.innerWidth < 768) {
-            // Mobil: Dikey yükseklik
-            progressLine.style.width = "3px";
-            progressLine.style.height = `${progressPercentages[status] || 0}%`;
+            progressLine.style.width = "3px"; progressLine.style.height = `${progressPercentages[status]}%`;
         } else {
-            // Desktop: Yatay genişlik
-            progressLine.style.height = "3px";
-            progressLine.style.width = `${progressPercentages[status] || 0}%`;
+            progressLine.style.height = "3px"; progressLine.style.width = `${progressPercentages[status]}%`;
         }
     }
 
     steps.forEach((step, index) => {
-        if (!step) return;
-        step.classList.remove('active', 'completed');
-        if (index < currentIndex) {
-            step.classList.add('completed');
-        } else if (index === currentIndex) {
-            step.classList.add('active');
-        }
+        step.classList.remove('active', 'completed', 'cancelled-step');
+        step.querySelector('.step-icon').innerHTML = originalIcons[index];
+        step.querySelector('.step-text').innerText = originalTexts[index];
+
+        if (index < currentIndex) { step.classList.add('completed'); }
+        else if (index === currentIndex) { step.classList.add('active'); }
     });
 }
+
+document.addEventListener('DOMContentLoaded', () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const orderIdFromUrl = urlParams.get('id');
+    if (orderIdFromUrl) {
+        document.getElementById('orderIdInput').value = orderIdFromUrl;
+        trackOrder();
+    }
+});
