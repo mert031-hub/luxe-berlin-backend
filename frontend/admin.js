@@ -4,10 +4,9 @@ if (!localStorage.getItem('adminToken')) {
 }
 
 // --- GLOBAL YAPILANDIRMA (DİNAMİK URL GÜNCELLEMESİ) ---
-// Sitenin nerede çalıştığını otomatik algılar ve doğru API'ye bağlanır
 const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
     ? 'http://localhost:5000/api'
-    : '/api'; // Render üzerinde kendi domaini üzerinden çalışır
+    : '/api';
 
 const API = API_URL;
 const UPLOADS_URL = '';
@@ -16,10 +15,8 @@ let salesChart = null;
 let allOrdersData = [];
 let currentChartMode = 'monthly';
 
-// Token'ı merkezi bir yerden almak için yardımcı değişken
 const getAuthToken = () => localStorage.getItem('adminToken');
 
-// KRİTİK: Token Süresi Dolunca Otomatik Çıkış Yapma Fonksiyonu
 const handleAuthError = (res) => {
     if (res.status === 401) {
         alert("Sitzung abgelaufen. Bitte melden Sie sich erneut an.");
@@ -29,16 +26,14 @@ const handleAuthError = (res) => {
     return res;
 };
 
-// YENİ: Aktif Bekçi Mekanizması (Yenileme gerektirmeden süreyi kontrol eder)
 function startAuthWatcher() {
     setInterval(() => {
         const token = getAuthToken();
         if (!token) return;
 
         try {
-            // JWT Token'ı decode ederek içindeki 'exp' (son kullanma) süresine bakıyoruz
             const payload = JSON.parse(atob(token.split('.')[1]));
-            const expiry = payload.exp * 1000; // Saniyeyi milisaniyeye çevir
+            const expiry = payload.exp * 1000;
             const now = Date.now();
 
             if (now > expiry) {
@@ -49,7 +44,7 @@ function startAuthWatcher() {
         } catch (e) {
             console.error("Token kontrol hatası:", e);
         }
-    }, 5000); // Her 5 saniyede bir kontrol et
+    }, 5000);
 }
 
 async function loadDashboard() {
@@ -57,8 +52,8 @@ async function loadDashboard() {
     if (typeof window.loadProducts === 'function') await window.loadProducts();
     if (typeof window.loadAdmins === 'function') await window.loadAdmins();
     if (typeof window.loadArchivedProducts === 'function') await window.loadArchivedProducts();
-    if (typeof window.loadReviews === 'function') await window.loadReviews(); // YENİ: Yorumları Yükle
-    window.logActivity("Dashboard Geladen", "Master Admin", "Success");
+    if (typeof window.loadReviews === 'function') await window.loadReviews();
+    window.logActivity("Dashboard vollständig geladen", "Master Admin", "Success");
 }
 
 // --- 1. ANALİTİK GRAFİĞİ ---
@@ -149,7 +144,7 @@ window.loadOrders = async () => {
                     <td>
                         <select class="form-select form-select-sm rounded-pill" onchange="updateStatus('${o._id}', this.value)">
                             <option value="Pending" ${o.status === 'Pending' ? 'selected' : ''}>⏳ Ausstehend</option>
-                            <option value="Processing" ${o.status === 'Processing' ? 'selected' : ''}>⚙️ In Bearbeitung</option>
+                            <option value="Processing" ${o.status === 'Processing' ? 'selected' : ''}>⚙️ Bearbeitung</option>
                             <option value="Shipped" ${o.status === 'Shipped' ? 'selected' : ''}>🚚 Versandt</option>
                             <option value="Delivered" ${o.status === 'Delivered' ? 'selected' : ''}>✅ Geliefert</option>
                             <option value="Cancelled" ${o.status === 'Cancelled' ? 'selected' : ''}>❌ Storniert</option>
@@ -236,7 +231,7 @@ window.updateStatus = async (id, status) => {
         body: JSON.stringify({ status })
     }).then(handleAuthError);
     window.loadOrders();
-    // DETAYLI LOG EKLEMESİ
+    // DETAYLI LOG
     window.logActivity(`Bestellung #LB-${id.slice(-6).toUpperCase()} Status -> ${status}`, "Admin", "Success");
 };
 
@@ -284,7 +279,7 @@ window.restoreProduct = async (id) => {
         method: 'PUT',
         headers: { 'x-auth-token': getAuthToken() }
     }).then(handleAuthError);
-    window.logActivity(`Produkt wiederhergestellt (ID: ${id.slice(-4)})`, "Admin", "Success");
+    window.logActivity(`Produkt (ID: ${id.slice(-4)}) wiederhergestellt`, "Admin", "Success");
     await loadDashboard();
 };
 
@@ -294,7 +289,7 @@ window.deleteProduct = async (id) => {
             method: 'DELETE',
             headers: { 'x-auth-token': getAuthToken() }
         }).then(handleAuthError);
-        window.logActivity(`Produkt archiviert (ID: ${id.slice(-4)})`, "Admin", "Deleted");
+        window.logActivity(`Produkt (ID: ${id.slice(-4)}) archiviert`, "Admin", "Deleted");
         await loadDashboard();
     }
 };
@@ -403,7 +398,7 @@ function calculateStats(orders) {
     if (custEl) custEl.innerText = new Set(valid.map(o => o.customer.email)).size;
 }
 
-// --- 4. YORUM YÖNETİMİ (YENİ) ---
+// --- 4. YORUM YÖNETİMİ ---
 window.loadReviews = async () => {
     try {
         const res = await fetch(`${API_URL}/reviews`, {
@@ -459,7 +454,7 @@ window.submitReply = async () => {
     if (res && res.ok) {
         bootstrap.Modal.getInstance(document.getElementById('replyModal')).hide();
         window.loadReviews();
-        window.logActivity(`Antwort auf Rezension ID: ${id.slice(-4)} gesendet`, "Admin", "Success");
+        window.logActivity(`Antwort auf Rezension (ID: ${id.slice(-4)}) gesendet`, "Admin", "Success");
     }
 };
 
@@ -472,7 +467,7 @@ window.deleteReview = async (id) => {
 
         if (res && res.ok) {
             window.loadReviews();
-            window.logActivity(`Rezension ID: ${id.slice(-4)} gelöscht`, "Admin", "Deleted");
+            window.logActivity(`Rezension (ID: ${id.slice(-4)}) gelöscht`, "Admin", "Deleted");
         }
     }
 };
@@ -547,7 +542,7 @@ document.getElementById('productSearch')?.addEventListener('input', (e) => {
     });
 });
 
-// YENİ: Yorumlarda Kelime/İsim Arama Filtresi
+// YENİ: Yorum Arama Filtresi (Eksiksiz Eklendi)
 document.getElementById('reviewSearch')?.addEventListener('input', (e) => {
     const term = e.target.value.toLowerCase();
     document.querySelectorAll('.review-row').forEach(row => {
@@ -561,5 +556,5 @@ window.logout = () => { localStorage.removeItem('adminToken'); window.location.h
 
 document.addEventListener('DOMContentLoaded', () => {
     loadDashboard();
-    startAuthWatcher(); // Bekçiyi başlat
+    startAuthWatcher();
 });
