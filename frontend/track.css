@@ -257,3 +257,92 @@ body {
   animation: fadeInUp 0.8s ease both;
   animation-delay: 0.3s;
 }
+/* --- LUXE PRELOADER STYLES --- */
+#preloader {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: #0b0e17; /* Derin Gece Mavisi */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999999; /* İmleçten bile üstte olmalı */
+  transition:
+    opacity 1s cubic-bezier(0.65, 0, 0.35, 1),
+    visibility 1s;
+}
+
+.preloader-content {
+  text-align: center;
+}
+
+.preloader-logo {
+  font-family: "Playfair Display", serif;
+  font-size: 3rem;
+  color: #ffffff;
+  letter-spacing: 8px;
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  animation: luxeFadePulse 2.5s ease-in-out infinite;
+}
+
+.preloader-logo span {
+  color: var(--gold);
+}
+
+.preloader-bar {
+  width: 150px;
+  height: 1px;
+  background: rgba(197, 160, 89, 0.1);
+  margin: 0 auto 15px;
+  position: relative;
+  overflow: hidden;
+}
+
+.preloader-bar::after {
+  content: "";
+  display: block;
+  width: 60px;
+  height: 100%;
+  background: var(--gold);
+  position: absolute;
+  left: -60px;
+  animation: loadingSlide 2s infinite ease-in-out;
+}
+
+.preloader-text {
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 0.7rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+/* Animasyon Tanımları */
+@keyframes loadingSlide {
+  0% {
+    left: -60px;
+  }
+  100% {
+    left: 100%;
+  }
+}
+
+@keyframes luxeFadePulse {
+  0%,
+  100% {
+    opacity: 0.4;
+    transform: scale(0.98);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Yükleme bittiğinde eklenecek gizleme klası */
+.preloader-hidden {
+  opacity: 0;
+  visibility: hidden;
+}

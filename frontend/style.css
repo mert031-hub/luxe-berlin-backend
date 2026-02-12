@@ -150,11 +150,14 @@ body.dark-mode .bg-light {
   z-index: 5;
 }
 
-/* ÜRÜN KARTLARI */
+/* ÜRÜN KARTLARI - INTERAKTIF GÜNCELLEME */
 .product-card {
   border: none;
   border-radius: 12px;
-  transition: 0.4s ease;
+  /* Daha akıcı geçiş için Bezier eğrisi eklendi */
+  transition:
+    transform 0.4s cubic-bezier(0.165, 0.84, 0.44, 1),
+    box-shadow 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
   cursor: pointer;
   background: var(--card-bg);
   overflow: hidden;
@@ -162,9 +165,37 @@ body.dark-mode .bg-light {
   position: relative;
   box-shadow: var(--soft-shadow);
 }
+
 .product-card:hover {
-  transform: translateY(-10px);
+  transform: translateY(-12px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15) !important;
 }
+
+/* Overlay "Details Ansehen" Katmanı */
+.product-card::after {
+  content: "DETAILS ANSEHEN";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -20%);
+  background: rgba(28, 37, 65, 0.9); /* Navy Overlay */
+  color: var(--gold);
+  padding: 10px 22px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  opacity: 0;
+  transition: all 0.4s ease;
+  pointer-events: none;
+  border-radius: 4px;
+  z-index: 5;
+}
+
+.product-card:hover::after {
+  opacity: 1;
+  transform: translate(-50%, -50%);
+}
+
 .product-tag {
   position: absolute;
   top: 15px;
@@ -180,17 +211,26 @@ body.dark-mode .bg-light {
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
   letter-spacing: 0.5px;
 }
+
 .product-img-box {
   height: 350px;
   overflow: hidden;
   background: var(--bg-primary);
+  position: relative;
 }
+
 .product-img-box img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: 0.5s ease;
+  /* Yumuşak zoom geçişi */
+  transition: transform 0.8s cubic-bezier(0.165, 0.84, 0.44, 1);
 }
+
+.product-card:hover .product-img-box img {
+  transform: scale(1.1); /* Zoom etkisi */
+}
+
 .price {
   color: var(--gold);
   font-weight: 700;
@@ -460,7 +500,7 @@ body.dark-mode .btn-luxe {
   transform: translateY(-5px);
 }
 
-/* --- YENİ: LUXE TOAST BİLDİRİM SİSTEMİ --- */
+/* --- LUXE TOAST BİLDİRİM SİSTEMİ --- */
 #luxe-toast-container {
   position: fixed;
   top: 30px;
@@ -517,4 +557,92 @@ body.dark-mode .btn-luxe {
 .luxe-toast .toast-msg {
   font-size: 0.9rem;
   font-weight: 500;
+}
+
+/* --- LUXE PRELOADER STYLES --- */
+#preloader {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: #0b0e17;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999999;
+  transition:
+    opacity 1s cubic-bezier(0.65, 0, 0.35, 1),
+    visibility 1s;
+}
+
+.preloader-content {
+  text-align: center;
+}
+
+.preloader-logo {
+  font-family: "Playfair Display", serif;
+  font-size: 3rem;
+  color: #ffffff;
+  letter-spacing: 8px;
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  animation: luxeFadePulse 2.5s ease-in-out infinite;
+}
+
+.preloader-logo span {
+  color: var(--gold);
+}
+
+.preloader-bar {
+  width: 150px;
+  height: 1px;
+  background: rgba(197, 160, 89, 0.1);
+  margin: 0 auto 15px;
+  position: relative;
+  overflow: hidden;
+}
+
+.preloader-bar::after {
+  content: "";
+  display: block;
+  width: 60px;
+  height: 100%;
+  background: var(--gold);
+  position: absolute;
+  left: -60px;
+  animation: loadingSlide 2s infinite ease-in-out;
+}
+
+.preloader-text {
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 0.7rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+@keyframes loadingSlide {
+  0% {
+    left: -60px;
+  }
+  100% {
+    left: 100%;
+  }
+}
+
+@keyframes luxeFadePulse {
+  0%,
+  100% {
+    opacity: 0.4;
+    transform: scale(0.98);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.preloader-hidden {
+  opacity: 0;
+  visibility: hidden;
 }

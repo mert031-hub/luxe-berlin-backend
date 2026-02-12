@@ -7,12 +7,12 @@
     <title>LUXE BERLIN | Master Admin</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
     <link
         href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Playfair+Display:wght@700&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="admin.css">
     <style>
-        /* Kaydırılabilir Tablo Kapsayıcısı */
         .table-scroll-container {
             max-height: 450px;
             overflow-y: auto;
@@ -22,7 +22,6 @@
             -webkit-overflow-scrolling: touch;
         }
 
-        /* Tablo Başlıklarını Sabitleme */
         .table-scroll-container thead th {
             position: sticky;
             top: 0;
@@ -120,19 +119,19 @@
 
     <main id="adminMainContent" class="container py-4 py-md-5 d-none">
         <div class="row g-3 g-md-4 mb-4 text-center text-white">
-            <div class="col-6 col-md-4">
+            <div class="col-6 col-md-4" data-aos="fade-up" data-aos-delay="100">
                 <div class="p-3 p-md-4 rounded-4 shadow-sm h-100" style="background:#1c2541;">
                     <p class="small text-uppercase mb-1 opacity-75" style="font-size: 0.7rem;">Bestellungen</p>
                     <h2 id="stat-count" class="fw-bold mb-0">0</h2>
                 </div>
             </div>
-            <div class="col-6 col-md-4">
+            <div class="col-6 col-md-4" data-aos="fade-up" data-aos-delay="200">
                 <div class="p-3 p-md-4 rounded-4 shadow-sm h-100" style="background:#c5a059;">
                     <p class="small text-uppercase mb-1 opacity-75" style="font-size: 0.7rem;">Umsatz</p>
                     <h2 id="stat-revenue" class="fw-bold mb-0" style="font-size: 1.2rem;">0,00 €</h2>
                 </div>
             </div>
-            <div class="col-12 col-md-4">
+            <div class="col-12 col-md-4" data-aos="fade-up" data-aos-delay="300">
                 <div class="p-3 p-md-4 rounded-4 shadow-sm h-100" style="background:#212529;">
                     <p class="small text-uppercase mb-1 opacity-75" style="font-size: 0.7rem;">Kunden</p>
                     <h2 id="stat-customers" class="fw-bold mb-0">0</h2>
@@ -140,7 +139,7 @@
             </div>
         </div>
 
-        <div class="row mb-4">
+        <div class="row mb-4" data-aos="fade-up">
             <div class="col-12">
                 <div class="card border-0 shadow-sm rounded-4 p-3 p-md-4">
                     <div
@@ -160,12 +159,12 @@
             </div>
         </div>
 
-        <div class="card border-0 shadow-sm rounded-4 mb-4">
+        <div class="card border-0 shadow-sm rounded-4 mb-4" data-aos="fade-up">
             <div class="card-body p-3 p-md-4">
                 <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
                     <h4 class="fw-bold mb-0">Bestellungsverwaltung</h4>
                     <input type="text" id="orderSearch" class="form-control w-100 w-md-50 rounded-pill"
-                        placeholder="Müşteri adına göre ara...">
+                        placeholder="Kunde suchen...">
                 </div>
                 <div class="table-scroll-container">
                     <table class="table table-hover align-middle mb-0">
@@ -186,7 +185,7 @@
             </div>
         </div>
 
-        <div class="card border-0 shadow-sm rounded-4 mb-4">
+        <div class="card border-0 shadow-sm rounded-4 mb-4" data-aos="fade-up">
             <div class="card-body p-3 p-md-4">
                 <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
                     <h4 class="fw-bold mb-0">Rezensionen verwalten</h4>
@@ -212,7 +211,7 @@
         </div>
 
         <section class="row g-4 mb-4">
-            <div class="col-lg-4 order-2 order-lg-1">
+            <div class="col-lg-4 order-2 order-lg-1" data-aos="fade-right">
                 <div class="card p-4 shadow-sm border-0 rounded-4 sticky-card">
                     <h5 id="productFormTitle" class="fw-bold mb-3 text-navy">Produkt verwalten</h5>
                     <form id="productForm">
@@ -222,7 +221,7 @@
                         <div class="mb-2"><input type="number" id="pPrice" class="form-control" placeholder="Preis (€)"
                                 step="0.01" required></div>
                         <div class="mb-2">
-                            <label class="small fw-bold opacity-75 mb-1 text-navy">Lagerbestand (Stok)</label>
+                            <label class="small fw-bold opacity-75 mb-1 text-navy">Lagerbestand</label>
                             <input type="number" id="pStock" class="form-control" placeholder="Anzahl" min="0" required>
                         </div>
                         <div class="mb-2">
@@ -241,13 +240,13 @@
                 </div>
             </div>
 
-            <div class="col-lg-8 order-1 order-lg-2">
+            <div class="col-lg-8 order-1 order-lg-2" data-aos="fade-left">
                 <div class="card p-3 p-md-4 shadow-sm border-0 rounded-4 h-100">
                     <div
                         class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-3 gap-3">
                         <h5 class="fw-bold mb-0">Inventar & Bestand</h5>
                         <input type="text" id="productSearch" class="form-control w-100 w-md-50 rounded-pill"
-                            placeholder="Ürün adına göre ara...">
+                            placeholder="Ürün ara...">
                     </div>
                     <div class="table-scroll-container" style="max-height: 400px;">
                         <table class="table align-middle mb-0">
@@ -263,7 +262,6 @@
                             <tbody id="admin-product-list"></tbody>
                         </table>
                     </div>
-
                     <div class="mt-5 pt-4 border-top">
                         <h6 class="fw-bold text-danger mb-3">🗑️ Archivierte Produkte</h6>
                         <div class="table-scroll-container" style="max-height: 200px;">
@@ -276,7 +274,7 @@
             </div>
         </section>
 
-        <div class="card border-0 shadow-sm rounded-4 mb-4">
+        <div class="card border-0 shadow-sm rounded-4 mb-4" data-aos="fade-up">
             <div class="card-body p-3 p-md-4">
                 <h5 class="fw-bold mb-3 text-navy">🖥️ Aktivitätsprotokoll</h5>
                 <div class="table-scroll-container" style="max-height: 250px;">
@@ -295,7 +293,7 @@
             </div>
         </div>
 
-        <section class="row g-4 pt-5 border-top">
+        <section class="row g-4 pt-5 border-top" data-aos="fade-up">
             <div class="col-lg-4">
                 <div class="card p-4 shadow-sm border-0 rounded-4">
                     <h5 class="fw-bold mb-3">Admin hinzufügen</h5>
@@ -341,10 +339,10 @@
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <input type="hidden" id="replyReviewId">
-                    <label class="small fw-bold text-muted mb-2">Deine Antwort:</label>
+                    <input type="hidden" id="replyReviewId"><label class="small fw-bold text-muted mb-2">Deine
+                        Antwort:</label>
                     <textarea id="adminReplyText" class="form-control" rows="4"
-                        placeholder="Schreiben Sie eine Antwort..."></textarea>
+                        placeholder="Schreiben Sie..."></textarea>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-light" data-bs-dismiss="modal">Schließen</button>
@@ -355,15 +353,19 @@
         </div>
     </div>
 
-    <script src="admin.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            if (localStorage.getItem('adminToken')) {
-                document.getElementById('adminMainContent').classList.remove('d-none');
-            }
-        });
+
     </script>
+    <script src="admin.js"></script>
 </body>
+<div id="preloader">
+    <div class="preloader-content">
+        <div class="preloader-logo">LUXE<span>BERLIN</span></div>
+        <div class="preloader-bar"></div>
+        <p class="preloader-text">Exklusive Mode wird geladen...</p>
+    </div>
+</div>
 
 </html>
