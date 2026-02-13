@@ -9,6 +9,7 @@ exports.createOrder = async (req, res) => {
     try {
         const { customer, items, totalAmount, paymentMethod } = req.body;
 
+        // Stok Kontrolü
         for (const item of items) {
             const product = await Product.findById(item.productId);
             if (!product) return res.status(404).json({ message: "Produkt nicht gefunden." });
@@ -17,11 +18,19 @@ exports.createOrder = async (req, res) => {
             }
         }
 
+        // Yeni Sipariş Nesnesi
         const newOrder = new Order({
             customer, items, totalAmount,
-            paymentMethod: paymentMethod || "Unbekannt"
+            paymentMethod: paymentMethod || "Unbekannt",
+            // Önce geçici bir ID atıyoruz (MongoID'den türetilecek)
+            shortId: "TEMP"
         });
 
+        // shortId Oluşturma (Mongo'nun ürettiği asıl ID'den son 6 hane)
+        const generatedShortId = `LB-${newOrder._id.toString().slice(-6).toUpperCase()}`;
+        newOrder.shortId = generatedShortId;
+
+        // Siparişi ve Stok Güncellemesini Kaydet
         await newOrder.save();
 
         for (const item of items) {
@@ -33,13 +42,12 @@ exports.createOrder = async (req, res) => {
             console.error("❌ Onay maili hatası:", err.message)
         );
 
-        const shortId = `LB-${newOrder._id.toString().slice(-6).toUpperCase()}`;
-        console.log(`✅ Sipariş oluşturuldu: #${shortId}`);
+        console.log(`✅ Sipariş oluşturuldu: #${generatedShortId}`);
 
         res.status(201).json({
             message: "Sipariş başarılı!",
             orderId: newOrder._id,
-            shortId
+            shortId: generatedShortId
         });
     } catch (err) {
         console.error("❌ Sipariş oluşturma hatası:", err);
@@ -60,22 +68,22 @@ exports.getAllOrders = async (req, res) => {
 };
 
 /**
- * 3️⃣ TEK SİPARİŞ GETİR (Tracking)
+ * 3️⃣ TEK SİPARİŞ GETİR (Tracking) - OPTİMİZE EDİLDİ
  */
 exports.getOrderById = async (req, res) => {
     try {
         let { id } = req.params;
-        id = id.replace('#', '').replace('LB-', '').toUpperCase();
+        const cleanId = id.replace('#', '').replace('LB-', '').toUpperCase();
 
-        // Hem tam ID hem de kısa ID ile arama mantığı
+        // Giriş 24 haneli bir MongoID mi?
         const isObjectId = /^[0-9a-fA-F]{24}$/.test(id);
         let order;
 
         if (isObjectId) {
             order = await Order.findById(id).populate('items.productId');
         } else {
-            const allOrders = await Order.find().populate('items.productId');
-            order = allOrders.find(o => o._id.toString().toUpperCase().endsWith(id));
+            // 🔥 KRİTİK OPTİMİZASYON: Tüm siparişleri çekmek yerine doğrudan indeksten buluyoruz.
+            order = await Order.findOne({ shortId: `LB-${cleanId}` }).populate('items.productId');
         }
 
         if (!order) return res.status(404).json({ message: "Sipariş bulunamadı." });

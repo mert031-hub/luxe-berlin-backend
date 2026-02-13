@@ -2,14 +2,16 @@ const mongoose = require('mongoose');
 
 /**
  * LUXE BERLIN - Sipariş Veri Modeli
- * Müşteri bilgileri, ürünler ve ödeme durumlarını tutar.
+ * Optimizasyon: shortId alanı eklenmiş ve indekslenmiştir.
  */
 const OrderSchema = new mongoose.Schema({
+    // YENİ: Kısa Takip Kodu (Veritabanı seviyesinde tutulur ve indekslenir)
+    shortId: { type: String, unique: true, required: true },
+
     customer: {
         firstName: { type: String, required: true },
         lastName: { type: String, required: true },
         email: { type: String, required: true },
-        // YENİ: Müşteri ile iletişim için telefon numarası alanı
         phone: { type: String, required: true },
         address: { type: String, required: true }
     },
@@ -26,14 +28,16 @@ const OrderSchema = new mongoose.Schema({
         }
     ],
     totalAmount: { type: Number, required: true },
-    // Ödeme yöntemi (KARTE, PAYPAL vb.)
     paymentMethod: { type: String, default: "Unbekannt" },
-    // Sipariş durumu (Pending, Processing, Shipped, Delivered, Cancelled)
     status: { type: String, default: 'Pending' },
-    // Siparişin oluşturulma tarihi
     date: { type: Date, default: Date.now },
-    // Admin panelinde silinen siparişleri arşivde tutmak için
     isArchived: { type: Boolean, default: false }
 });
+
+// 🚀 BACKEND OPTİMİZASYONU (INDEXING)
+OrderSchema.index({ shortId: 1 });          // Takip aramalarını ışık hızına çıkarır
+OrderSchema.index({ "customer.email": 1 }); // Müşteri geçmişi sorguları için
+OrderSchema.index({ status: 1 });           // Filtrelemeler için
+OrderSchema.index({ date: -1 });            // Sıralamalar için
 
 module.exports = mongoose.model('Order', OrderSchema);

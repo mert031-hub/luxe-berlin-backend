@@ -239,3 +239,15 @@ body {
   opacity: 0;
   visibility: hidden;
 }
+
+/* MOBİL PRELOADER DÜZENLEMESİ */
+@media (max-width: 576px) {
+  .preloader-logo {
+    font-size: 1.8rem !important;
+    letter-spacing: 4px !important;
+    padding: 0 15px;
+  }
+  .preloader-bar {
+    width: 100px !important;
+  }
+}

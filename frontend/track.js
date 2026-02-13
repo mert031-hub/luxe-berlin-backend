@@ -11,13 +11,20 @@ const UPLOADS_URL = '';
 const euro = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' });
 
 async function trackOrder() {
-    const rawId = document.getElementById('orderIdInput').value.trim();
+    const rawInput = document.getElementById('orderIdInput').value.trim();
     const resultArea = document.getElementById('track-result');
     const itemsList = document.getElementById('order-items-list');
     const header = document.getElementById('status-header');
     const dynamicArea = document.getElementById('dynamic-info-area');
 
-    const id = rawId.replace('#', '').replace('LB-', '').toUpperCase();
+    // ID Normalizasyonu (MongoID ise olduğu gibi bırak, Kısa ID ise büyük harf yap)
+    let id;
+    if (rawInput.length === 24) {
+        id = rawInput; // MongoID (Linkten gelen uzun ID)
+    } else {
+        id = rawInput.replace('#', '').replace('LB-', '').toUpperCase(); // Manuel kısa ID
+    }
+
     if (!id) return alert("Bitte geben Sie eine Bestellnummer ein!");
 
     try {
@@ -33,8 +40,10 @@ async function trackOrder() {
                 if (typeof AOS !== 'undefined') { AOS.refresh(); }
             }, 50);
 
+            // Görüntüleme için ID'yi kısaltıyoruz
+            const displayId = order.shortId || `#LB-${id.slice(-6).toUpperCase()}`;
             header.innerHTML = `
-                <h6 class="text-muted mb-1">Bestellnummer: #LB-${id.slice(-6).toUpperCase()}</h6>
+                <h6 class="text-muted mb-1">Bestellnummer: ${displayId}</h6>
                 <h4 class="fw-bold">Status: <span style="color:#c5a059;">${translateStatus(order.status)}</span></h4>
             `;
 
@@ -49,7 +58,7 @@ async function trackOrder() {
                     <div class="product-item d-flex justify-content-between align-items-center py-3" 
                          style="animation: fadeInUp 0.5s ease forwards; animation-delay: ${index * 0.1 + 0.4}s; opacity: 0;">
                         <div class="d-flex align-items-center">
-                            <img src="${finalImgSrc}" alt="${item.name}" class="product-thumb me-3 shadow-sm">
+                            <img src="${finalImgSrc}" alt="${item.name}" class="product-thumb me-3 shadow-sm" loading="lazy">
                             <div>
                                 <span class="fw-bold text-navy me-1">${item.qty}x</span> 
                                 <span class="small fw-semibold">${item.name}</span>
@@ -66,6 +75,7 @@ async function trackOrder() {
 
             setTimeout(() => {
                 resultArea.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                if (typeof AOS !== 'undefined') { AOS.refresh(); }
             }, 300);
 
         } else {
@@ -79,13 +89,7 @@ async function trackOrder() {
 }
 
 function translateStatus(status) {
-    const map = {
-        'Pending': 'Eingegangen',
-        'Processing': 'Verarbeitung',
-        'Shipped': 'Versandt',
-        'Delivered': 'Geliefert',
-        'Cancelled': 'Storniert'
-    };
+    const map = { 'Pending': 'Eingegangen', 'Processing': 'Verarbeitung', 'Shipped': 'Versandt', 'Delivered': 'Geliefert', 'Cancelled': 'Storniert' };
     return map[status] || 'Eingegangen';
 }
 
@@ -102,10 +106,7 @@ function updateProgressSteps(status) {
 
     if (status === 'Cancelled') {
         container.classList.add('is-cancelled');
-        if (progressLine) {
-            progressLine.style.width = "0%";
-            progressLine.style.height = "0%";
-        }
+        if (progressLine) { progressLine.style.width = "0%"; progressLine.style.height = "0%"; }
 
         steps.forEach((step, index) => {
             step.classList.remove('active', 'completed');
@@ -150,11 +151,8 @@ function updateProgressSteps(status) {
         step.querySelector('.step-icon').innerHTML = originalIcons[index];
         step.querySelector('.step-text').innerText = originalTexts[index];
 
-        if (index < currentIndex) {
-            step.classList.add('completed');
-        } else if (index === currentIndex) {
-            step.classList.add('active');
-        }
+        if (index < currentIndex) { step.classList.add('completed'); }
+        else if (index === currentIndex) { step.classList.add('active'); }
     });
 }
 
@@ -165,14 +163,10 @@ window.addEventListener("load", function () {
             preloader.classList.add("preloader-hidden");
             setTimeout(() => {
                 if (typeof AOS !== 'undefined') {
-                    AOS.init({
-                        duration: 1000,
-                        once: true,
-                        offset: 100,
-                        disableMutationObserver: false
-                    });
+                    AOS.init({ duration: 1000, once: true, offset: 50, disableMutationObserver: false });
                     AOS.refresh();
                 }
+                window.dispatchEvent(new Event('scroll'));
                 preloader.style.display = "none";
             }, 1000);
         }, 1200);

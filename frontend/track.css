@@ -33,14 +33,16 @@ body {
   transition: all 0.3s ease;
   border: 1px solid #eee !important;
   background: white !important;
+  display: flex !important;
 }
 
 .tracking-search-box input#orderIdInput {
-  color: #1c2541 !important; /* Metin rengini koyulaştırdık */
+  color: #1c2541 !important;
   background-color: white !important;
-  font-size: 16px !important; /* iOS zoom engelleme */
+  font-size: 16px !important;
   -webkit-appearance: none;
   opacity: 1 !important;
+  flex-grow: 1; /* Butonla yan yana dengeli durması için */
 }
 
 .tracking-search-box input::placeholder {
@@ -54,6 +56,19 @@ body {
   .btn-gold {
     padding: 0 15px !important;
     font-size: 12px;
+    white-space: nowrap;
+  }
+  /* Preloader logo mobil küçültme (Taşma ve Sola Kayma Fix) */
+  .preloader-logo {
+    font-size: 1.8rem !important; /* Boyut küçültüldü */
+    letter-spacing: 4px !important; /* Harf arası daraltıldı */
+    padding: 0 10px;
+    width: 100%;
+    text-align: center;
+    box-sizing: border-box;
+  }
+  .preloader-bar {
+    width: 100px !important;
   }
 }
 
@@ -64,6 +79,7 @@ body {
   border: none;
 }
 
+/* --- PROGRESS TRACKER --- */
 .track-container {
   margin: 60px 0;
   display: flex;
@@ -241,6 +257,7 @@ body {
   border: 1px solid #eee;
 }
 
+/* Animasyonlar */
 @keyframes fadeInUp {
   from {
     opacity: 0;
@@ -278,6 +295,13 @@ body {
     opacity 1s cubic-bezier(0.65, 0, 0.35, 1),
     visibility 1s;
 }
+
+/* Preloader İçerik Hizalaması */
+.preloader-content {
+  text-align: center;
+  width: 100%;
+}
+
 .preloader-logo {
   font-family: "Playfair Display", serif;
   font-size: 3rem;
@@ -313,6 +337,14 @@ body {
   font-size: 0.7rem;
   letter-spacing: 2px;
   text-transform: uppercase;
+}
+@keyframes loadingSlide {
+  0% {
+    left: -60px;
+  }
+  100% {
+    left: 100%;
+  }
 }
 @keyframes luxeFadePulse {
   0%,

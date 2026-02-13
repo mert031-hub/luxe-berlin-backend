@@ -1,7 +1,10 @@
+/**
+ * LUXE BERLIN - CHECKOUT LOGIC
+ */
+
 let products = [];
 let cart = JSON.parse(localStorage.getItem('luxeCartArray')) || [];
 
-// --- GLOBAL YAPILANDIRMA (DİNAMİK URL GÜNCELLEMESİ) ---
 const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
     ? 'http://localhost:5000/api'
     : '/api';
@@ -36,7 +39,7 @@ function loadCheckout() {
             return `
                 <div class="d-flex align-items-center mb-4 pb-3 border-bottom border-white border-opacity-10 cart-item-anim" 
                      style="animation-delay: ${index * 0.1}s">
-                    <img src="${p.img}" width="55" class="me-3 rounded shadow-sm">
+                    <img src="${p.img}" width="55" class="me-3 rounded shadow-sm" loading="lazy">
                     <div class="flex-grow-1">
                         <div class="small fw-bold mb-1 text-white">${p.name}</div>
                         <div class="d-flex align-items-center">
@@ -146,7 +149,6 @@ document.getElementById('checkoutForm')?.addEventListener('submit', async (e) =>
         const result = await response.json();
         if (response.ok) {
             localStorage.removeItem('luxeCartArray');
-            // Sipariş sonrası yönlendirme
             window.location.href = `./success.html?orderId=${result.orderId}&displayId=${result.shortId}`;
         } else {
             alert("Fehler: " + (result.message || "Bestellung fehlgeschlagen."));
@@ -160,7 +162,7 @@ document.getElementById('checkoutForm')?.addEventListener('submit', async (e) =>
 });
 
 document.addEventListener('DOMContentLoaded', fetchProductsAndLoad);
-/* --- PRELOADER & AOS SYNC LOGIC --- */
+
 window.addEventListener("load", function () {
     const preloader = document.getElementById("preloader");
     if (preloader) {
@@ -168,19 +170,10 @@ window.addEventListener("load", function () {
             preloader.classList.add("preloader-hidden");
             setTimeout(() => {
                 if (typeof AOS !== 'undefined') {
-                    AOS.init({
-                        duration: 1000,
-                        once: true,
-                        offset: 100,
-                        disableMutationObserver: false
-                    });
+                    AOS.init({ duration: 1000, once: true, offset: 50, disableMutationObserver: false });
                     AOS.refresh();
                 }
-                const adminContent = document.getElementById('adminMainContent');
-                if (adminContent && localStorage.getItem('adminToken')) {
-                    adminContent.classList.remove('d-none');
-                    setTimeout(() => AOS.refresh(), 100);
-                }
+                window.dispatchEvent(new Event('scroll'));
                 preloader.style.display = "none";
             }, 1000);
         }, 1200);

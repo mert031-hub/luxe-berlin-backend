@@ -51,6 +51,10 @@ async function loadOrderSuccess() {
 
                 localStorage.setItem('luxeHasOrdered', 'true');
                 localStorage.setItem('luxeReviewSentCount', '0');
+
+                if (typeof AOS !== 'undefined') {
+                    setTimeout(() => { AOS.refresh(); }, 500);
+                }
             }
         } catch (err) {
             console.error("Sipariş verisi yüklenirken hata oluştu:", err);
@@ -58,9 +62,6 @@ async function loadOrderSuccess() {
     }
 }
 
-/**
- * Sipariş numarasını panoya kopyalayan ve animasyonu tetikleyen fonksiyon
- */
 function copyOrderId() {
     const orderIdText = document.getElementById('orderIdText');
     const idBox = document.getElementById('idBox');
@@ -69,21 +70,17 @@ function copyOrderId() {
     if (orderId === "Laden...") return;
 
     navigator.clipboard.writeText(orderId).then(() => {
-        // Animasyonu tetikle
         idBox.classList.add('copied');
-
-        // 2 saniye sonra sınıfı temizle
         setTimeout(() => {
             idBox.classList.remove('copied');
         }, 2000);
-
     }).catch(err => {
         console.error('Kopyalama hatası:', err);
     });
 }
 
 document.addEventListener('DOMContentLoaded', loadOrderSuccess);
-/* --- PRELOADER & AOS SYNC LOGIC --- */
+
 window.addEventListener("load", function () {
     const preloader = document.getElementById("preloader");
     if (preloader) {
@@ -94,16 +91,13 @@ window.addEventListener("load", function () {
                     AOS.init({
                         duration: 1000,
                         once: true,
-                        offset: 100,
+                        offset: 50, // Fix: Mobilde daha erken görünmesi için düşürüldü
                         disableMutationObserver: false
                     });
                     AOS.refresh();
                 }
-                const adminContent = document.getElementById('adminMainContent');
-                if (adminContent && localStorage.getItem('adminToken')) {
-                    adminContent.classList.remove('d-none');
-                    setTimeout(() => AOS.refresh(), 100);
-                }
+                // AOS senkronizasyonu için sanal scroll tetikle
+                window.dispatchEvent(new Event('scroll'));
                 preloader.style.display = "none";
             }, 1000);
         }, 1200);

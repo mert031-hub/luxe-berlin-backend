@@ -2,14 +2,12 @@
  * LUXE BERLIN - CORE JAVASCRIPT
  */
 
-// Global Değişkenler
 let products = [];
 let cart = JSON.parse(localStorage.getItem('luxeCartArray')) || [];
 const euro = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' });
 let selectedProduct = null, currentQty = 1;
 let shownReviewsCount = 6;
 
-// --- DİNAMİK API YAPILANDIRMASI ---
 const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
     ? 'http://localhost:5000/api'
     : '/api';
@@ -17,7 +15,6 @@ const UPLOADS_URL = '';
 
 const badWords = ["küfür1", "küfür2", "argo1", "argo2", "idiot", "badword", "scheiße"];
 
-// --- 1. LUXE TOAST BİLDİRİM FONKSİYONU ---
 function showLuxeAlert(message, type = 'success') {
     const container = document.getElementById('luxe-toast-container');
     if (!container) return;
@@ -43,7 +40,6 @@ function showLuxeAlert(message, type = 'success') {
     }, 4000);
 }
 
-// --- 2. TEMA YÖNETİMİ ---
 function initTheme() {
     const themeToggleBtn = document.getElementById('theme-toggle');
     const themeIcon = document.getElementById('theme-icon');
@@ -69,7 +65,6 @@ function initTheme() {
     });
 }
 
-// --- 3. ÜRÜN İŞLEMLERİ ---
 async function fetchProducts() {
     try {
         const response = await fetch(`${API_URL}/products`);
@@ -105,7 +100,7 @@ function renderProducts(listToDisplay) {
             <div class="col-12 col-md-6 col-lg-4">
                 <div class="product-card shadow-sm" data-bs-toggle="modal" data-bs-target="#luxeModal" onclick="setupModal('${p.id}')">
                     ${p.tag ? `<span class="product-tag ${tagClass}">${p.tag}</span>` : ''}
-                    <div class="product-img-box"><img src="${p.img}" alt="${p.name}"></div>
+                    <div class="product-img-box"><img src="${p.img}" alt="${p.name}" loading="lazy"></div>
                     <div class="product-info p-4 text-center">
                         <h3 class="h5 mb-2" style="font-family:'Playfair Display';">${p.name}</h3>
                         <span class="price">${euro.format(p.price)}</span>
@@ -124,7 +119,6 @@ window.filterProducts = function () {
     renderProducts(filtered);
 }
 
-// --- 4. YORUM SİSTEMİ ---
 let testimonials = [];
 
 function censorText(text) {
@@ -169,13 +163,11 @@ async function initTestimonials() {
             <div class="testimonial-card">
                 <div class="stars mb-2">${"⭐".repeat(t.stars)}</div>
                 <p class="testimonial-text">"${t.text}"</p>
-                
                 ${t.adminReply ? `
                 <div class="admin-reply-box mt-3 p-3 rounded-3" style="background: rgba(197, 160, 89, 0.05); border-left: 3px solid var(--gold);">
                     <small class="fw-bold text-uppercase d-block mb-1" style="color: var(--gold); font-size: 0.7rem;">Luxe Berlin Team</small>
                     <p class="small mb-0 text-muted italic">${t.adminReply}</p>
                 </div>` : ''}
-
                 <div class="d-flex justify-content-between align-items-end mt-auto pt-3">
                     <div class="fw-bold text-uppercase small" style="letter-spacing:1px;">— ${t.name}</div>
                     <span class="testimonial-date" style="font-size: 0.7rem; color: var(--gold);">${t.date || '10.02.2026'}</span>
@@ -204,7 +196,6 @@ document.getElementById('revText')?.addEventListener('input', function () {
 
 document.getElementById('reviewForm')?.addEventListener('submit', async (e) => {
     e.preventDefault();
-
     let reviewCount = parseInt(localStorage.getItem('luxeReviewSentCount')) || 0;
 
     if (reviewCount >= 2) {
@@ -250,7 +241,6 @@ document.getElementById('reviewForm')?.addEventListener('submit', async (e) => {
     }
 });
 
-// --- 5. MODAL & MİKTAR MANTIĞI ---
 window.setupModal = function (id) {
     selectedProduct = products.find(p => p.id === id);
     if (!selectedProduct) return;
@@ -319,7 +309,6 @@ window.blockNonIntegers = function (e) {
     if ([".", ",", "e", "E", "+", "-"].includes(e.key)) e.preventDefault();
 }
 
-// --- 6. SEPET YÖNETİMİ ---
 window.addToCart = function () {
     if (currentQty <= 0) return;
 
@@ -366,14 +355,13 @@ function updateCartUI() {
     }
 }
 
-// --- BAŞLATMA ---
 document.addEventListener('DOMContentLoaded', () => {
     fetchProducts();
     initTheme();
     initTestimonials();
 });
 
-/* --- PRELOADER & AOS SYNC LOGIC --- */
+/* --- PRELOADER & AOS SYNC LOGIC (MOBIL AOS FIX) --- */
 window.addEventListener("load", function () {
     const preloader = document.getElementById("preloader");
     if (preloader) {
@@ -384,11 +372,15 @@ window.addEventListener("load", function () {
                     AOS.init({
                         duration: 1000,
                         once: true,
-                        offset: 100,
+                        offset: 50, // Mobilde daha erken tetiklenme
                         disableMutationObserver: false
                     });
                     AOS.refresh();
                 }
+
+                // AOS senkronizasyonu için sanal scroll tetikle
+                window.dispatchEvent(new Event('scroll'));
+
                 const adminContent = document.getElementById('adminMainContent');
                 if (adminContent && localStorage.getItem('adminToken')) {
                     adminContent.classList.remove('d-none');

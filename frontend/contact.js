@@ -1,6 +1,7 @@
-// LUXE BERLIN - CONTACT LOGIC (FIXED)
+/**
+ * LUXE BERLIN - CONTACT LOGIC
+ */
 
-// Backend adresini dinamik olarak tanımlıyoruz
 const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
     ? 'http://localhost:5000/api'
     : '/api';
@@ -11,7 +12,6 @@ document.getElementById('contactForm')?.addEventListener('submit', async (e) => 
     const responseDiv = document.getElementById('responseMessage');
     const btn = e.target.querySelector('button');
 
-    // Form verilerini topluyoruz
     const contactData = {
         name: document.getElementById('contactName').value,
         email: document.getElementById('contactEmail').value,
@@ -19,19 +19,16 @@ document.getElementById('contactForm')?.addEventListener('submit', async (e) => 
         message: document.getElementById('contactMessage').value
     };
 
-    // Butonu işlem bitene kadar pasif yapıyoruz
     btn.disabled = true;
     btn.innerText = "SENDET...";
 
     try {
-        // Backend'deki /api/contact rotasına istek atıyoruz
         const res = await fetch(`${API_URL}/contact`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(contactData)
         });
 
-        // Beklenmedik HTML yanıtlarını (404 gibi) yakala
         const contentType = res.headers.get("content-type");
         if (!contentType || !contentType.includes("application/json")) {
             throw new TypeError("Sunucudan beklenen yanıt alınamadı (JSON Hatası).");
@@ -40,29 +37,24 @@ document.getElementById('contactForm')?.addEventListener('submit', async (e) => 
         const result = await res.json();
 
         if (res.ok) {
-            // Başarı durumunda kullanıcıyı bilgilendir
             responseDiv.className = "mt-4 text-center p-3 rounded-3 alert alert-success";
             responseDiv.innerText = "Vielen Dank! Ihre Nachricht wurde erfolgreich versendet.";
             responseDiv.classList.remove('d-none');
-
-            // Formu temizle
             document.getElementById('contactForm').reset();
         } else {
             throw new Error(result.message || "Ein Fehler ist aufgetreten.");
         }
     } catch (err) {
         console.error("Hata Detayı:", err);
-        // Hata durumunda kullanıcıyı bilgilendir
         responseDiv.className = "mt-4 text-center p-3 rounded-3 alert alert-danger";
         responseDiv.innerText = "Fehler: " + err.message;
         responseDiv.classList.remove('d-none');
     } finally {
-        // İşlem bittiğinde butonu eski haline getir
         btn.disabled = false;
         btn.innerText = "NACHRICHT SENDEN";
     }
 });
-/* --- PRELOADER & AOS SYNC LOGIC --- */
+
 window.addEventListener("load", function () {
     const preloader = document.getElementById("preloader");
     if (preloader) {
@@ -73,16 +65,12 @@ window.addEventListener("load", function () {
                     AOS.init({
                         duration: 1000,
                         once: true,
-                        offset: 100,
+                        offset: 50,
                         disableMutationObserver: false
                     });
                     AOS.refresh();
                 }
-                const adminContent = document.getElementById('adminMainContent');
-                if (adminContent && localStorage.getItem('adminToken')) {
-                    adminContent.classList.remove('d-none');
-                    setTimeout(() => AOS.refresh(), 100);
-                }
+                window.dispatchEvent(new Event('scroll'));
                 preloader.style.display = "none";
             }, 1000);
         }, 1200);
