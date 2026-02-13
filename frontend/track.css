@@ -1,3 +1,8 @@
+/**
+ * LUXE BERLIN - MASTER TRACKING STYLES
+ * Yapı bozulmadan hizalama ve renk onarımları yapılmıştır.
+ */
+
 :root {
   --gold: #c5a059;
   --navy: #1c2541;
@@ -28,7 +33,7 @@ body {
   margin-top: 30px;
 }
 
-/* MOBİL GÖRÜNÜRLÜK DÜZENLEMESİ */
+/* --- TRACKING SEARCH BOX --- */
 .tracking-search-box {
   transition: all 0.3s ease;
   border: 1px solid #eee !important;
@@ -42,58 +47,82 @@ body {
   font-size: 16px !important;
   -webkit-appearance: none;
   opacity: 1 !important;
-  flex-grow: 1; /* Butonla yan yana dengeli durması için */
+  flex-grow: 1;
 }
 
 .tracking-search-box input::placeholder {
   color: #a0aec0 !important;
 }
 
-@media (max-width: 576px) {
-  .track-card {
-    padding: 30px 20px;
-  }
-  .btn-gold {
-    padding: 0 15px !important;
-    font-size: 12px;
-    white-space: nowrap;
-  }
-  /* Preloader logo mobil küçültme (Taşma ve Sola Kayma Fix) */
-  .preloader-logo {
-    font-size: 1.8rem !important; /* Boyut küçültüldü */
-    letter-spacing: 4px !important; /* Harf arası daraltıldı */
-    padding: 0 10px;
-    width: 100%;
-    text-align: center;
-    box-sizing: border-box;
-  }
-  .preloader-bar {
-    width: 100px !important;
-  }
-}
-
+/* --- BUTON RENK ONARIMLARI --- */
 .btn-gold {
-  background: var(--gold);
-  color: white;
+  background: var(--gold) !important;
+  color: white !important;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   border: none;
+  font-weight: 700;
+}
+.btn-gold:hover {
+  background: #b38f4d !important;
+  transform: translateY(-2px);
 }
 
-/* --- PROGRESS TRACKER --- */
+.btn-outline-danger {
+  color: #dc3545 !important;
+  border: 2px solid #dc3545 !important;
+  font-weight: 600;
+  transition: 0.3s;
+}
+.btn-outline-danger:hover {
+  background-color: #dc3545 !important;
+  color: white !important;
+}
+
+.btn-danger {
+  background-color: #dc3545 !important;
+  border: none !important;
+  color: white !important;
+  font-weight: 700;
+}
+
+/* --- CANCEL MODAL ANIMATION --- */
+#cancelConfirmModal .modal-content {
+  animation: luxeSlideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  border: none;
+  border-radius: 24px;
+}
+
+@keyframes luxeSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.cancel-icon-circle {
+  width: 80px;
+  height: 80px;
+  background: #fff5f5;
+  border: 1px solid #fed7d7;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #e53e3e;
+  margin: 0 auto 20px;
+}
+
+/* --- PROGRESS TRACKER (GÖRSEL HİZALAMA ONARIMI) --- */
 .track-container {
   margin: 60px 0;
   display: flex;
   flex-direction: column;
   position: relative;
   gap: 45px;
-}
-
-@media (min-width: 768px) {
-  .track-container {
-    flex-direction: row;
-    justify-content: space-between;
-    gap: 0;
-  }
 }
 
 .track-container::before {
@@ -104,23 +133,6 @@ body {
   border-radius: 10px;
 }
 
-@media (max-width: 767px) {
-  .track-container::before {
-    top: 10px;
-    bottom: 10px;
-    left: 32px;
-    width: 3px;
-  }
-}
-@media (min-width: 768px) {
-  .track-container::before {
-    top: 32px;
-    left: 5%;
-    right: 5%;
-    height: 3px;
-  }
-}
-
 .progress-line-fill {
   position: absolute;
   background: var(--gold);
@@ -129,20 +141,58 @@ body {
   box-shadow: 0 0 15px var(--gold-shadow);
 }
 
-@media (max-width: 767px) {
+/* MASAÜSTÜ HİZALAMA: İkonların (65px) tam ortasından geçmesi için 32.5px yapıldı */
+@media (min-width: 768px) {
+  .track-container {
+    flex-direction: row;
+    justify-content: space-between;
+    gap: 0;
+  }
+  .track-container::before {
+    top: 32.5px;
+    left: 5%;
+    right: 5%;
+    height: 4px;
+  }
   .progress-line-fill {
-    left: 32px;
-    top: 10px;
-    width: 3px;
-    height: 0%;
+    top: 32.5px;
+    left: 5%;
+    height: 4px;
+    width: 0%;
+  }
+  .step {
+    flex-direction: column;
+    text-align: center;
+    width: 25%;
+  }
+  .step-text {
+    margin-left: 0;
+    margin-top: 15px;
   }
 }
-@media (min-width: 768px) {
+
+/* MOBİL HİZALAMA: İkonların merkezine tam dikey oturtuldu */
+@media (max-width: 767px) {
+  .track-container::before {
+    top: 10px;
+    bottom: 10px;
+    left: 32.5px;
+    width: 4px;
+  }
   .progress-line-fill {
-    top: 32px;
-    left: 5%;
-    height: 3px;
-    width: 0%;
+    left: 32.5px;
+    top: 10px;
+    width: 4px;
+    height: 0%;
+  }
+  .step {
+    flex-direction: row;
+    align-items: center;
+    text-align: left;
+  }
+  .step-text {
+    margin-left: 20px;
+    margin-top: 0;
   }
 }
 
@@ -156,13 +206,7 @@ body {
   z-index: 3;
   display: flex;
   align-items: center;
-}
-@media (min-width: 768px) {
-  .step {
-    flex-direction: column;
-    text-align: center;
-    width: 25%;
-  }
+  position: relative;
 }
 
 .step-icon {
@@ -207,13 +251,6 @@ body {
   color: #aaa;
   font-weight: 600;
   letter-spacing: 1px;
-  margin-left: 20px;
-}
-@media (min-width: 768px) {
-  .step-text {
-    margin-left: 0;
-    margin-top: 15px;
-  }
 }
 
 .step.active .step-text,
@@ -226,6 +263,7 @@ body {
   font-weight: 800;
 }
 
+/* --- DETAY ALANLARI --- */
 .cancel-notice {
   background: #fff5f5;
   border: 1px solid #feb2b2;
@@ -257,7 +295,7 @@ body {
   border: 1px solid #eee;
 }
 
-/* Animasyonlar */
+/* --- ANIMASYONLAR --- */
 @keyframes fadeInUp {
   from {
     opacity: 0;
@@ -280,6 +318,7 @@ body {
   }
 }
 
+/* --- PRELOADER (1000039755.jpg FIX) --- */
 #preloader {
   position: fixed;
   top: 0;
@@ -296,7 +335,6 @@ body {
     visibility 1s;
 }
 
-/* Preloader İçerik Hizalaması */
 .preloader-content {
   text-align: center;
   width: 100%;
@@ -314,6 +352,21 @@ body {
 .preloader-logo span {
   color: var(--gold);
 }
+
+@media (max-width: 576px) {
+  .track-card {
+    padding: 30px 20px;
+  }
+  .preloader-logo {
+    font-size: 1.8rem !important;
+    letter-spacing: 4px !important;
+    padding: 0 10px;
+  }
+  .preloader-bar {
+    width: 100px !important;
+  }
+}
+
 .preloader-bar {
   width: 150px;
   height: 1px;
@@ -338,6 +391,7 @@ body {
   letter-spacing: 2px;
   text-transform: uppercase;
 }
+
 @keyframes loadingSlide {
   0% {
     left: -60px;

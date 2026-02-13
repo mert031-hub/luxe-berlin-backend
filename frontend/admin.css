@@ -1,6 +1,6 @@
 /**
  * LUXE BERLIN - MASTER ADMIN STYLES
- * Orijinal Düzen ve Görsel Onarımlar (Full Version)
+ * Orijinal Düzen, Görsel Onarımlar ve Mobil AOS Fix
  */
 
 :root {
@@ -19,12 +19,20 @@ body {
   overflow-x: hidden;
 }
 
-/* --- NAVBAR VE PRELOADER (1000039755.jpg) --- */
+/* MOBİL AOS GÜVENLİK DUVARI */
+@media (max-width: 768px) {
+  [data-aos] {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+}
+
+/* --- NAVBAR VE PRELOADER --- */
 .navbar {
   background-color: var(--navy);
   border-bottom: 3px solid var(--gold);
 }
-
 .navbar-brand {
   font-size: 1.25rem;
   font-weight: 700;
@@ -48,7 +56,6 @@ body {
     opacity 1s cubic-bezier(0.65, 0, 0.35, 1),
     visibility 1s;
 }
-
 .preloader-logo {
   font-family: "Playfair Display", serif;
   font-size: 3rem;
@@ -61,7 +68,6 @@ body {
 .preloader-logo span {
   color: var(--gold);
 }
-
 .preloader-bar {
   width: 150px;
   height: 1px;
@@ -119,7 +125,6 @@ body {
   transform: translateY(-5px);
   box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
 }
-
 .bg-navy {
   background: linear-gradient(135deg, #1c2541, #3a506b);
 }
@@ -129,7 +134,6 @@ body {
 .bg-dark-grey {
   background: linear-gradient(135deg, #212529, #495057);
 }
-
 .stat-card p {
   opacity: 0.8;
   font-size: 0.75rem;
@@ -138,7 +142,7 @@ body {
   letter-spacing: 1px;
 }
 
-/* --- TABLO VE VERİ YÖNETİMİ (image_cf1ba1.png / image_cf899e.png) --- */
+/* --- TABLO VE VERİ YÖNETİMİ --- */
 .table-scroll-container {
   max-height: 450px;
   overflow-y: auto;
@@ -149,7 +153,6 @@ body {
   -webkit-overflow-scrolling: touch;
   margin-bottom: 1rem;
 }
-
 .table thead th {
   position: sticky;
   top: 0;
@@ -162,20 +165,18 @@ body {
   letter-spacing: 0.8px;
   text-transform: uppercase;
 }
-
 .table tbody td {
   padding: 18px 12px;
   border-bottom: 1px solid var(--border-color);
   font-size: 0.85rem;
 }
-
 .customer-name,
 .product-name {
   font-weight: 700;
   color: var(--navy);
 }
 
-/* Yorum Metni Onarımı (image_cf8cdc.png) */
+/* Yorum Metni Onarımı */
 .review-text {
   white-space: normal !important;
   min-width: 250px;
@@ -185,7 +186,7 @@ body {
   color: #555;
 }
 
-/* --- DURUM SEÇİM KUTUSU (image_cf10e2.png) --- */
+/* Durum Seçim Kutusu */
 .status-select {
   border-radius: 30px;
   font-size: 0.8rem;
@@ -203,7 +204,7 @@ body {
   box-shadow: 0 0 0 3px var(--gold-shadow);
 }
 
-/* --- AKSİYON BUTONLARI (image_cf899e.png) --- */
+/* Aksiyon Butonları */
 .btn-delete {
   color: #e53e3e;
   background: #fff5f5;
@@ -222,19 +223,7 @@ body {
   border-color: #c53030;
 }
 
-.btn-gold {
-  background-color: var(--gold);
-  color: white;
-  border: none;
-  transition: all 0.3s ease;
-}
-
-/* --- INVENTAR & BESTAND ONARIMI (image_cf947e.png) --- */
-/* Bu bölümdeki metin taşmasını engellemek için kapsayıcı düzenlendi */
-#admin-product-list td {
-  vertical-align: middle;
-}
-
+/* Inventar Görselleri */
 .product-img-box-small {
   width: 45px;
   height: 45px;
@@ -251,13 +240,12 @@ body {
   object-fit: cover;
 }
 
-/* --- ONAY MODALI TASARIMI --- */
+/* Onay Modalı */
 #statusConfirmModal .modal-content {
   border: none;
   border-radius: 24px;
   animation: luxeSlideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
-
 @keyframes luxeSlideUp {
   from {
     opacity: 0;
@@ -268,13 +256,11 @@ body {
     transform: translateY(0) scale(1);
   }
 }
-
 .status-change-box {
   background: #fdfaf3;
   border: 1px solid rgba(197, 160, 89, 0.2);
   border-radius: 15px;
 }
-
 .status-icon-circle {
   width: 70px;
   height: 70px;
@@ -288,7 +274,7 @@ body {
   color: var(--gold);
 }
 
-/* --- STICKY KARTLAR --- */
+/* Sticky Kartlar */
 .sticky-card {
   position: sticky;
   top: 100px;
@@ -296,7 +282,6 @@ body {
   overflow-y: auto;
   padding-right: 5px;
 }
-
 @media (max-width: 991px) {
   .sticky-card {
     position: static;
@@ -304,21 +289,7 @@ body {
   }
 }
 
-/* --- MOBİL UYUMLULUK --- */
-@media (max-width: 768px) {
-  .table tbody td {
-    white-space: nowrap;
-  }
-  .review-text {
-    white-space: normal !important;
-    min-width: 250px;
-  }
-  .stat-card {
-    padding: 20px;
-  }
-}
-
-/* Scrollbar Tasarımı */
+/* Kaydırma Çubuğu */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
