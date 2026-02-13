@@ -2,10 +2,11 @@ const mongoose = require('mongoose');
 
 /**
  * LUXE BERLIN - Sipariş Veri Modeli
- * Optimizasyon: shortId alanı eklenmiş ve indekslenmiştir.
+ * Müşteri bilgileri, ürünler ve ödeme durumlarını tutar.
+ * Optimizasyon: shortId alanı benzersizdir ve indekslenmiştir.
  */
 const OrderSchema = new mongoose.Schema({
-    // YENİ: Kısa Takip Kodu (Veritabanı seviyesinde tutulur ve indekslenir)
+    // shortId üzerindeki unique: true özelliği otomatik olarak bir index oluşturur.
     shortId: { type: String, unique: true, required: true },
 
     customer: {
@@ -34,10 +35,11 @@ const OrderSchema = new mongoose.Schema({
     isArchived: { type: Boolean, default: false }
 });
 
-// 🚀 BACKEND OPTİMİZASYONU (INDEXING)
-OrderSchema.index({ shortId: 1 });          // Takip aramalarını ışık hızına çıkarır
-OrderSchema.index({ "customer.email": 1 }); // Müşteri geçmişi sorguları için
-OrderSchema.index({ status: 1 });           // Filtrelemeler için
-OrderSchema.index({ date: -1 });            // Sıralamalar için
+// 🚀 BACKEND OPTİMİZASYONU (EK İNDEKSLER)
+// Not: shortId indeksi yukarıdaki unique: true ile otomatik oluşturulduğu için buraya tekrar eklemiyoruz.
+
+OrderSchema.index({ "customer.email": 1 }); // Müşteri geçmişi ve filtreleme sorguları için
+OrderSchema.index({ status: 1 });           // Admin panelindeki durum filtrelemeleri için
+OrderSchema.index({ date: -1 });            // En yeni siparişlerin her zaman en üstte hızlı gelmesi için
 
 module.exports = mongoose.model('Order', OrderSchema);

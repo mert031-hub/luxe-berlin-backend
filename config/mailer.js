@@ -5,7 +5,7 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 
 /**
  * Sipariş durumuna göre mail gönderen servis
- * Premium HTML tasarımı ile güncellendi.
+ * Premium HTML tasarımı ve shortId optimizasyonu ile güncellendi.
  */
 async function sendStatusEmail(order, newStatus) {
     if (!order) return;
@@ -19,12 +19,12 @@ async function sendStatusEmail(order, newStatus) {
     if (status === "pending" || status === "eingegangen") {
         subject = "Bestellbestätigung - LUXE BERLIN";
         statusLabel = "Bestellbestätigung";
-        message = "Wir haben Ihre Bestellung erhalten ve bereiten sie mit höchster Sorgfalt vor.";
+        message = "Wir haben Ihre Bestellung erhalten und bereiten sie mit höchster Sorgfalt vor.";
     }
     else if (status === "processing" || status === "in bearbeitung") {
         subject = "Ihre Bestellung wird bearbeitet";
         statusLabel = "In Bearbeitung";
-        message = "Ihre exklusiven Stücke werden nun geprüft ve für den Versand vorbereitet.";
+        message = "Ihre exklusiven Stücke werden nun geprüft und für den Versand vorbereitet.";
     }
     else if (status === "shipped" || status === "versandt") {
         subject = "Ihre Bestellung ist auf dem Weg!";
@@ -55,9 +55,8 @@ async function sendStatusEmail(order, newStatus) {
 
     try {
         const { data, error } = await resend.emails.send({
-            // GÜNCELLEME: Doğruladığın domain kullanılıyor
+            // Doğrulanan domain üzerinden gönderim
             from: "LUXE BERLIN <noreply@kocyigit-trade.com>",
-            // GÜNCELLEME: Siparişi veren müşterinin gerçek e-postası
             to: [order.customer.email],
             subject: subject,
             html: `
@@ -111,10 +110,10 @@ async function sendStatusEmail(order, newStatus) {
                             <div style="font-size: 14px; color: #4a5568;">${order.customer.address}</div>
                         </div>
 
-                        <a href="https://kocyigit-trade.com/track.html?id=${order._id}" class="btn">BESTELLUNG VERFOLGEN</a>
+                        <a href="https://kocyigit-trade.com/track.html?id=${order.shortId}" class="btn">BESTELLUNG VERFOLGEN</a>
                         
                         <div style="margin-top: 30px; font-size: 11px; color: #cbd5e0; text-align: center;">
-                            Bestell-ID: #LB-${order._id.toString().slice(-6).toUpperCase()}
+                            Bestell-ID: #${order.shortId}
                         </div>
                     </div>
                     <div class="footer">
@@ -132,7 +131,7 @@ async function sendStatusEmail(order, newStatus) {
             return;
         }
 
-        console.log(`✅ Mail başarıyla gönderildi | Alıcı: ${order.customer.email}`);
+        console.log(`✅ Mail başarıyla gönderildi | Alıcı: ${order.customer.email} | ID: ${order.shortId}`);
     } catch (err) {
         console.error("❌ Mail gönderim hatası:", err.message);
     }
