@@ -8,7 +8,7 @@ const API_URL = window.location.hostname === 'localhost' || window.location.host
 
 const UPLOADS_URL = '';
 const euro = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' });
-let currentLoadedOrderId = null; // İptal işlemi için gerçek ID'yi saklar
+let currentLoadedOrderId = null;
 
 async function trackOrder() {
     const rawInput = document.getElementById('orderIdInput').value.trim();
@@ -32,11 +32,12 @@ async function trackOrder() {
         const order = await res.json();
 
         if (res.ok && order) {
-            currentLoadedOrderId = order._id; // İptal fonksiyonu için sakla
+            currentLoadedOrderId = order._id;
             resultArea.classList.add('d-none');
             dynamicArea.innerHTML = "";
 
-            // İPTAL BUTONU GÖRÜNÜRLÜĞÜ: Sadece kargolanmamışsa göster
+            // ✅ İPTAL BUTONU GÖRÜNÜRLÜK KONTROLÜ
+            // Sadece kargolanmamışsa (Pending veya Processing) iptal butonunu göster.
             if (order.status === 'Pending' || order.status === 'Processing') {
                 cancelSection.classList.remove('d-none');
             } else {
@@ -96,7 +97,6 @@ async function trackOrder() {
     }
 }
 
-// YENİ: İPTAL İSTEĞİ FONKSİYONU
 async function cancelOrderRequest() {
     if (!currentLoadedOrderId) return;
     if (!confirm("Möchten Sie Ihre Bestellung wirklich stornieren?")) return;

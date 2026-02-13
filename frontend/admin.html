@@ -8,106 +8,24 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link
         href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Playfair+Display:wght@700&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="admin.css">
-    <style>
-        .table-scroll-container {
-            max-height: 450px;
-            overflow-y: auto;
-            overflow-x: auto;
-            border-radius: 8px;
-            border: 1px solid #eee;
-            -webkit-overflow-scrolling: touch;
-        }
-
-        .table-scroll-container thead th {
-            position: sticky;
-            top: 0;
-            background-color: #f8f9fa;
-            z-index: 10;
-            border-bottom: 2px solid #dee2e6;
-            white-space: nowrap;
-        }
-
-        .sticky-card {
-            position: sticky;
-            top: 90px;
-            max-height: calc(100vh - 110px);
-            overflow-y: auto;
-            padding-right: 5px;
-        }
-
-        @media (max-width: 991px) {
-            .sticky-card {
-                position: static;
-                max-height: none;
-            }
-        }
-
-        .table-scroll-container::-webkit-scrollbar,
-        .sticky-card::-webkit-scrollbar {
-            width: 4px;
-            height: 4px;
-        }
-
-        .table-scroll-container::-webkit-scrollbar-thumb,
-        .sticky-card::-webkit-scrollbar-thumb {
-            background: #c5a059;
-            border-radius: 10px;
-        }
-
-        .product-img-box-small {
-            width: 40px;
-            height: 40px;
-            overflow: hidden;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 4px;
-            border: 1px solid #eee;
-            flex-shrink: 0;
-        }
-
-        .product-img-box-small img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        .grayscale {
-            filter: grayscale(1);
-            opacity: 0.5;
-        }
-
-        .sticky-log-header {
-            position: sticky;
-            top: 0;
-            background: #f8f9fa;
-            z-index: 5;
-        }
-
-        .btn-chart-toggle.active {
-            background-color: #1c2541 !important;
-            color: white !important;
-        }
-
-        .admin-reply-badge {
-            font-size: 0.7rem;
-            padding: 3px 8px;
-            border-radius: 50px;
-            background: rgba(197, 160, 89, 0.1);
-            color: #c5a059;
-            font-weight: 700;
-        }
-    </style>
 </head>
 
 <body class="bg-light">
 
-    <nav class="navbar navbar-expand-lg navbar-dark sticky-top"
-        style="background-color: #1c2541; border-bottom: 3px solid #c5a059;">
+    <div id="preloader">
+        <div class="preloader-content">
+            <div class="preloader-logo">LUXE<span>BERLIN</span></div>
+            <div class="preloader-bar"></div>
+            <p class="preloader-text">Exklusive Mode wird geladen...</p>
+        </div>
+    </div>
+
+    <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
         <div class="container">
             <a class="navbar-brand fw-bold" href="#">LUXE<span>BERLIN</span> ADMIN</a>
             <div class="ms-auto d-flex align-items-center">
@@ -120,20 +38,20 @@
     <main id="adminMainContent" class="container py-4 py-md-5 d-none">
         <div class="row g-3 g-md-4 mb-4 text-center text-white">
             <div class="col-6 col-md-4" data-aos="fade-up" data-aos-delay="100">
-                <div class="p-3 p-md-4 rounded-4 shadow-sm h-100" style="background:#1c2541;">
-                    <p class="small text-uppercase mb-1 opacity-75" style="font-size: 0.7rem;">Bestellungen</p>
+                <div class="stat-card bg-navy h-100">
+                    <p>Bestellungen</p>
                     <h2 id="stat-count" class="fw-bold mb-0">0</h2>
                 </div>
             </div>
             <div class="col-6 col-md-4" data-aos="fade-up" data-aos-delay="200">
-                <div class="p-3 p-md-4 rounded-4 shadow-sm h-100" style="background:#c5a059;">
-                    <p class="small text-uppercase mb-1 opacity-75" style="font-size: 0.7rem;">Umsatz</p>
-                    <h2 id="stat-revenue" class="fw-bold mb-0" style="font-size: 1.2rem;">0,00 €</h2>
+                <div class="stat-card bg-gold h-100">
+                    <p>Umsatz</p>
+                    <h2 id="stat-revenue" class="fw-bold mb-0">0,00 €</h2>
                 </div>
             </div>
             <div class="col-12 col-md-4" data-aos="fade-up" data-aos-delay="300">
-                <div class="p-3 p-md-4 rounded-4 shadow-sm h-100" style="background:#212529;">
-                    <p class="small text-uppercase mb-1 opacity-75" style="font-size: 0.7rem;">Kunden</p>
+                <div class="stat-card bg-dark-grey h-100">
+                    <p>Kunden</p>
                     <h2 id="stat-customers" class="fw-bold mb-0">0</h2>
                 </div>
             </div>
@@ -168,7 +86,7 @@
                 </div>
                 <div class="table-scroll-container">
                     <table class="table table-hover align-middle mb-0">
-                        <thead class="small fw-bold text-uppercase">
+                        <thead>
                             <tr>
                                 <th>Datum</th>
                                 <th>Kunde</th>
@@ -190,11 +108,11 @@
                 <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
                     <h4 class="fw-bold mb-0">Rezensionen verwalten</h4>
                     <input type="text" id="reviewSearch" class="form-control w-100 w-md-50 rounded-pill"
-                        placeholder="Yorum metni veya isimde ara...">
+                        placeholder="Yorumda ara...">
                 </div>
                 <div class="table-scroll-container">
                     <table class="table table-hover align-middle mb-0">
-                        <thead class="small fw-bold text-uppercase">
+                        <thead>
                             <tr>
                                 <th>Datum</th>
                                 <th>Name</th>
@@ -232,8 +150,8 @@
                                 class="rounded border shadow-sm"></div>
                         <div class="mb-3"><textarea id="pDesc" class="form-control" placeholder="Beschreibung" rows="3"
                                 required></textarea></div>
-                        <button type="submit" id="productSubmitBtn" class="btn btn-dark w-100 rounded-pill">Produkt
-                            Speichern</button>
+                        <button type="submit" id="productSubmitBtn"
+                            class="btn btn-dark w-100 rounded-pill">Speichern</button>
                         <button type="button" id="cancelEditBtn" class="btn btn-link btn-sm w-100 mt-2 d-none"
                             onclick="resetProductForm()">Abbrechen</button>
                     </form>
@@ -248,7 +166,7 @@
                         <input type="text" id="productSearch" class="form-control w-100 w-md-50 rounded-pill"
                             placeholder="Ürün ara...">
                     </div>
-                    <div class="table-scroll-container" style="max-height: 400px;">
+                    <div class="table-scroll-container">
                         <table class="table align-middle mb-0">
                             <thead class="small text-muted text-uppercase">
                                 <tr>
@@ -319,6 +237,41 @@
         </section>
     </main>
 
+    <div class="modal fade" id="statusConfirmModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+                <div class="modal-body p-5 text-center">
+                    <div class="status-icon-circle">
+                        <i class="fas fa-exchange-alt fa-2x"></i>
+                    </div>
+                    <h4 class="fw-bold mb-2">Status ändern?</h4>
+                    <p class="text-muted small mb-4">Möchten Sie den Status dieser Bestellung wirklich aktualisieren?
+                    </p>
+
+                    <div
+                        class="status-change-box d-flex align-items-center justify-content-center gap-3 mb-4 p-3 rounded-3">
+                        <div class="text-center">
+                            <span class="d-block small text-muted text-uppercase fw-bold">VON</span>
+                            <span id="modal-old-status" class="fw-bold text-navy">-</span>
+                        </div>
+                        <i class="fas fa-arrow-right text-gold"></i>
+                        <div class="text-center">
+                            <span class="d-block small text-muted text-uppercase fw-bold">ZU</span>
+                            <span id="modal-new-status" class="fw-bold text-gold">-</span>
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-light w-100 rounded-pill fw-bold"
+                            data-bs-dismiss="modal">Abbrechen</button>
+                        <button type="button" id="confirmStatusBtn"
+                            class="btn btn-gold w-100 rounded-pill fw-bold shadow-sm">Bestätigen</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="modal fade" id="orderDetailModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-fullscreen-sm-down">
             <div class="modal-content border-0 shadow-lg rounded-4">
@@ -339,15 +292,14 @@
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <input type="hidden" id="replyReviewId"><label class="small fw-bold text-muted mb-2">Deine
-                        Antwort:</label>
+                    <input type="hidden" id="replyReviewId">
+                    <label class="small fw-bold text-muted mb-2">Deine Antwort:</label>
                     <textarea id="adminReplyText" class="form-control" rows="4"
                         placeholder="Schreiben Sie..."></textarea>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-light" data-bs-dismiss="modal">Schließen</button>
-                    <button type="button" class="btn btn-gold px-4"
-                        style="background: #c5a059; color: white; border:none;" onclick="submitReply()">Senden</button>
+                    <button type="button" class="btn btn-gold px-4" onclick="submitReply()">Senden</button>
                 </div>
             </div>
         </div>
@@ -355,17 +307,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
-    <script>
-
-    </script>
     <script src="admin.js"></script>
 </body>
-<div id="preloader">
-    <div class="preloader-content">
-        <div class="preloader-logo">LUXE<span>BERLIN</span></div>
-        <div class="preloader-bar"></div>
-        <p class="preloader-text">Exklusive Mode wird geladen...</p>
-    </div>
-</div>
 
 </html>

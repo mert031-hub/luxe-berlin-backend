@@ -1,5 +1,6 @@
 /**
  * LUXE BERLIN - CORE JAVASCRIPT
+ * GÜNCELLEME: Modal İçi Miktar Hatası (Internal Error Message) ve Tam Sayı Kontrolü
  */
 
 let products = [];
@@ -15,6 +16,7 @@ const UPLOADS_URL = '';
 
 const badWords = ["küfür1", "küfür2", "argo1", "argo2", "idiot", "badword", "scheiße"];
 
+// --- 1. LUXE TOAST BİLDİRİM FONKSİYONU ---
 function showLuxeAlert(message, type = 'success') {
     const container = document.getElementById('luxe-toast-container');
     if (!container) return;
@@ -40,6 +42,7 @@ function showLuxeAlert(message, type = 'success') {
     }, 4000);
 }
 
+// --- 2. TEMA YÖNETİMİ ---
 function initTheme() {
     const themeToggleBtn = document.getElementById('theme-toggle');
     const themeIcon = document.getElementById('theme-icon');
@@ -65,6 +68,7 @@ function initTheme() {
     });
 }
 
+// --- 3. ÜRÜN İŞLEMLERİ ---
 async function fetchProducts() {
     try {
         const response = await fetch(`${API_URL}/products`);
@@ -119,6 +123,7 @@ window.filterProducts = function () {
     renderProducts(filtered);
 }
 
+// --- 4. YORUM YÖNETİMİ ---
 let testimonials = [];
 
 function censorText(text) {
@@ -149,7 +154,6 @@ async function initTestimonials() {
     let reviewCount = parseInt(localStorage.getItem('luxeReviewSentCount')) || 0;
 
     if (hasOrdered && reviewBox) {
-        // ✅ GÜNCELLEME: İzin verilen yorum hakkı 1'e düşürüldü
         if (reviewCount < 1) {
             reviewBox.style.display = "block";
             if (remainingSpan) remainingSpan.innerText = (1 - reviewCount);
@@ -182,24 +186,10 @@ async function initTestimonials() {
     }
 }
 
-document.addEventListener('click', (e) => {
-    if (e.target && e.target.id === 'showMoreReviewsBtn') {
-        shownReviewsCount += 6;
-        initTestimonials();
-    }
-});
-
-document.getElementById('revText')?.addEventListener('input', function () {
-    const count = this.value.length;
-    const counterDisplay = document.getElementById('char-count');
-    if (counterDisplay) counterDisplay.innerText = `${count} / 500`;
-});
-
 document.getElementById('reviewForm')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     let reviewCount = parseInt(localStorage.getItem('luxeReviewSentCount')) || 0;
 
-    // ✅ GÜNCELLEME: Limit kontrolü 1'e çekildi
     if (reviewCount >= 1) {
         const limitModal = new bootstrap.Modal(document.getElementById('reviewLimitModal'));
         limitModal.show();
@@ -232,7 +222,6 @@ document.getElementById('reviewForm')?.addEventListener('submit', async (e) => {
             e.target.reset();
             if (document.getElementById('char-count')) document.getElementById('char-count').innerText = "0 / 500";
 
-            // ✅ GÜNCELLEME: İlk yorumda limit modalı gösterilir
             if (reviewCount === 1) {
                 new bootstrap.Modal(document.getElementById('reviewLimitModal')).show();
             } else {
@@ -244,6 +233,7 @@ document.getElementById('reviewForm')?.addEventListener('submit', async (e) => {
     }
 });
 
+// --- 5. MODAL VE MİKTAR (MENGE) KORUMASI ---
 window.setupModal = function (id) {
     selectedProduct = products.find(p => p.id === id);
     if (!selectedProduct) return;
@@ -254,6 +244,10 @@ window.setupModal = function (id) {
 
     document.getElementById('mImg').src = selectedProduct.img;
     document.getElementById('mTitle').innerText = selectedProduct.name;
+
+    // Hata alanını temizle
+    const errorDisplay = document.getElementById('mQtyError');
+    if (errorDisplay) { errorDisplay.innerText = ""; errorDisplay.style.display = "none"; }
 
     const features = selectedProduct.description.split(',');
     document.getElementById('mDesc').innerHTML = `
@@ -269,7 +263,9 @@ function updateModalUI() {
     const inCart = cart.find(i => i.id === selectedProduct.id)?.qty || 0;
     const avail = selectedProduct.stock - inCart;
 
-    document.getElementById('qtyInput').value = currentQty;
+    const qtyInput = document.getElementById('qtyInput');
+    if (qtyInput) qtyInput.value = currentQty;
+
     document.getElementById('mPriceDisplay').innerText = euro.format(selectedProduct.price * currentQty);
 
     const addBtn = document.getElementById('add-to-cart-btn');
@@ -287,21 +283,45 @@ window.changeQty = function (val) {
     const inCart = cart.find(i => i.id === selectedProduct.id)?.qty || 0;
     const avail = selectedProduct.stock - inCart;
     const next = currentQty + val;
+    const errorDisplay = document.getElementById('mQtyError');
 
     if (next >= 1 && next <= avail) {
         currentQty = next;
+        if (errorDisplay) { errorDisplay.style.display = "none"; }
         updateModalUI();
+    } else if (next > avail) {
+        // Limit aşıldığında hata mesajını işaretlediğin yerde göster
+        if (errorDisplay) {
+            errorDisplay.innerText = `Maximal ${avail} Stück verfügbar.`;
+            errorDisplay.style.display = "block";
+        }
     }
 }
 
+// KRİTİK: Miktar Giriş Doğrulaması (İşaretlediğin Alan Entegrasyonu)
 window.validateManualQty = function (input) {
     if (!selectedProduct) return;
     const inCart = cart.find(i => i.id === selectedProduct.id)?.qty || 0;
     const avail = selectedProduct.stock - inCart;
-    let val = parseInt(input.value);
+    const errorDisplay = document.getElementById('mQtyError');
 
-    if (isNaN(val) || val < 1) val = 1;
-    if (val > avail) val = avail;
+    let valStr = input.value.replace(/[^0-9]/g, '');
+    let val = parseInt(valStr);
+
+    if (isNaN(val) || val < 1) {
+        val = 1;
+        if (errorDisplay) errorDisplay.style.display = "none";
+    }
+
+    if (val > avail) {
+        val = avail;
+        if (errorDisplay) {
+            errorDisplay.innerText = `Maximal ${avail} Stück verfügbar.`;
+            errorDisplay.style.display = "block";
+        }
+    } else {
+        if (errorDisplay) errorDisplay.style.display = "none";
+    }
 
     currentQty = val;
     input.value = val;
@@ -312,6 +332,7 @@ window.blockNonIntegers = function (e) {
     if ([".", ",", "e", "E", "+", "-"].includes(e.key)) e.preventDefault();
 }
 
+// --- 6. SEPET YÖNETİMİ VE ONARIMI ---
 window.addToCart = function () {
     if (currentQty <= 0) return;
 
@@ -333,8 +354,10 @@ window.addToCart = function () {
 }
 
 function updateCartUI() {
-    const totalQty = cart.reduce((acc, i) => acc + i.qty, 0);
-    const totalPrice = cart.reduce((acc, i) => {
+    const validCartItems = cart.filter(item => products.some(p => p.id === item.id));
+
+    const totalQty = validCartItems.reduce((acc, i) => acc + i.qty, 0);
+    const totalPrice = validCartItems.reduce((acc, i) => {
         const p = products.find(x => x.id === i.id);
         return acc + (p ? p.price * i.qty : 0);
     }, 0);
@@ -356,15 +379,21 @@ function updateCartUI() {
             floatBar.classList.remove('active');
         }
     }
+
+    if (validCartItems.length !== cart.length) {
+        cart = validCartItems;
+        localStorage.setItem('luxeCartArray', JSON.stringify(cart));
+    }
 }
 
+// --- 7. BAŞLATMA ---
 document.addEventListener('DOMContentLoaded', () => {
     fetchProducts();
     initTheme();
     initTestimonials();
 });
 
-/* --- PRELOADER & AOS SYNC LOGIC (MOBIL AOS FIX) --- */
+/* --- PRELOADER & AOS SENKRONİZASYONU --- */
 window.addEventListener("load", function () {
     const preloader = document.getElementById("preloader");
     if (preloader) {

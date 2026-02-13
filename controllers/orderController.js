@@ -25,7 +25,7 @@ exports.createOrder = async (req, res) => {
             shortId: "TEMP"
         });
 
-        // shortId Oluşturma
+        // shortId Oluşturma (Mongo'nun ürettiği asıl ID'den son 6 hane)
         const generatedShortId = `LB-${newOrder._id.toString().slice(-6).toUpperCase()}`;
         newOrder.shortId = generatedShortId;
 
@@ -134,18 +134,21 @@ exports.archiveOrder = async (req, res) => {
 };
 
 /**
- * 7️⃣ SİPARİŞ İPTAL ETME (Müşteri/Yasal İptal)
+ * 7️⃣ SİPARİŞ İPTAL ETME (Kargo Kontrollü Güvenli İptal)
  */
 exports.cancelOrder = async (req, res) => {
     try {
         const order = await Order.findById(req.params.id);
         if (!order) return res.status(404).json({ message: "Bestellung nicht gefunden." });
 
-        // Sadece kargolanmamış siparişler iptal edilebilir
+        // 🛑 KRİTİK KONTROL: Eğer sipariş "Versandt" veya "Geliefert" ise iptal edilemez.
         if (order.status === "Shipped" || order.status === "Delivered") {
-            return res.status(400).json({ message: "Versandte Bestellungen können nicht storniert werden." });
+            return res.status(400).json({
+                message: "Bereits versandte Bestellungen können nicht storniert werden. Bitte nutzen Sie das Widerrufsrecht."
+            });
         }
 
+        // Durumu iptal olarak güncelle
         order.status = "Cancelled";
         await order.save();
 
@@ -154,7 +157,7 @@ exports.cancelOrder = async (req, res) => {
             await Product.findByIdAndUpdate(item.productId, { $inc: { stock: item.qty } });
         }
 
-        // Bilgi Maili Gönder
+        // İptal Maili Gönder
         sendStatusEmail(order, "Cancelled").catch(err => console.error("❌ İptal maili hatası:", err));
 
         res.json({ message: "Bestellung erfolgreich storniert.", order });

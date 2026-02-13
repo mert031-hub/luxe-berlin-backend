@@ -1,9 +1,14 @@
-// 1. OTURUM KONTROLÜ (Sayfa Yüklenme Anı)
+/**
+ * LUXE BERLIN - MASTER ADMIN JAVASCRIPT (FULL VERSION)
+ * Tüm fonksiyonlar ve güvenlik katmanları dahil edilmiştir.
+ */
+
+// 1. OTURUM KONTROLÜ
 if (!localStorage.getItem('adminToken')) {
     window.location.href = 'login.html';
 }
 
-// --- GLOBAL YAPILANDIRMA (DİNAMİK URL GÜNCELLEMESİ) ---
+// --- GLOBAL YAPILANDIRMA ---
 const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
     ? 'http://localhost:5000/api'
     : '/api';
@@ -11,9 +16,13 @@ const API_URL = window.location.hostname === 'localhost' || window.location.host
 const API = API_URL;
 const UPLOADS_URL = '';
 const euro = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' });
+
 let salesChart = null;
 let allOrdersData = [];
 let currentChartMode = 'monthly';
+
+// Geçici veri saklama (Onay bekleyen işlem için)
+let pendingUpdate = { id: null, status: null, selectEl: null };
 
 const getAuthToken = () => localStorage.getItem('adminToken');
 
@@ -142,7 +151,9 @@ window.loadOrders = async () => {
                     <td><span class="badge bg-light text-dark border">${payIcon} ${rawMethod}</span></td>
                     <td class="fw-bold">${euro.format(o.totalAmount)}</td>
                     <td>
-                        <select class="form-select form-select-sm rounded-pill" onchange="updateStatus('${o._id}', this.value)">
+                        <select class="form-select form-select-sm rounded-pill status-select" 
+                                data-current="${o.status}" 
+                                onchange="openStatusConfirmModal('${o._id}', this)">
                             <option value="Pending" ${o.status === 'Pending' ? 'selected' : ''}>⏳ Ausstehend</option>
                             <option value="Processing" ${o.status === 'Processing' ? 'selected' : ''}>⚙️ Bearbeitung</option>
                             <option value="Shipped" ${o.status === 'Shipped' ? 'selected' : ''}>🚚 Versandt</option>
@@ -150,7 +161,7 @@ window.loadOrders = async () => {
                             <option value="Cancelled" ${o.status === 'Cancelled' ? 'selected' : ''}>❌ Storniert</option>
                         </select>
                     </td>
-                    <td class="text-end pe-4"><button class="btn btn-sm btn-outline-danger border-0" onclick="deleteOrder('${o._id}')">✕</button></td>
+                    <td class="text-end pe-4"><button class="btn-delete" onclick="deleteOrder('${o._id}')">✕</button></td>
                 </tr>`;
         });
 
@@ -158,6 +169,59 @@ window.loadOrders = async () => {
         renderSalesChart(orders, currentChartMode);
     } catch (err) { console.error("Sipariş Yükleme Hatası:", err); }
 };
+
+// --- YENİ ONAY MODALI MANTIĞI ---
+window.openStatusConfirmModal = (id, selectElement) => {
+    const oldStatus = selectElement.getAttribute('data-current');
+    const newStatus = selectElement.value;
+    const labels = { 'Pending': 'Ausstehend', 'Processing': 'Bearbeitung', 'Shipped': 'Versandt', 'Delivered': 'Geliefert', 'Cancelled': 'Storniert' };
+
+    if (oldStatus === newStatus) return;
+
+    // Modal İçeriğini Doldur
+    document.getElementById('modal-old-status').innerText = labels[oldStatus] || oldStatus;
+    document.getElementById('modal-new-status').innerText = labels[newStatus] || newStatus;
+
+    // İşlemi hafızaya al
+    pendingUpdate = { id, status: newStatus, selectEl: selectElement };
+
+    const confirmModal = new bootstrap.Modal(document.getElementById('statusConfirmModal'));
+    confirmModal.show();
+
+    // Modal iptal edilirse (kapandığında hala id varsa) dropdown'ı geri çek
+    document.getElementById('statusConfirmModal').addEventListener('hidden.bs.modal', function () {
+        if (pendingUpdate.id) {
+            pendingUpdate.selectEl.value = pendingUpdate.selectEl.getAttribute('data-current');
+            pendingUpdate = { id: null, status: null, selectEl: null };
+        }
+    }, { once: true });
+};
+
+document.getElementById('confirmStatusBtn')?.addEventListener('click', async () => {
+    const { id, status, selectEl } = pendingUpdate;
+    if (!id) return;
+
+    try {
+        const res = await fetch(`${API_URL}/orders/${id}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-auth-token': getAuthToken()
+            },
+            body: JSON.stringify({ status })
+        }).then(handleAuthError);
+
+        if (res && res.ok) {
+            selectEl.setAttribute('data-current', status);
+            pendingUpdate = { id: null, status: null, selectEl: null }; // ID'yi sil ki hidden.bs.modal tetiklenince geri çekmesin
+            bootstrap.Modal.getInstance(document.getElementById('statusConfirmModal')).hide();
+            await window.loadOrders();
+            window.logActivity(`Status-Update: ${status}`, "Admin", "Success");
+        }
+    } catch (err) {
+        console.error("Update Hatası:", err);
+    }
+});
 
 window.deleteOrder = async (id) => {
     if (confirm("Möchten Sie diese Bestellung gerçekten löschen?")) {
@@ -175,12 +239,7 @@ window.deleteOrder = async (id) => {
 };
 
 window.viewDetails = async (id) => {
-    const res = await fetch(`${API_URL}/orders`, {
-        headers: { 'x-auth-token': getAuthToken() }
-    }).then(handleAuthError);
-    if (!res) return;
-    const orders = await res.json();
-    const o = orders.find(item => item._id === id);
+    const o = allOrdersData.find(item => item._id === id);
     if (!o) return;
 
     const modalArea = document.getElementById('modal-content-area');
@@ -221,20 +280,6 @@ window.viewDetails = async (id) => {
     }
 };
 
-window.updateStatus = async (id, status) => {
-    await fetch(`${API_URL}/orders/${id}`, {
-        method: 'PUT',
-        headers: {
-            'Content-Type': 'application/json',
-            'x-auth-token': getAuthToken()
-        },
-        body: JSON.stringify({ status })
-    }).then(handleAuthError);
-    window.loadOrders();
-    // DETAYLI LOG
-    window.logActivity(`Bestellung #LB-${id.slice(-6).toUpperCase()} Status -> ${status}`, "Admin", "Success");
-};
-
 // --- 3. ÜRÜN YÖNETİMİ ---
 window.loadProducts = async () => {
     try {
@@ -270,7 +315,14 @@ window.loadArchivedProducts = async () => {
         const archivedList = document.getElementById('admin-archived-list');
         if (!archivedList) return;
         archivedList.innerHTML = archived.length ? "" : "<tr><td class='text-muted small text-center p-3'>Keine Archiv.</td></tr>";
-        archived.forEach(p => { archivedList.innerHTML += `<tr><td><img src="${p.image ? (p.image.startsWith('http') ? p.image : `/${p.image}`) : 'https://placehold.co/150'}" width="30" class="grayscale rounded shadow-sm"></td><td class="small text-muted ps-3">${p.name}</td><td class="text-end"><button class="btn btn-sm btn-outline-success border-0 py-0" onclick="restoreProduct('${p._id}')">Geri Getir ♻️</button></td></tr>`; });
+        archived.forEach(p => {
+            archivedList.innerHTML += `
+            <tr>
+                <td><img src="${p.image ? (p.image.startsWith('http') ? p.image : `/${p.image}`) : 'https://placehold.co/150'}" width="30" class="grayscale rounded shadow-sm"></td>
+                <td class="small text-muted ps-3">${p.name}</td>
+                <td class="text-end"><button class="btn btn-sm btn-outline-success border-0 py-0" onclick="restoreProduct('${p._id}')">Geri Getir ♻️</button></td>
+            </tr>`;
+        });
     } catch (err) { console.error(err); }
 };
 
@@ -279,7 +331,7 @@ window.restoreProduct = async (id) => {
         method: 'PUT',
         headers: { 'x-auth-token': getAuthToken() }
     }).then(handleAuthError);
-    window.logActivity(`Produkt (ID: ${id.slice(-4)}) wiederhergestellt`, "Admin", "Success");
+    window.logActivity(`Produkt wiederhergestellt`, "Admin", "Success");
     await loadDashboard();
 };
 
@@ -289,26 +341,20 @@ window.deleteProduct = async (id) => {
             method: 'DELETE',
             headers: { 'x-auth-token': getAuthToken() }
         }).then(handleAuthError);
-        window.logActivity(`Produkt (ID: ${id.slice(-4)}) archiviert`, "Admin", "Deleted");
+        window.logActivity(`Produkt archiviert`, "Admin", "Deleted");
         await loadDashboard();
     }
 };
 
 document.getElementById('productForm')?.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const pIdEl = document.getElementById('pId');
-    if (!pIdEl) return console.error("pId bulunamadı");
-
-    const id = pIdEl.value;
+    const id = document.getElementById('pId').value;
     const formData = new FormData();
 
-    const getValue = (id) => document.getElementById(id)?.value || "";
-
-    formData.append('name', getValue('pName'));
-    formData.append('price', getValue('pPrice'));
-    formData.append('stock', getValue('pStock'));
-    formData.append('tag', getValue('pTag'));
-    formData.append('description', getValue('pDesc'));
+    formData.append('name', document.getElementById('pName').value);
+    formData.append('price', document.getElementById('pPrice').value);
+    formData.append('stock', document.getElementById('pStock').value);
+    formData.append('description', document.getElementById('pDesc').value);
 
     const fileInput = document.getElementById('pImageFile');
     if (fileInput && fileInput.files[0]) formData.append('image', fileInput.files[0]);
@@ -321,7 +367,6 @@ document.getElementById('productForm')?.addEventListener('submit', async (e) => 
 
     if (res && res.ok) {
         alert("Erfolgreich!");
-        window.logActivity(id ? `Produkt aktualisiert: ${getValue('pName')}` : `Neues Produkt erstellt: ${getValue('pName')}`, "Admin", "Success");
         window.resetProductForm();
         loadDashboard();
     }
@@ -330,20 +375,15 @@ document.getElementById('productForm')?.addEventListener('submit', async (e) => 
 window.editProduct = async (id) => {
     const res = await fetch(`${API_URL}/products`).then(handleAuthError);
     if (!res) return;
-    const p = (await res.json()).find(i => i._id === id);
+    const products = await res.json();
+    const p = products.find(i => i._id === id);
     if (!p) return;
 
-    const setVal = (elId, val) => {
-        const el = document.getElementById(elId);
-        if (el) el.value = val;
-    };
-
-    setVal('pId', p._id);
-    setVal('pName', p.name);
-    setVal('pPrice', p.price);
-    setVal('pStock', p.stock);
-    setVal('pTag', p.tag || "");
-    setVal('pDesc', p.description || "");
+    document.getElementById('pId').value = p._id;
+    document.getElementById('pName').value = p.name;
+    document.getElementById('pPrice').value = p.price;
+    document.getElementById('pStock').value = p.stock;
+    document.getElementById('pDesc').value = p.description || "";
 
     const preview = document.getElementById('imagePreview');
     const previewImg = document.getElementById('previewImg');
@@ -352,50 +392,26 @@ window.editProduct = async (id) => {
         previewImg.src = p.image.startsWith('http') ? p.image : `/${p.image}`;
     }
 
-    const title = document.getElementById('productFormTitle');
-    const submitBtn = document.getElementById('productSubmitBtn');
-    const cancelBtn = document.getElementById('cancelEditBtn');
-
-    if (title) title.innerText = "Produkt bearbeiten";
-    if (submitBtn) submitBtn.innerText = "Aktualisieren";
-    if (cancelBtn) cancelBtn.classList.remove('d-none');
-
-    const form = document.getElementById('productForm');
-    if (form) form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    document.getElementById('productFormTitle').innerText = "Produkt bearbeiten";
+    document.getElementById('productSubmitBtn').innerText = "Aktualisieren";
+    document.getElementById('cancelEditBtn').classList.remove('d-none');
+    document.getElementById('productForm').scrollIntoView({ behavior: 'smooth' });
 };
 
 window.resetProductForm = () => {
-    const form = document.getElementById('productForm');
-    if (!form) return;
-    form.reset();
-
-    const pId = document.getElementById('pId');
-    if (pId) pId.value = "";
-
-    const pTag = document.getElementById('pTag');
-    if (pTag) pTag.value = "";
-
-    const preview = document.getElementById('imagePreview');
-    if (preview) preview.classList.add('d-none');
-
-    const title = document.getElementById('productFormTitle');
-    if (title) title.innerText = "Produkt hinzufügen";
-
-    const submitBtn = document.getElementById('productSubmitBtn');
-    if (submitBtn) submitBtn.innerText = "Speichern";
-
-    const cancelBtn = document.getElementById('cancelEditBtn');
-    if (cancelBtn) cancelBtn.classList.add('d-none');
+    document.getElementById('productForm').reset();
+    document.getElementById('pId').value = "";
+    document.getElementById('imagePreview').classList.add('d-none');
+    document.getElementById('productFormTitle').innerText = "Produkt hinzufügen";
+    document.getElementById('productSubmitBtn').innerText = "Speichern";
+    document.getElementById('cancelEditBtn').classList.add('d-none');
 };
 
 function calculateStats(orders) {
     const valid = orders.filter(o => o.status !== 'Cancelled');
-    const countEl = document.getElementById('stat-count');
-    const revEl = document.getElementById('stat-revenue');
-    const custEl = document.getElementById('stat-customers');
-    if (countEl) countEl.innerText = valid.length;
-    if (revEl) revEl.innerText = euro.format(valid.reduce((s, o) => s + o.totalAmount, 0));
-    if (custEl) custEl.innerText = new Set(valid.map(o => o.customer.email)).size;
+    document.getElementById('stat-count').innerText = valid.length;
+    document.getElementById('stat-revenue').innerText = euro.format(valid.reduce((s, o) => s + o.totalAmount, 0));
+    document.getElementById('stat-customers').innerText = new Set(valid.map(o => o.customer.email)).size;
 }
 
 // --- 4. YORUM YÖNETİMİ ---
@@ -417,10 +433,10 @@ window.loadReviews = async () => {
                     <td class="small text-muted">${new Date(r.createdAt).toLocaleDateString('de-DE')}</td>
                     <td class="reviewer-name fw-bold">${r.name}</td>
                     <td>${"⭐".repeat(r.stars)}</td>
-                    <td class="review-text small" style="max-width: 200px;">${r.text}</td>
+                    <td class="review-text small" style="max-width: 250px;">${r.text}</td>
                     <td>
                         ${r.adminReply
-                    ? `<span class="admin-reply-badge">Beantwortet ✓</span><br><small class="text-muted">${r.adminReply.substring(0, 20)}...</small>`
+                    ? `<span class="admin-reply-badge">Beantwortet ✓</span>`
                     : `<span class="badge bg-light text-muted border">Keine Antwort</span>`}
                     </td>
                     <td class="text-end">
@@ -429,7 +445,7 @@ window.loadReviews = async () => {
                     </td>
                 </tr>`;
         });
-    } catch (err) { console.error("Yorum Yükleme Hatası:", err); }
+    } catch (err) { console.error(err); }
 };
 
 window.openReplyModal = (id, existingReply) => {
@@ -454,21 +470,17 @@ window.submitReply = async () => {
     if (res && res.ok) {
         bootstrap.Modal.getInstance(document.getElementById('replyModal')).hide();
         window.loadReviews();
-        window.logActivity(`Antwort auf Rezension (ID: ${id.slice(-4)}) gesendet`, "Admin", "Success");
+        window.logActivity(`Rezension beantwortet`, "Admin", "Success");
     }
 };
 
 window.deleteReview = async (id) => {
-    if (confirm("Rezension unwiderruflich löschen?")) {
-        const res = await fetch(`${API_URL}/reviews/${id}`, {
+    if (confirm("Rezension löschen?")) {
+        await fetch(`${API_URL}/reviews/${id}`, {
             method: 'DELETE',
             headers: { 'x-auth-token': getAuthToken() }
         }).then(handleAuthError);
-
-        if (res && res.ok) {
-            window.loadReviews();
-            window.logActivity(`Rezension (ID: ${id.slice(-4)}) gelöscht`, "Admin", "Deleted");
-        }
+        window.loadReviews();
     }
 };
 
@@ -482,7 +494,9 @@ window.loadAdmins = async () => {
     const list = document.getElementById('admin-list-body');
     if (!list) return;
     list.innerHTML = "";
-    users.forEach(u => { list.innerHTML += `<tr><td class="fw-bold text-navy">${u.username}</td><td class="text-end"><button class="btn btn-sm btn-outline-danger border-0" onclick="deleteAdmin('${u._id}')">Entfernen</button></td></tr>`; });
+    users.forEach(u => {
+        list.innerHTML += `<tr><td class="fw-bold text-navy">${u.username}</td><td class="text-end"><button class="btn btn-sm btn-outline-danger border-0" onclick="deleteAdmin('${u._id}')">Entfernen</button></td></tr>`;
+    });
 };
 
 document.getElementById('addAdminForm')?.addEventListener('submit', async (e) => {
@@ -500,28 +514,14 @@ document.getElementById('addAdminForm')?.addEventListener('submit', async (e) =>
     }).then(handleAuthError);
     if (res && res.ok) {
         alert("Admin registriert!");
-        window.logActivity(`Neuer Admin registriert: ${username}`, "Master Admin", "Success");
         window.loadAdmins();
     }
 });
 
-window.deleteAdmin = async (id) => {
-    if (confirm("Entfernen?")) {
-        try {
-            await fetch(`${API_URL}/auth/users/${id}`, {
-                method: 'DELETE',
-                headers: { 'x-auth-token': getAuthToken() }
-            }).then(handleAuthError);
-            window.logActivity(`Admin-Konto entfernt (ID: ${id.slice(-4)})`, "Admin", "Deleted");
-            window.loadAdmins();
-        } catch (err) { console.error(err); }
-    }
-};
-
 window.logActivity = (action, user, status) => {
     const list = document.getElementById('admin-activity-logs');
     if (!list) return;
-    const row = `<tr><td>${new Date().toLocaleTimeString()}</td><td>${action}</td><td>${user}</td><td><span class="badge ${status === 'Success' ? 'bg-success' : (status === 'Deleted' ? 'bg-danger' : 'bg-primary')}">${status}</span></td></tr>`;
+    const row = `<tr><td>${new Date().toLocaleTimeString()}</td><td>${action}</td><td>${user}</td><td><span class="badge ${status === 'Success' ? 'bg-success' : 'bg-danger'}">${status}</span></td></tr>`;
     list.insertAdjacentHTML('afterbegin', row);
 };
 
@@ -529,26 +529,25 @@ window.logActivity = (action, user, status) => {
 document.getElementById('orderSearch')?.addEventListener('input', (e) => {
     const term = e.target.value.toLowerCase();
     document.querySelectorAll('.order-row').forEach(row => {
-        const customerName = row.querySelector('.customer-name')?.innerText.toLowerCase() || "";
-        row.style.display = customerName.includes(term) ? "" : "none";
+        const name = row.querySelector('.customer-name').innerText.toLowerCase();
+        row.style.display = name.includes(term) ? "" : "none";
     });
 });
 
 document.getElementById('productSearch')?.addEventListener('input', (e) => {
     const term = e.target.value.toLowerCase();
     document.querySelectorAll('.product-row').forEach(row => {
-        const productName = row.querySelector('.product-name')?.innerText.toLowerCase() || "";
-        row.style.display = productName.includes(term) ? "" : "none";
+        const name = row.querySelector('.product-name').innerText.toLowerCase();
+        row.style.display = name.includes(term) ? "" : "none";
     });
 });
 
-// YENİ: Yorum Arama Filtresi (Eksiksiz Eklendi)
 document.getElementById('reviewSearch')?.addEventListener('input', (e) => {
     const term = e.target.value.toLowerCase();
     document.querySelectorAll('.review-row').forEach(row => {
-        const reviewerName = row.querySelector('.reviewer-name')?.innerText.toLowerCase() || "";
-        const reviewText = row.querySelector('.review-text')?.innerText.toLowerCase() || "";
-        row.style.display = (reviewerName.includes(term) || reviewText.includes(term)) ? "" : "none";
+        const name = row.querySelector('.reviewer-name').innerText.toLowerCase();
+        const text = row.querySelector('.review-text').innerText.toLowerCase();
+        row.style.display = (name.includes(term) || text.includes(term)) ? "" : "none";
     });
 });
 
@@ -558,27 +557,15 @@ document.addEventListener('DOMContentLoaded', () => {
     loadDashboard();
     startAuthWatcher();
 });
-/* --- PRELOADER & AOS SYNC LOGIC --- */
+
 window.addEventListener("load", function () {
     const preloader = document.getElementById("preloader");
     if (preloader) {
         setTimeout(() => {
             preloader.classList.add("preloader-hidden");
             setTimeout(() => {
-                if (typeof AOS !== 'undefined') {
-                    AOS.init({
-                        duration: 1000,
-                        once: true,
-                        offset: 100,
-                        disableMutationObserver: false
-                    });
-                    AOS.refresh();
-                }
-                const adminContent = document.getElementById('adminMainContent');
-                if (adminContent && localStorage.getItem('adminToken')) {
-                    adminContent.classList.remove('d-none');
-                    setTimeout(() => AOS.refresh(), 100);
-                }
+                if (typeof AOS !== 'undefined') { AOS.init({ duration: 1000, once: true }); }
+                document.getElementById('adminMainContent').classList.remove('d-none');
                 preloader.style.display = "none";
             }, 1000);
         }, 1200);

@@ -84,7 +84,7 @@
                 style="display: none;" data-aos="zoom-in">
                 <h4 class="fw-bold mb-2 text-center">Teilen Sie Ihre Erfahrung</h4>
                 <p class="text-center small text-muted mb-4">Verbleibende Bewertungen: <span
-                        id="remaining-reviews">2</span></p>
+                        id="remaining-reviews">1</span></p>
                 <form id="reviewForm">
                     <div class="row g-3">
                         <div class="col-md-6">
@@ -132,7 +132,7 @@
                     <h4 class="fw-bold mb-3" style="font-family: 'Playfair Display'; color: #1c2541;">Herzlichen Dank!
                     </h4>
                     <p class="text-muted mb-4">
-                        Pro Bestellung haben Sie ein Limit von 2 Bewertungen. Wir schätzen Ihr Feedback sehr!
+                        Pro Bestellung haben Sie ein Limit von 1 Bewertung. Wir schätzen Ihr Feedback sehr!
                         <br><br>
                         Um weitere Erfahrungen teilt, schauen Sie sich gerne unsere neuen Kollektionen an.
                     </p>
@@ -177,6 +177,10 @@
                         <h2 id="mTitle" class="fw-bold mb-3"
                             style="font-family:'Playfair Display'; color: var(--midnight);"></h2>
                         <div id="mDesc" class="text-muted small mb-4"></div>
+
+                        <div id="mQtyError" class="text-danger small fw-bold mb-1 animate-fadeIn"
+                            style="display:none; font-size: 0.75rem;"></div>
+
                         <div class="mb-4">
                             <h3 id="mPriceDisplay" class="fw-bold mb-1" style="color: var(--gold);"></h3>
                             <div id="mStockStatus" class="bg-light text-dark fw-bold border"></div>
@@ -188,7 +192,7 @@
                             <div class="qty-control-luxe d-flex align-items-center border rounded-pill">
                                 <button class="btn btn-link text-dark text-decoration-none fw-bold shadow-none"
                                     onclick="changeQty(-1)">-</button>
-                                <input type="number" id="qtyInput" class="qty-input" value="1" min="1"
+                                <input type="text" id="qtyInput" class="qty-input" value="1"
                                     onkeydown="blockNonIntegers(event)" oninput="validateManualQty(this)">
                                 <button class="btn btn-link text-dark text-decoration-none fw-bold shadow-none"
                                     onclick="changeQty(1)">+</button>
@@ -223,19 +227,17 @@
         <span class="luxe-whatsapp-text">WhatsApp Support</span>
     </a>
 
+    <div id="preloader">
+        <div class="preloader-content">
+            <div class="preloader-logo">LUXE<span>BERLIN</span></div>
+            <div class="preloader-bar"></div>
+            <p class="preloader-text">Exklusive Mode wird geladen...</p>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
-    <script>
-
-    </script>
     <script src="main.js"></script>
 </body>
-<div id="preloader">
-    <div class="preloader-content">
-        <div class="preloader-logo">LUXE<span>BERLIN</span></div>
-        <div class="preloader-bar"></div>
-        <p class="preloader-text">Exklusive Mode wird geladen...</p>
-    </div>
-</div>
 
 </html>
