@@ -2,22 +2,31 @@ const express = require('express');
 const router = express.Router();
 const orderController = require('../controllers/orderController');
 
-// 📥 Sipariş Oluşturma
+/**
+ * LUXE BERLIN - ORDER ROUTES
+ * Tüm sipariş operasyonlarının API uç noktaları.
+ */
+
+// 1. Yeni sipariş oluşturma (Checkout)
 router.post('/', orderController.createOrder);
 
-// 📋 Siparişleri Listeleme (Admin)
+// 2. Tüm siparişleri listeleme (Admin Panel)
 router.get('/', orderController.getAllOrders);
 
-// 🔍 Tek Sipariş Detayı (Tracking)
+// 3. Tekil sipariş sorgulama (Tracking - Hem MongoID hem shortId destekler)
 router.get('/:id', orderController.getOrderById);
 
-// ⚙️ Durum Güncelleme
+// 4. Sipariş durumunu güncelleme (Admin Panel - Shipped, Delivered vb.)
 router.put('/:id', orderController.updateOrderStatus);
 
-// 🗑️ Fiziksel Silme
+// 5. Siparişi veritabanından tamamen silme
 router.delete('/:id', orderController.deleteOrder);
 
-// 📦 Arşivleme (Yumuşak Silme)
-router.put('/:id/archive', orderController.archiveOrder);
+// 6. Siparişi arşivleme (Admin Panel - Soft Delete)
+router.patch('/:id/archive', orderController.archiveOrder);
+
+// 7. SİPARİŞ İPTAL ETME (Müşteri/Yasal İptal Sistemi)
+// Bu rota hem stokları iade eder hem de iptal maili gönderir.
+router.post('/:id/cancel', orderController.cancelOrder);
 
 module.exports = router;

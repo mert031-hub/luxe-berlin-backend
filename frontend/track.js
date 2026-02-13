@@ -1,6 +1,5 @@
 /**
  * LUXE BERLIN - ADVANCED TRACKING LOGIC (FULL & CANCEL-READY)
- * Yorum satırlarından arındırılmış ve eksiksiz tam sürümdür.
  */
 
 const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
@@ -9,6 +8,7 @@ const API_URL = window.location.hostname === 'localhost' || window.location.host
 
 const UPLOADS_URL = '';
 const euro = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' });
+let currentLoadedOrderId = null; // İptal işlemi için gerçek ID'yi saklar
 
 async function trackOrder() {
     const rawInput = document.getElementById('orderIdInput').value.trim();
@@ -16,13 +16,13 @@ async function trackOrder() {
     const itemsList = document.getElementById('order-items-list');
     const header = document.getElementById('status-header');
     const dynamicArea = document.getElementById('dynamic-info-area');
+    const cancelSection = document.getElementById('cancel-section');
 
-    // ID Normalizasyonu (MongoID ise olduğu gibi bırak, Kısa ID ise büyük harf yap)
     let id;
     if (rawInput.length === 24) {
-        id = rawInput; // MongoID (Linkten gelen uzun ID)
+        id = rawInput;
     } else {
-        id = rawInput.replace('#', '').replace('LB-', '').toUpperCase(); // Manuel kısa ID
+        id = rawInput.replace('#', '').replace('LB-', '').toUpperCase();
     }
 
     if (!id) return alert("Bitte geben Sie eine Bestellnummer ein!");
@@ -32,15 +32,22 @@ async function trackOrder() {
         const order = await res.json();
 
         if (res.ok && order) {
+            currentLoadedOrderId = order._id; // İptal fonksiyonu için sakla
             resultArea.classList.add('d-none');
             dynamicArea.innerHTML = "";
+
+            // İPTAL BUTONU GÖRÜNÜRLÜĞÜ: Sadece kargolanmamışsa göster
+            if (order.status === 'Pending' || order.status === 'Processing') {
+                cancelSection.classList.remove('d-none');
+            } else {
+                cancelSection.classList.add('d-none');
+            }
 
             setTimeout(() => {
                 resultArea.classList.remove('d-none');
                 if (typeof AOS !== 'undefined') { AOS.refresh(); }
             }, 50);
 
-            // Görüntüleme için ID'yi kısaltıyoruz
             const displayId = order.shortId || `#LB-${id.slice(-6).toUpperCase()}`;
             header.innerHTML = `
                 <h6 class="text-muted mb-1">Bestellnummer: ${displayId}</h6>
@@ -81,9 +88,34 @@ async function trackOrder() {
         } else {
             alert("Bestellung nicht gefunden!");
             resultArea.classList.add('d-none');
+            cancelSection.classList.add('d-none');
         }
     } catch (err) {
         console.error("Tracking Error:", err);
+        alert("Ein Fehler ist aufgetreten.");
+    }
+}
+
+// YENİ: İPTAL İSTEĞİ FONKSİYONU
+async function cancelOrderRequest() {
+    if (!currentLoadedOrderId) return;
+    if (!confirm("Möchten Sie Ihre Bestellung wirklich stornieren?")) return;
+
+    try {
+        const res = await fetch(`${API_URL}/orders/${currentLoadedOrderId}/cancel`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+
+        if (res.ok) {
+            alert("Ihre Bestellung wurde erfolgreich storniert.");
+            location.reload();
+        } else {
+            const data = await res.json();
+            alert("Fehler: " + data.message);
+        }
+    } catch (err) {
+        console.error("Cancellation error:", err);
         alert("Ein Fehler ist aufgetreten.");
     }
 }

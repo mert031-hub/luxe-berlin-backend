@@ -149,9 +149,10 @@ async function initTestimonials() {
     let reviewCount = parseInt(localStorage.getItem('luxeReviewSentCount')) || 0;
 
     if (hasOrdered && reviewBox) {
-        if (reviewCount < 2) {
+        // ✅ GÜNCELLEME: İzin verilen yorum hakkı 1'e düşürüldü
+        if (reviewCount < 1) {
             reviewBox.style.display = "block";
-            if (remainingSpan) remainingSpan.innerText = (2 - reviewCount);
+            if (remainingSpan) remainingSpan.innerText = (1 - reviewCount);
         } else {
             reviewBox.style.display = "none";
         }
@@ -198,7 +199,8 @@ document.getElementById('reviewForm')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     let reviewCount = parseInt(localStorage.getItem('luxeReviewSentCount')) || 0;
 
-    if (reviewCount >= 2) {
+    // ✅ GÜNCELLEME: Limit kontrolü 1'e çekildi
+    if (reviewCount >= 1) {
         const limitModal = new bootstrap.Modal(document.getElementById('reviewLimitModal'));
         limitModal.show();
         return;
@@ -230,7 +232,8 @@ document.getElementById('reviewForm')?.addEventListener('submit', async (e) => {
             e.target.reset();
             if (document.getElementById('char-count')) document.getElementById('char-count').innerText = "0 / 500";
 
-            if (reviewCount === 2) {
+            // ✅ GÜNCELLEME: İlk yorumda limit modalı gösterilir
+            if (reviewCount === 1) {
                 new bootstrap.Modal(document.getElementById('reviewLimitModal')).show();
             } else {
                 showLuxeAlert("Vielen Dank für Ihre Bewertung!", "success");
@@ -372,13 +375,12 @@ window.addEventListener("load", function () {
                     AOS.init({
                         duration: 1000,
                         once: true,
-                        offset: 50, // Mobilde daha erken tetiklenme
+                        offset: 50,
                         disableMutationObserver: false
                     });
                     AOS.refresh();
                 }
 
-                // AOS senkronizasyonu için sanal scroll tetikle
                 window.dispatchEvent(new Event('scroll'));
 
                 const adminContent = document.getElementById('adminMainContent');

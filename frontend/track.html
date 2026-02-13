@@ -42,6 +42,12 @@
                         <button class="btn btn-gold px-4 fw-bold" onclick="trackOrder()">STATUS PRÜFEN</button>
                     </div>
 
+                    <div id="cancel-section" class="d-none mt-2 mb-4">
+                        <p class="small text-muted mb-2">Möchten Sie diese Bestellung stornieren?</p>
+                        <button class="btn btn-outline-danger btn-sm rounded-pill px-4"
+                            onclick="cancelOrderRequest()">Bestellung Stornieren</button>
+                    </div>
+
                     <div id="track-result" class="d-none mt-5 result-animation">
                         <div id="status-header" class="mb-4 text-start border-bottom pb-3"></div>
                         <div class="track-container" id="track-container">

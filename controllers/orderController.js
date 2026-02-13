@@ -22,11 +22,10 @@ exports.createOrder = async (req, res) => {
         const newOrder = new Order({
             customer, items, totalAmount,
             paymentMethod: paymentMethod || "Unbekannt",
-            // Önce geçici bir ID atıyoruz (MongoID'den türetilecek)
             shortId: "TEMP"
         });
 
-        // shortId Oluşturma (Mongo'nun ürettiği asıl ID'den son 6 hane)
+        // shortId Oluşturma
         const generatedShortId = `LB-${newOrder._id.toString().slice(-6).toUpperCase()}`;
         newOrder.shortId = generatedShortId;
 
@@ -68,21 +67,19 @@ exports.getAllOrders = async (req, res) => {
 };
 
 /**
- * 3️⃣ TEK SİPARİŞ GETİR (Tracking) - OPTİMİZE EDİLDİ
+ * 3️⃣ TEK SİPARİŞ GETİR (Tracking)
  */
 exports.getOrderById = async (req, res) => {
     try {
         let { id } = req.params;
         const cleanId = id.replace('#', '').replace('LB-', '').toUpperCase();
 
-        // Giriş 24 haneli bir MongoID mi?
         const isObjectId = /^[0-9a-fA-F]{24}$/.test(id);
         let order;
 
         if (isObjectId) {
             order = await Order.findById(id).populate('items.productId');
         } else {
-            // 🔥 KRİTİK OPTİMİZASYON: Tüm siparişleri çekmek yerine doğrudan indeksten buluyoruz.
             order = await Order.findOne({ shortId: `LB-${cleanId}` }).populate('items.productId');
         }
 
@@ -133,5 +130,35 @@ exports.archiveOrder = async (req, res) => {
         res.json({ message: "Sipariş arşivlendi." });
     } catch (err) {
         res.status(500).json({ message: err.message });
+    }
+};
+
+/**
+ * 7️⃣ SİPARİŞ İPTAL ETME (Müşteri/Yasal İptal)
+ */
+exports.cancelOrder = async (req, res) => {
+    try {
+        const order = await Order.findById(req.params.id);
+        if (!order) return res.status(404).json({ message: "Bestellung nicht gefunden." });
+
+        // Sadece kargolanmamış siparişler iptal edilebilir
+        if (order.status === "Shipped" || order.status === "Delivered") {
+            return res.status(400).json({ message: "Versandte Bestellungen können nicht storniert werden." });
+        }
+
+        order.status = "Cancelled";
+        await order.save();
+
+        // Stokları Geri Yükle
+        for (const item of order.items) {
+            await Product.findByIdAndUpdate(item.productId, { $inc: { stock: item.qty } });
+        }
+
+        // Bilgi Maili Gönder
+        sendStatusEmail(order, "Cancelled").catch(err => console.error("❌ İptal maili hatası:", err));
+
+        res.json({ message: "Bestellung erfolgreich storniert.", order });
+    } catch (err) {
+        res.status(500).json({ message: "Serverfehler", error: err.message });
     }
 };
