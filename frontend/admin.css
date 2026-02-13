@@ -274,6 +274,26 @@ body {
   color: var(--gold);
 }
 
+/* --- BUTON RENK ONARIMLARI --- */
+.btn-gold {
+  background: var(--gold) !important;
+  border-color: var(--gold) !important;
+  color: white !important;
+  font-weight: 700;
+}
+.btn-gold:hover {
+  background: #b38f4d !important;
+}
+
+.btn-outline-primary {
+  color: var(--navy) !important;
+  border-color: var(--navy) !important;
+}
+.btn-outline-primary:hover {
+  background: var(--navy) !important;
+  color: white !important;
+}
+
 /* Sticky Kartlar */
 .sticky-card {
   position: sticky;

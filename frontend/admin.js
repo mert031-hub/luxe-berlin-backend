@@ -238,6 +238,10 @@ window.deleteOrder = async (id) => {
     }
 };
 
+/**
+ * GÜNCELLENDİ: DETAILS MODALI
+ * Sipariş Kodu eklendi, Mail taşması önlendi.
+ */
 window.viewDetails = async (id) => {
     const o = allOrdersData.find(item => item._id === id);
     if (!o) return;
@@ -245,14 +249,19 @@ window.viewDetails = async (id) => {
     const modalArea = document.getElementById('modal-content-area');
     if (modalArea) {
         modalArea.innerHTML = `
+            <div class="mb-4 p-3 rounded-3 text-center" style="background: rgba(197, 160, 89, 0.05); border: 1px dashed var(--gold);">
+                <span class="small text-uppercase fw-bold text-muted d-block mb-1">Bestell-ID</span>
+                <h4 class="fw-bold mb-0 text-navy" style="letter-spacing: 1px;">${o.shortId || '#LB-' + o._id.slice(-6).toUpperCase()}</h4>
+            </div>
+
             <div class="row mb-3">
-                <div class="col-md-6">
+                <div class="col-md-6 mb-3 mb-md-0">
                     <label class="small fw-bold text-muted d-block mb-1">Zahlungsart</label>
                     <div class="p-2 bg-white rounded border">💰 ${o.paymentMethod || 'K.A.'}</div>
                 </div>
                 <div class="col-md-6">
                     <label class="small fw-bold text-muted d-block mb-1">Kontaktinfo</label>
-                    <div class="p-2 bg-white rounded border small">
+                    <div class="p-2 bg-white rounded border small" style="word-break: break-all;">
                         📧 ${o.customer.email}<br>
                         📞 ${o.customer.phone || 'Nicht angegeben'}
                     </div>
@@ -521,7 +530,7 @@ document.getElementById('addAdminForm')?.addEventListener('submit', async (e) =>
 window.logActivity = (action, user, status) => {
     const list = document.getElementById('admin-activity-logs');
     if (!list) return;
-    const row = `<tr><td>${new Date().toLocaleTimeString()}</td><td>${action}</td><td>${user}</td><td><span class="badge ${status === 'Success' ? 'bg-success' : 'bg-danger'}">${status}</span></td></tr>`;
+    const row = `<tr><td>${new Date().toLocaleTimeString()}</td><td>${action}</td><td>${user}</td><td><span class="badge ${status === 'Success' ? 'bg-success' : (status === 'Deleted' ? 'bg-danger' : 'bg-primary')}">${status}</span></td></tr>`;
     list.insertAdjacentHTML('afterbegin', row);
 };
 

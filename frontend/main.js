@@ -1,6 +1,8 @@
 /**
  * LUXE BERLIN - CORE JAVASCRIPT
- * Tüm özellikler: Sepet Onarımı, Miktar Koruması, 1 Yorum Sınırı, Mobil AOS Fix
+ * Tüm özellikler: Sepet Onarımı, Miktar Koruması, 1 Yorum Sınırı, Karakter Sayacı, 
+ * İsim Sınırı (50 Karakter) ve Küfür Filtresi Onarımı.
+ * GÜNCELLEME: Yorum ses efekti kaldırıldı.
  */
 
 // --- GLOBAL DEĞİŞKENLER ---
@@ -9,6 +11,7 @@ let cart = JSON.parse(localStorage.getItem('luxeCartArray')) || [];
 const euro = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' });
 let selectedProduct = null, currentQty = 1;
 let shownReviewsCount = 6;
+let testimonials = [];
 
 const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
     ? 'http://localhost:5000/api'
@@ -24,7 +27,6 @@ function showLuxeAlert(message, type = 'success') {
 
     const toast = document.createElement('div');
     toast.className = 'luxe-toast';
-
     const icon = type === 'success' ? 'fa-check-circle' : 'fa-exclamation-triangle';
 
     toast.innerHTML = `
@@ -36,7 +38,6 @@ function showLuxeAlert(message, type = 'success') {
     `;
 
     container.appendChild(toast);
-
     setTimeout(() => {
         toast.classList.add('fade-out');
         setTimeout(() => toast.remove(), 500);
@@ -50,7 +51,6 @@ function initTheme() {
     if (!themeToggleBtn || !themeIcon) return;
 
     const currentTheme = localStorage.getItem('luxeTheme') || 'light';
-
     if (currentTheme === 'dark') {
         document.body.classList.add('dark-mode');
         themeIcon.classList.replace('fa-moon', 'fa-sun');
@@ -59,12 +59,7 @@ function initTheme() {
     themeToggleBtn.addEventListener('click', () => {
         document.body.classList.toggle('dark-mode');
         let theme = document.body.classList.contains('dark-mode') ? 'dark' : 'light';
-
-        if (theme === 'dark') {
-            themeIcon.classList.replace('fa-moon', 'fa-sun');
-        } else {
-            themeIcon.classList.replace('fa-sun', 'fa-moon');
-        }
+        themeIcon.classList.replace(theme === 'dark' ? 'fa-moon' : 'fa-sun', theme === 'dark' ? 'fa-sun' : 'fa-moon');
         localStorage.setItem('luxeTheme', theme);
     });
 }
@@ -75,7 +70,6 @@ async function fetchProducts() {
         const response = await fetch(`${API_URL}/products`);
         const data = await response.json();
 
-        // Silinmemiş ürünleri al ve veriyi normalize et
         products = data.filter(p => p.isDeleted !== true).map(p => ({
             id: p._id,
             name: p.name,
@@ -87,7 +81,7 @@ async function fetchProducts() {
         }));
 
         renderProducts(products);
-        updateCartUI(); // Ürünler geldikten sonra sepeti kontrol et
+        updateCartUI();
     } catch (error) {
         console.error("Backend bağlantı hatası:", error);
     }
@@ -119,20 +113,17 @@ function renderProducts(listToDisplay) {
 window.filterProducts = function () {
     const term = document.getElementById('mainSearchInput')?.value.toLowerCase() || "";
     const filtered = products.filter(p =>
-        p.name.toLowerCase().includes(term) ||
-        p.description.toLowerCase().includes(term)
+        p.name.toLowerCase().includes(term) || p.description.toLowerCase().includes(term)
     );
     renderProducts(filtered);
 }
 
-// --- 4. YORUM SİSTEMİ (1 Yorum Sınırı Dahil) ---
-let testimonials = [];
+// --- 4. YORUM YÖNETİMİ VE KRİTİK FONKSİYONLAR ---
 
 function censorText(text) {
-    let censoredText = text;
+    if (!text) return "";
     const regex = new RegExp(badWords.join("|"), "gi");
-    censoredText = censoredText.replace(regex, (match) => "*".repeat(match.length));
-    return censoredText;
+    return text.replace(regex, (match) => "*".repeat(match.length));
 }
 
 async function initTestimonials() {
@@ -142,18 +133,14 @@ async function initTestimonials() {
     const showMoreWrapper = document.getElementById('show-more-reviews-wrapper');
 
     if (!container) return;
-
     try {
         const response = await fetch(`${API_URL}/reviews`);
         if (response.ok) testimonials = await response.json();
-    } catch (error) {
-        console.error("Yorumlar yüklenemedi:", error);
-    }
+    } catch (error) { console.error("Yorumlar yüklenemedi:", error); }
 
     const hasOrdered = localStorage.getItem('luxeHasOrdered') === 'true';
     let reviewCount = parseInt(localStorage.getItem('luxeReviewSentCount')) || 0;
 
-    // Yasal Düzenleme: Sipariş başına 1 yorum hakkı
     if (hasOrdered && reviewBox) {
         if (reviewCount < 1) {
             reviewBox.style.display = "block";
@@ -169,38 +156,70 @@ async function initTestimonials() {
             <div class="testimonial-card">
                 <div class="stars mb-2">${"⭐".repeat(t.stars)}</div>
                 <p class="testimonial-text">"${t.text}"</p>
-                ${t.adminReply ? `
-                <div class="admin-reply-box mt-3 p-3 rounded-3" style="background: rgba(197, 160, 89, 0.05); border-left: 3px solid var(--gold);">
+                ${t.adminReply ? `<div class="admin-reply-box mt-3 p-3 rounded-3" style="background: rgba(197, 160, 89, 0.05); border-left: 3px solid var(--gold);">
                     <small class="fw-bold text-uppercase d-block mb-1" style="color: var(--gold); font-size: 0.7rem;">Luxe Berlin Team</small>
                     <p class="small mb-0 text-muted italic">${t.adminReply}</p>
                 </div>` : ''}
                 <div class="d-flex justify-content-between align-items-end mt-auto pt-3">
-                    <div class="fw-bold text-uppercase small" style="letter-spacing:1px;">— ${t.name}</div>
-                    <span class="testimonial-date" style="font-size: 0.7rem; color: var(--gold);">${t.date || '10.02.2026'}</span>
+                    <div class="fw-bold text-uppercase small">— ${t.name}</div>
+                    <span class="testimonial-date" style="font-size: 0.7rem; color: var(--gold);">${t.date || '13.02.2026'}</span>
                 </div>
             </div>
-        </div>
-    `).join('');
+        </div>`).join('');
 
-    if (showMoreWrapper) {
-        showMoreWrapper.style.display = testimonials.length > shownReviewsCount ? "block" : "none";
+    if (showMoreWrapper) showMoreWrapper.style.display = testimonials.length > shownReviewsCount ? "block" : "none";
+}
+
+// ONARIM: Yorum Sayaç Mantığı & İsim Sınırı (50 Karakter)
+function initReviewCounter() {
+    const revTextArea = document.getElementById('revText');
+    const charCounter = document.getElementById('char-count');
+    const revNameInput = document.getElementById('revName');
+
+    if (revTextArea && charCounter) {
+        revTextArea.addEventListener('input', function () {
+            charCounter.innerText = `${this.value.length} / 500`;
+        });
+    }
+
+    if (revNameInput) {
+        revNameInput.addEventListener('input', function () {
+            if (this.value.length > 50) {
+                this.value = this.value.substring(0, 50);
+            }
+        });
     }
 }
+
+// ONARIM: Daha Fazla Göster Buton Etkileşimi
+document.addEventListener('click', function (e) {
+    if (e.target && e.target.id === 'showMoreReviewsBtn') {
+        shownReviewsCount += 6;
+        initTestimonials();
+    }
+});
 
 document.getElementById('reviewForm')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     let reviewCount = parseInt(localStorage.getItem('luxeReviewSentCount')) || 0;
 
     if (reviewCount >= 1) {
-        const limitModal = new bootstrap.Modal(document.getElementById('reviewLimitModal'));
-        limitModal.show();
+        new bootstrap.Modal(document.getElementById('reviewLimitModal')).show();
+        return;
+    }
+
+    const nameValue = document.getElementById('revName').value;
+    const textValue = document.getElementById('revText').value;
+
+    if (nameValue.length > 50) {
+        showLuxeAlert("Der Name ist zu lang (max. 50 Zeichen).", "warning");
         return;
     }
 
     const newReview = {
-        name: document.getElementById('revName').value,
+        name: nameValue,
         stars: parseInt(document.getElementById('revStars').value),
-        text: censorText(document.getElementById('revText').value),
+        text: censorText(textValue),
         date: new Date().toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })
     };
 
@@ -216,6 +235,8 @@ document.getElementById('reviewForm')?.addEventListener('submit', async (e) => {
             localStorage.setItem('luxeReviewSentCount', reviewCount.toString());
             await initTestimonials();
             e.target.reset();
+            document.getElementById('char-count').innerText = "0 / 500";
+            // GÜNCELLEME: Sesli uyarı buradan kaldırıldı.
             new bootstrap.Modal(document.getElementById('reviewLimitModal')).show();
         }
     } catch (err) {
@@ -234,8 +255,6 @@ window.setupModal = function (id) {
 
     document.getElementById('mImg').src = selectedProduct.img;
     document.getElementById('mTitle').innerText = selectedProduct.name;
-
-    // Hata mesajı alanını temizle
     const errorDisplay = document.getElementById('mQtyError');
     if (errorDisplay) { errorDisplay.innerText = ""; errorDisplay.style.display = "none"; }
 
@@ -263,7 +282,7 @@ function updateModalUI() {
     const statusBox = document.getElementById('mStockStatus');
     if (statusBox) {
         statusBox.innerText = avail > 0 ? `VORRÄTIG: ${avail}` : "AUSVERKAUFT";
-        statusBox.className = avail > 0 ? "bg-light text-dark fw-bold border p-2 px-3" : "bg-danger text-white fw-bold border-0 p-2 px-3";
+        statusBox.className = avail > 0 ? "bg-light text-dark fw-bold border p-2 px-3 d-inline-block rounded-1" : "bg-danger text-white fw-bold border-0 p-2 px-3 d-inline-block rounded-1";
     }
 }
 
@@ -293,20 +312,11 @@ window.validateManualQty = function (input) {
     let valStr = input.value.replace(/[^0-9]/g, '');
     let val = parseInt(valStr);
 
-    if (isNaN(val) || val < 1) {
-        val = 1;
-        if (errorDisplay) errorDisplay.style.display = "none";
-    }
-
+    if (isNaN(val) || val < 1) { val = 1; if (errorDisplay) errorDisplay.style.display = "none"; }
     if (val > avail) {
         val = avail;
-        if (errorDisplay) {
-            errorDisplay.innerText = `Maximal ${avail} Stück verfügbar.`;
-            errorDisplay.style.display = "block";
-        }
-    } else {
-        if (errorDisplay) errorDisplay.style.display = "none";
-    }
+        if (errorDisplay) { errorDisplay.innerText = `Maximal ${avail} Stück verfügbar.`; errorDisplay.style.display = "block"; }
+    } else { if (errorDisplay) errorDisplay.style.display = "none"; }
 
     currentQty = val;
     input.value = val;
@@ -320,13 +330,9 @@ window.blockNonIntegers = function (e) {
 // --- 6. SEPET YÖNETİMİ VE ONARIMI ---
 window.addToCart = function () {
     if (currentQty <= 0) return;
-
     const item = cart.find(i => i.id === selectedProduct.id);
-    if (item) {
-        item.qty += currentQty;
-    } else {
-        cart.push({ id: selectedProduct.id, qty: currentQty });
-    }
+    if (item) item.qty += currentQty;
+    else cart.push({ id: selectedProduct.id, qty: currentQty });
 
     localStorage.setItem('luxeCartArray', JSON.stringify(cart));
     updateCartUI();
@@ -337,9 +343,7 @@ window.addToCart = function () {
 }
 
 function updateCartUI() {
-    // Sadece hala veritabanında var olan ürünleri hesaba kat (0,00€ hatası çözümü)
     const validCartItems = cart.filter(item => products.some(p => p.id === item.id));
-
     const totalQty = validCartItems.reduce((acc, i) => acc + i.qty, 0);
     const totalPrice = validCartItems.reduce((acc, i) => {
         const p = products.find(x => x.id === i.id);
@@ -347,24 +351,16 @@ function updateCartUI() {
     }, 0);
 
     const badge = document.getElementById('cart-badge');
-    if (badge) {
-        badge.innerText = totalQty;
-        badge.style.display = totalQty > 0 ? "block" : "none";
-    }
+    if (badge) { badge.innerText = totalQty; badge.style.display = totalQty > 0 ? "block" : "none"; }
 
     const floatBar = document.getElementById('luxe-floating-cart');
     const floatTotal = document.getElementById('float-total-amount');
 
     if (floatBar && floatTotal) {
-        if (totalQty > 0) {
-            floatBar.classList.add('active');
-            floatTotal.innerText = euro.format(totalPrice);
-        } else {
-            floatBar.classList.remove('active');
-        }
+        if (totalQty > 0) { floatBar.classList.add('active'); floatTotal.innerText = euro.format(totalPrice); }
+        else floatBar.classList.remove('active');
     }
 
-    // Geçersiz ürünleri hafızadan temizle
     if (validCartItems.length !== cart.length) {
         cart = validCartItems;
         localStorage.setItem('luxeCartArray', JSON.stringify(cart));
@@ -376,6 +372,7 @@ document.addEventListener('DOMContentLoaded', () => {
     fetchProducts();
     initTheme();
     initTestimonials();
+    initReviewCounter();
 });
 
 window.addEventListener("load", function () {
@@ -393,11 +390,7 @@ window.addEventListener("load", function () {
                     });
                     AOS.refresh();
                 }
-
-                // Mobil AOS Wake-up (Hileli tetikleme)
-                window.scrollBy(0, 1);
-                window.scrollBy(0, -1);
-
+                window.scrollBy(0, 1); window.scrollBy(0, -1);
                 window.dispatchEvent(new Event('scroll'));
 
                 const adminContent = document.getElementById('adminMainContent');
