@@ -1,7 +1,5 @@
 /**
- * LUXE BERLIN - OFFICIAL BACKEND SERVER
- * Özellikler: MongoDB Bağlantısı, Cloudinary Hazırlığı, Render IPv4 Fix, 
- * Resend E-posta Sistemi, Global Hata Yakalayıcı.
+ * LUXE BERLIN - OFFICIAL BACKEND SERVER (SECURE VERSION)
  */
 
 require('dotenv').config();
@@ -9,42 +7,38 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const dns = require('dns');
+const cookieParser = require('cookie-parser'); // YENİ: Çerez işleyici
 const connectDB = require('./config/db');
 
-// --- 1. RENDER & IPV6 FIX ---
-// Render üzerindeki "ENETUNREACH" (IPv6 bağlantı hataları) sorununu 
-// dış bağlantıları IPv4'e zorlayarak kökten çözer.
 dns.setDefaultResultOrder('ipv4first');
 
 const app = express();
 
-// --- 2. VERİTABANI BAĞLANTISI ---
 connectDB();
 
-// --- 3. MIDDLEWARE'LER ---
-app.use(cors()); // Cross-Origin Resource Sharing izni
-app.use(express.json()); // JSON veri işleme (POST/PUT istekleri için)
+// --- GÜVENLİK AYARLARI ---
+app.use(cookieParser()); // Çerezleri okuyabilmek için şart
 
-/**
- * GÖRSEL ERİŞİM NOTU: 
- * /uploads klasörü yerel dosyalar için kalmaya devam eder, 
- * ancak yeni eklenen ürünler doğrudan Cloudinary URL'lerini kullanacaktır.
- */
+app.use(cors({
+    // Local'de 5173 (Vite) veya 5500 (Live Server) kullanıyorsan onu yazmalısın
+    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+    credentials: true // 🛡️ Çerezlerin frontend-backend arasında taşınmasına izin verir
+}));
+
+app.use(express.json());
+
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-
-// Statik frontend dosyalarını sunar (Render/Heroku Deployment için)
 app.use(express.static(path.join(__dirname, 'frontend')));
 
-// --- 4. API ROTALARI ---
-// Her bir rota kendi işlevinden sorumlu modüllere yönlendirilir
+// --- API ROTALARI ---
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/products', require('./routes/productRoutes'));
 app.use('/api/orders', require('./routes/orderRoutes'));
 app.use('/api/contact', require('./routes/contactRoutes'));
 app.use('/api/reviews', require('./routes/reviewRoutes'));
 app.use('/api', require('./routes/testRoutes'));
+app.use('/api/logs', require('./routes/logRoutes'));
 
-// API Sağlık Testi (Uptime kontrolü için)
 app.get('/api-status', (req, res) => {
     res.status(200).json({
         success: true,
@@ -53,8 +47,6 @@ app.get('/api-status', (req, res) => {
     });
 });
 
-// --- 5. 404 SAYFA BULUNAMADI ---
-// Tanımlanmamış rotalarda kullanıcıyı 404 sayfasına veya JSON hatasına yönlendirir
 app.use((req, res) => {
     res.status(404);
     if (req.accepts('html')) {
@@ -67,12 +59,9 @@ app.use((req, res) => {
     });
 });
 
-// --- 6. GLOBAL HATA YAKALAYICI (CRITICAL ERROR HANDLER) ---
-// Beklenmedik sunucu hatalarını yakalar, loglar ve sistemin çökmesini engeller
 app.use((err, req, res, next) => {
     console.error("!!! CRITICAL SERVER ERROR !!!");
     console.error(err.stack);
-
     res.status(500);
     if (req.accepts('html')) {
         res.sendFile(path.join(__dirname, 'frontend', '500.html'));
@@ -85,11 +74,10 @@ app.use((err, req, res, next) => {
     });
 });
 
-// --- 7. SUNUCU BAŞLATMA ---
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
     console.log(`--------------------------------------------------`);
-    console.log(`🚀 LUXE BERLIN SERVER IS ACTIVE`);
+    console.log(`🚀 LUXE BERLIN SERVER IS ACTIVE (SECURE MODE)`);
     console.log(`📡 PORT: ${PORT}`);
     console.log(`📁 FRONTEND PATH: ${path.join(__dirname, 'frontend')}`);
     console.log(`☁️ CLOUD STATUS: Ready for Cloudinary & Resend`);

@@ -6,16 +6,13 @@ const jwt = require('jsonwebtoken');
 exports.register = async (req, res) => {
     try {
         const { username, password } = req.body;
-
         if (!username || !password) {
             return res.status(400).json({ message: "Benutzername und Passwort sind erforderlich!" });
         }
-
         const existingUser = await User.findOne({ username });
         if (existingUser) {
             return res.status(400).json({ message: "Dieser Benutzername existiert bereits!" });
         }
-
         const newUser = new User({ username, password });
         await newUser.save();
         res.status(201).json({ message: "Admin erfolgreich erstellt! ✅" });
@@ -45,7 +42,7 @@ exports.deleteAdmin = async (req, res) => {
     }
 };
 
-// Login Fonksiyonu (4 Saatlik Güvenli Oturum)
+// 🛡️ Login Fonksiyonu (HttpOnly Cookie Versiyonu)
 exports.login = async (req, res) => {
     try {
         const { username, password } = req.body;
@@ -60,16 +57,22 @@ exports.login = async (req, res) => {
             return res.status(400).json({ message: "Falsches Passwort!" });
         }
 
-        // --- KRİTİK AYAR: Token Süresi ---
-        // '4h' değeri, oturumun 4 saat boyunca aktif kalmasını sağlar.
         const token = jwt.sign(
             { id: user._id, username: user.username },
             process.env.JWT_SECRET,
             { expiresIn: '4h' }
         );
 
+        // 🛡️ KRİTİK: Token'ı çereze koyuyoruz, body'e değil!
+        res.cookie('token', token, {
+            httpOnly: true, // XSS koruması (JS okuyamaz)
+            secure: process.env.NODE_ENV === 'production', // Canlıda sadece HTTPS
+            sameSite: 'Strict', // CSRF koruması
+            maxAge: 4 * 60 * 60 * 1000 // 4 Saat
+        });
+
         res.json({
-            token,
+            success: true,
             user: { id: user._id, username: user.username }
         });
 
@@ -77,4 +80,25 @@ exports.login = async (req, res) => {
         console.error("LOGIN HATASI:", err.message);
         res.status(500).json({ error: "Serverfehler beim Login" });
     }
+};
+
+// 🛡️ Logout (Çerezi temizler)
+exports.logout = async (req, res) => {
+    res.clearCookie('token');
+    res.json({ message: "Abmeldung erfolgreich. 👋" });
+};
+
+// 🛡️ GetMe (Aktif kullanıcıyı döner)
+exports.getMe = async (req, res) => {
+    try {
+        const user = await User.findById(req.user.id).select('-password');
+        res.json(user);
+    } catch (err) {
+        res.status(500).json({ message: "Serverfehler" });
+    }
+};
+
+// 🛡️ Status (Oturum kontrolü için)
+exports.getStatus = async (req, res) => {
+    res.status(200).json({ authenticated: true });
 };

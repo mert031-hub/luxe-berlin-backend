@@ -1,12 +1,25 @@
 /**
- * LUXE BERLIN - MASTER ADMIN JAVASCRIPT (FULL VERSION)
- * Tüm fonksiyonlar ve güvenlik katmanları dahil edilmiştir.
- * GÜNCELLEME: alert() yerine Luxe Toast bildirim sistemi eklendi.
+ * LUXE BERLIN - MASTER ADMIN JAVASCRIPT (HARDENED SECURITY VERSION)
+ * Tüm fonksiyonlar korunmuş, oturum yönetimi HttpOnly Cookie sistemine taşınmıştır.
+ * LOG SİSTEMİ: Veritabanı tabanlı ve kalıcı hale getirilmiştir.
  */
 
-// 1. OTURUM KONTROLÜ
-if (!localStorage.getItem('adminToken')) {
-    window.location.href = 'login.html';
+// --- GLOBAL DEĞİŞKENLER ---
+let currentUser = "Admin";
+
+// --- 1. OTURUM KONTROLÜ (GÜVENLİ YÖNTEM) ---
+async function checkInitialAuth() {
+    try {
+        const res = await fetch(`${API_URL}/auth/me`, { credentials: 'include' });
+        if (res.ok) {
+            const user = await res.json();
+            currentUser = user.username;
+        } else {
+            window.location.href = 'login.html';
+        }
+    } catch (err) {
+        window.location.href = 'login.html';
+    }
 }
 
 // --- GLOBAL YAPILANDIRMA ---
@@ -25,13 +38,10 @@ let currentChartMode = 'monthly';
 // Geçici veri saklama (Onay bekleyen işlem için)
 let pendingUpdate = { id: null, status: null, selectEl: null };
 
-const getAuthToken = () => localStorage.getItem('adminToken');
-
-// --- 💡 YENİ: LUXE TOAST BİLDİRİM SİSTEMİ ---
+// --- 💡 LUXE TOAST BİLDİRİM SİSTEMİ ---
 function showLuxeAlert(message, type = 'success') {
     let container = document.getElementById('luxe-toast-container');
 
-    // Eğer HTML'de container yoksa dinamik olarak oluştur
     if (!container) {
         container = document.createElement('div');
         container.id = 'luxe-toast-container';
@@ -52,49 +62,67 @@ function showLuxeAlert(message, type = 'success') {
 
     container.appendChild(toast);
 
-    // Animasyonla kaldır
     setTimeout(() => {
         toast.classList.add('fade-out');
         setTimeout(() => toast.remove(), 500);
     }, 4000);
 }
 
+// 🛡️ GÜVENLİK GÜNCELLEMESİ: Hata yönetimi artık 401 alınca direkt logout yapar.
 const handleAuthError = (res) => {
-    if (res.status === 401) {
+    if (res && res.status === 401) {
         showLuxeAlert("Sitzung abgelaufen. Bitte anmelden.", "error");
-        window.logout();
+        setTimeout(() => window.logout(), 2000);
         return null;
     }
     return res;
 };
 
+// 🛡️ GÜVENLİK GÜNCELLEMESİ: Token parse etmek yerine backend'e durum sorar.
 function startAuthWatcher() {
-    setInterval(() => {
-        const token = getAuthToken();
-        if (!token) return;
-
+    setInterval(async () => {
         try {
-            const payload = JSON.parse(atob(token.split('.')[1]));
-            const expiry = payload.exp * 1000;
-            const now = Date.now();
-
-            if (now > expiry) {
-                showLuxeAlert("Ihre Sitzung ist abgelaufen.", "error");
-                window.logout();
-            }
+            const res = await fetch(`${API_URL}/auth/status`, { credentials: 'include' });
+            if (res.status === 401) window.logout();
         } catch (e) {
-            console.error("Token kontrol hatası:", e);
+            console.error("Session check failed");
         }
-    }, 5000);
+    }, 60000); // Dakikada bir kontrol
 }
 
+// --- 🛡️ KALICI LOG SİSTEMİ: VERİTABANINDAN LOGLARI YÜKLE ---
+window.loadLogs = async () => {
+    try {
+        const res = await fetch(`${API_URL}/logs`, { credentials: 'include' }).then(handleAuthError);
+        if (!res) return;
+        const logs = await res.json();
+        const list = document.getElementById('admin-activity-logs');
+        if (!list) return;
+
+        list.innerHTML = "";
+        logs.forEach(log => {
+            const row = `
+                <tr>
+                    <td>${new Date(log.timestamp).toLocaleString('de-DE')}</td>
+                    <td>${log.action}</td>
+                    <td>${log.user}</td>
+                    <td><span class="badge ${log.status === 'Success' ? 'bg-success' : (log.status === 'Deleted' ? 'bg-danger' : 'bg-primary')}">${log.status}</span></td>
+                </tr>`;
+            list.innerHTML += row;
+        });
+    } catch (err) { console.error("Loglar yüklenemedi:", err); }
+};
+
 async function loadDashboard() {
+    await window.loadLogs(); // 🛡️ İlk olarak kalıcı logları çekiyoruz
     if (typeof window.loadOrders === 'function') await window.loadOrders();
     if (typeof window.loadProducts === 'function') await window.loadProducts();
     if (typeof window.loadAdmins === 'function') await window.loadAdmins();
     if (typeof window.loadArchivedProducts === 'function') await window.loadArchivedProducts();
     if (typeof window.loadReviews === 'function') await window.loadReviews();
-    window.logActivity("Dashboard vollständig geladen", "Master Admin", "Success");
+
+    // Dashboard yükleme logunu veritabanına kaydet
+    window.logActivity("Dashboard vollständig geladen", currentUser, "Success");
 }
 
 // --- 1. ANALİTİK GRAFİĞİ ---
@@ -160,7 +188,7 @@ window.changeChartMode = (mode) => {
 window.loadOrders = async () => {
     try {
         const res = await fetch(`${API_URL}/orders`, {
-            headers: { 'x-auth-token': getAuthToken() }
+            credentials: 'include'
         }).then(handleAuthError);
 
         if (!res) return;
@@ -216,13 +244,6 @@ window.openStatusConfirmModal = (id, selectElement) => {
 
     const confirmModal = new bootstrap.Modal(document.getElementById('statusConfirmModal'));
     confirmModal.show();
-
-    document.getElementById('statusConfirmModal').addEventListener('hidden.bs.modal', function () {
-        if (pendingUpdate.id) {
-            pendingUpdate.selectEl.value = pendingUpdate.selectEl.getAttribute('data-current');
-            pendingUpdate = { id: null, status: null, selectEl: null };
-        }
-    }, { once: true });
 };
 
 document.getElementById('confirmStatusBtn')?.addEventListener('click', async () => {
@@ -232,10 +253,8 @@ document.getElementById('confirmStatusBtn')?.addEventListener('click', async () 
     try {
         const res = await fetch(`${API_URL}/orders/${id}`, {
             method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'x-auth-token': getAuthToken()
-            },
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
             body: JSON.stringify({ status })
         }).then(handleAuthError);
 
@@ -245,7 +264,8 @@ document.getElementById('confirmStatusBtn')?.addEventListener('click', async () 
             bootstrap.Modal.getInstance(document.getElementById('statusConfirmModal')).hide();
             await window.loadOrders();
             showLuxeAlert(`Status auf ${status} aktualisiert`, "success");
-            window.logActivity(`Status-Update: ${status}`, "Admin", "Success");
+            // 🛡️ KALICI LOG
+            window.logActivity(`Status-Update: ${status}`, currentUser, "Success");
         }
     } catch (err) {
         console.error("Update Hatası:", err);
@@ -257,11 +277,12 @@ window.deleteOrder = async (id) => {
         try {
             const res = await fetch(`${API_URL}/orders/${id}`, {
                 method: 'DELETE',
-                headers: { 'x-auth-token': getAuthToken() }
+                credentials: 'include'
             }).then(handleAuthError);
             if (res && res.ok) {
                 showLuxeAlert("Bestellung gelöscht", "success");
-                window.logActivity(`Bestellung #LB-${id.slice(-6).toUpperCase()} gelöscht`, "Admin", "Deleted");
+                // 🛡️ KALICI LOG
+                window.logActivity(`Bestellung #LB-${id.slice(-6).toUpperCase()} gelöscht`, currentUser, "Deleted");
                 await window.loadOrders();
             }
         } catch (err) { console.error(err); }
@@ -279,7 +300,6 @@ window.viewDetails = async (id) => {
                 <span class="small text-uppercase fw-bold text-muted d-block mb-1">Bestell-ID</span>
                 <h4 class="fw-bold mb-0 text-navy" style="letter-spacing: 1px;">${o.shortId || '#LB-' + o._id.slice(-6).toUpperCase()}</h4>
             </div>
-
             <div class="row mb-3">
                 <div class="col-md-6 mb-3 mb-md-0">
                     <label class="small fw-bold text-muted d-block mb-1">Zahlungsart</label>
@@ -318,7 +338,7 @@ window.viewDetails = async (id) => {
 // --- 3. ÜRÜN YÖNETİMİ ---
 window.loadProducts = async () => {
     try {
-        const res = await fetch(`${API_URL}/products`).then(handleAuthError);
+        const res = await fetch(`${API_URL}/products`, { credentials: 'include' }).then(handleAuthError);
         if (!res) return;
         const products = await res.json();
         const list = document.getElementById('admin-product-list');
@@ -344,7 +364,7 @@ window.loadProducts = async () => {
 
 window.loadArchivedProducts = async () => {
     try {
-        const res = await fetch(`${API_URL}/products`).then(handleAuthError);
+        const res = await fetch(`${API_URL}/products`, { credentials: 'include' }).then(handleAuthError);
         if (!res) return;
         const archived = (await res.json()).filter(p => p.isDeleted === true);
         const archivedList = document.getElementById('admin-archived-list');
@@ -364,10 +384,11 @@ window.loadArchivedProducts = async () => {
 window.restoreProduct = async (id) => {
     await fetch(`${API_URL}/products/restore/${id}`, {
         method: 'PUT',
-        headers: { 'x-auth-token': getAuthToken() }
+        credentials: 'include'
     }).then(handleAuthError);
     showLuxeAlert("Produkt reaktiviert", "success");
-    window.logActivity(`Produkt wiederhergestellt`, "Admin", "Success");
+    // 🛡️ KALICI LOG
+    window.logActivity(`Produkt wiederhergestellt`, currentUser, "Success");
     await loadDashboard();
 };
 
@@ -375,17 +396,15 @@ window.deleteProduct = async (id) => {
     if (confirm("Produkt archivieren?")) {
         await fetch(`${API_URL}/products/${id}`, {
             method: 'DELETE',
-            headers: { 'x-auth-token': getAuthToken() }
+            credentials: 'include'
         }).then(handleAuthError);
         showLuxeAlert("Produkt archiviert", "success");
-        window.logActivity(`Produkt archiviert`, "Admin", "Deleted");
+        // 🛡️ KALICI LOG
+        window.logActivity(`Produkt archiviert`, currentUser, "Deleted");
         await loadDashboard();
     }
 };
 
-/**
- * Ürün Kaydetme/Güncelleme (Luxe Alert Entegre Edildi)
- */
 document.getElementById('productForm')?.addEventListener('submit', async (e) => {
     e.preventDefault();
 
@@ -409,11 +428,13 @@ document.getElementById('productForm')?.addEventListener('submit', async (e) => 
         const res = await fetch(id ? `${API_URL}/products/${id}` : `${API_URL}/products`, {
             method: id ? 'PUT' : 'POST',
             body: formData,
-            headers: { 'x-auth-token': getAuthToken() }
+            credentials: 'include'
         }).then(handleAuthError);
 
         if (res && res.ok) {
             showLuxeAlert(id ? "Produkt erfolgreich aktualisiert!" : "Neues Produkt hinzugefügt!", "success");
+            // 🛡️ KALICI LOG
+            window.logActivity(id ? `Produkt aktualisiert` : `Neues Produkt erstellt`, currentUser, "Success");
             window.resetProductForm();
             await loadDashboard();
         }
@@ -427,7 +448,7 @@ document.getElementById('productForm')?.addEventListener('submit', async (e) => 
 });
 
 window.editProduct = async (id) => {
-    const res = await fetch(`${API_URL}/products`).then(handleAuthError);
+    const res = await fetch(`${API_URL}/products`, { credentials: 'include' }).then(handleAuthError);
     if (!res) return;
     const products = await res.json();
     const p = products.find(i => i._id === id);
@@ -477,7 +498,7 @@ function calculateStats(orders) {
 window.loadReviews = async () => {
     try {
         const res = await fetch(`${API_URL}/reviews`, {
-            headers: { 'x-auth-token': getAuthToken() }
+            credentials: 'include'
         }).then(handleAuthError);
 
         if (!res) return;
@@ -519,10 +540,8 @@ window.submitReply = async () => {
 
     const res = await fetch(`${API_URL}/reviews/reply/${id}`, {
         method: 'PUT',
-        headers: {
-            'Content-Type': 'application/json',
-            'x-auth-token': getAuthToken()
-        },
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ replyText })
     }).then(handleAuthError);
 
@@ -530,7 +549,8 @@ window.submitReply = async () => {
         bootstrap.Modal.getInstance(document.getElementById('replyModal')).hide();
         window.loadReviews();
         showLuxeAlert("Rezension beantwortet", "success");
-        window.logActivity(`Rezension beantwortet`, "Admin", "Success");
+        // 🛡️ KALICI LOG
+        window.logActivity(`Rezension beantwortet`, currentUser, "Success");
     }
 };
 
@@ -538,9 +558,11 @@ window.deleteReview = async (id) => {
     if (confirm("Rezension löschen?")) {
         await fetch(`${API_URL}/reviews/${id}`, {
             method: 'DELETE',
-            headers: { 'x-auth-token': getAuthToken() }
+            credentials: 'include'
         }).then(handleAuthError);
         showLuxeAlert("Rezension gelöscht", "success");
+        // 🛡️ KALICI LOG
+        window.logActivity(`Rezension gelöscht`, currentUser, "Deleted");
         window.loadReviews();
     }
 };
@@ -548,7 +570,7 @@ window.deleteReview = async (id) => {
 // --- 5. ADMIN & LOG YÖNETİMİ ---
 window.loadAdmins = async () => {
     const res = await fetch(`${API_URL}/auth/users`, {
-        headers: { 'x-auth-token': getAuthToken() }
+        credentials: 'include'
     }).then(handleAuthError);
     if (!res) return;
     const users = await res.json();
@@ -560,6 +582,27 @@ window.loadAdmins = async () => {
     });
 };
 
+window.deleteAdmin = async (id) => {
+    if (confirm("Möchten Sie diesen Admin gerçekten entfernen?")) {
+        try {
+            const res = await fetch(`${API_URL}/auth/users/${id}`, {
+                method: 'DELETE',
+                credentials: 'include'
+            }).then(handleAuthError);
+
+            if (res && res.ok) {
+                showLuxeAlert("Admin wurde entfernt", "success");
+                // 🛡️ KALICI LOG
+                window.logActivity(`Admin gelöscht`, currentUser, "Deleted");
+                await window.loadAdmins();
+            }
+        } catch (err) {
+            console.error("Admin Silme Hatası:", err);
+            showLuxeAlert("Fehler beim Entfernen", "error");
+        }
+    }
+};
+
 document.getElementById('addAdminForm')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const username = document.getElementById('newAdminUser')?.value;
@@ -567,23 +610,33 @@ document.getElementById('addAdminForm')?.addEventListener('submit', async (e) =>
 
     const res = await fetch(`${API_URL}/auth/register`, {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'x-auth-token': getAuthToken()
-        },
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ username, password })
     }).then(handleAuthError);
     if (res && res.ok) {
         showLuxeAlert("Admin registriert!", "success");
+        // 🛡️ KALICI LOG
+        window.logActivity(`Yeni Admin Oluşturuldu: ${username}`, currentUser, "Success");
+        document.getElementById('addAdminForm').reset();
         window.loadAdmins();
     }
 });
 
-window.logActivity = (action, user, status) => {
-    const list = document.getElementById('admin-activity-logs');
-    if (!list) return;
-    const row = `<tr><td>${new Date().toLocaleTimeString()}</td><td>${action}</td><td>${user}</td><td><span class="badge ${status === 'Success' ? 'bg-success' : (status === 'Deleted' ? 'bg-danger' : 'bg-primary')}">${status}</span></td></tr>`;
-    list.insertAdjacentHTML('afterbegin', row);
+// 🛡️ GÜNCELLEME: Logları veritabanına kaydeder ve arayüzü yeniler.
+window.logActivity = async (action, user, status) => {
+    try {
+        await fetch(`${API_URL}/logs`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ action, user, status })
+        });
+        // Kaydettikten sonra listeyi veritabanından güncel olarak çekiyoruz.
+        await window.loadLogs();
+    } catch (err) {
+        console.error("Log kaydedilemedi:", err);
+    }
 };
 
 // --- ARAMA FİLTRELERİ ---
@@ -612,9 +665,18 @@ document.getElementById('reviewSearch')?.addEventListener('input', (e) => {
     });
 });
 
-window.logout = () => { localStorage.removeItem('adminToken'); window.location.href = 'login.html'; };
+// 🛡️ GÜVENLİK GÜNCELLEMESİ: Logout artık backend'e çerezi temizletir.
+window.logout = async () => {
+    try {
+        await fetch(`${API_URL}/auth/logout`, { method: 'POST', credentials: 'include' });
+    } finally {
+        window.location.href = 'login.html';
+    }
+};
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+    // 🛡️ DÜZELTME: Diğer işlemler başlamadan önce kimlik bilgisi alınmalı (await).
+    await checkInitialAuth();
     loadDashboard();
     startAuthWatcher();
 });

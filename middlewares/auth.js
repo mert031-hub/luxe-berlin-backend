@@ -1,8 +1,8 @@
 const jwt = require('jsonwebtoken');
 
 module.exports = function (req, res, next) {
-    // İsteğin başlığındaki (header) token'ı al
-    const token = req.header('x-auth-token');
+    // 🛡️ GÜNCELLEME: İsteğin çerezlerinden (cookies) token'ı al
+    const token = req.cookies.token;
 
     // Token yoksa erişimi reddet
     if (!token) {
@@ -10,10 +10,10 @@ module.exports = function (req, res, next) {
     }
 
     try {
-        // .env dosendaki JWT_SECRET ile doğrula
+        // .env dosyasındaki JWT_SECRET ile doğrula
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
         req.user = decoded;
-        next(); // Görevli onay verdi, asıl işleme geç
+        next();
     } catch (err) {
         res.status(401).json({ message: "Token ist ungültig." });
     }

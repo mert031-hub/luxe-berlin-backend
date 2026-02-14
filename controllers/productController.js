@@ -3,6 +3,8 @@ const Product = require('../models/Product');
 // --- 1. ÜRÜNLERİ LİSTELE ---
 exports.getProducts = async (req, res) => {
     try {
+        // Tüm ürünleri çekiyoruz. 
+        // Not: Frontend tarafındaki filtreleme (isDeleted kontrolü) ile tam uyumlu.
         const products = await Product.find();
         res.json(products);
     } catch (err) {
@@ -15,7 +17,10 @@ exports.createProduct = async (req, res) => {
     try {
         const { name, price, stock, description, tag } = req.body;
 
-        // Multer-Cloudinary storage artık otomatik olarak doğru klasöre (dev/prod) yükleme yapıyor.
+        /**
+         * Cloudinary Notu: req.file.path artık yerel bir yol değil, 
+         * Cloudinary'den gelen tam URL'dir (https://res.cloudinary.com/...).
+         */
         const image = req.file ? req.file.path : '';
 
         const newProduct = new Product({
@@ -23,7 +28,7 @@ exports.createProduct = async (req, res) => {
             price,
             stock,
             description,
-            image,
+            image, // Cloudinary URL'si veritabanına kaydedilir
             tag: tag || "Neu",
             isDeleted: false
         });
@@ -40,8 +45,8 @@ exports.updateProduct = async (req, res) => {
     try {
         const updateData = { ...req.body };
 
+        // Eğer admin yeni bir resim seçtiyse, Cloudinary yeni bir URL verir ve biz onu güncelleriz.
         if (req.file) {
-            // Yeni resim yüklendiğinde de storage ayarın sayesinde doğru klasöre gider.
             updateData.image = req.file.path;
         }
 
@@ -62,8 +67,7 @@ exports.updateProduct = async (req, res) => {
 // --- 4. YUMUŞAK SİLME (DELETE) ---
 exports.deleteProduct = async (req, res) => {
     try {
-        // GÜVENLİK NOTU: Burada resmi Cloudinary'den SİLMİYORUZ. 
-        // Sadece isDeleted: true yapıyoruz. Bu sayede iki ortam arasındaki resimler asla birbirini bozmaz.
+        // Ürünü veritabanından tamamen silmiyoruz, arşivliyoruz.
         const deletedProduct = await Product.findByIdAndUpdate(
             req.params.id,
             { isDeleted: true },
