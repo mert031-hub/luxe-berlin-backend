@@ -1,10 +1,8 @@
 const Product = require('../models/Product');
 
-// 1. Ürünleri Listele
+// --- 1. ÜRÜNLERİ LİSTELE ---
 exports.getProducts = async (req, res) => {
     try {
-        // Frontend filtrelesin demişsin, o yüzden hepsini çekiyoruz.
-        // Ama istersen: .find({ isDeleted: false }) diyerek sadece yayındakileri de çekebilirsin.
         const products = await Product.find();
         res.json(products);
     } catch (err) {
@@ -12,11 +10,12 @@ exports.getProducts = async (req, res) => {
     }
 };
 
-// 2. Ürün Oluştur (POST)
+// --- 2. ÜRÜN OLUŞTUR (POST) ---
 exports.createProduct = async (req, res) => {
     try {
-        const { name, price, stock, description } = req.body;
-        // Resim yoksa boş string, varsa multer'dan gelen path
+        const { name, price, stock, description, tag } = req.body;
+
+        // Multer-Cloudinary storage artık otomatik olarak doğru klasöre (dev/prod) yükleme yapıyor.
         const image = req.file ? req.file.path : '';
 
         const newProduct = new Product({
@@ -25,7 +24,8 @@ exports.createProduct = async (req, res) => {
             stock,
             description,
             image,
-            isDeleted: false // Yeni ürün varsayılan olarak silinmemiş gelir
+            tag: tag || "Neu",
+            isDeleted: false
         });
 
         await newProduct.save();
@@ -35,12 +35,15 @@ exports.createProduct = async (req, res) => {
     }
 };
 
-// 3. Ürün Güncelle (PUT)
+// --- 3. ÜRÜN GÜNCELLE (PUT) ---
 exports.updateProduct = async (req, res) => {
     try {
         const updateData = { ...req.body };
-        // Eğer yeni bir resim yüklendiyse path'i güncelle
-        if (req.file) updateData.image = req.file.path;
+
+        if (req.file) {
+            // Yeni resim yüklendiğinde de storage ayarın sayesinde doğru klasöre gider.
+            updateData.image = req.file.path;
+        }
 
         const updatedProduct = await Product.findByIdAndUpdate(
             req.params.id,
@@ -56,10 +59,11 @@ exports.updateProduct = async (req, res) => {
     }
 };
 
-// 4. Yumuşak Silme (DELETE)
+// --- 4. YUMUŞAK SİLME (DELETE) ---
 exports.deleteProduct = async (req, res) => {
     try {
-        // findByIdAndDelete yerine isDeleted bayrağını işaretle
+        // GÜVENLİK NOTU: Burada resmi Cloudinary'den SİLMİYORUZ. 
+        // Sadece isDeleted: true yapıyoruz. Bu sayede iki ortam arasındaki resimler asla birbirini bozmaz.
         const deletedProduct = await Product.findByIdAndUpdate(
             req.params.id,
             { isDeleted: true },
@@ -71,7 +75,7 @@ exports.deleteProduct = async (req, res) => {
     }
 };
 
-// 5. Arşivden Geri Getirme (RESTORE)
+// --- 5. ARŞİVDEN GERİ GETİRME (RESTORE) ---
 exports.restoreProduct = async (req, res) => {
     try {
         const restoredProduct = await Product.findByIdAndUpdate(

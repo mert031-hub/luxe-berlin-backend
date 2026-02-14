@@ -4,8 +4,8 @@ const { Resend } = require("resend");
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 /**
- * Sipariş durumuna göre mail gönderen servis
- * Premium HTML tasarımı ve shortId optimizasyonu ile güncellendi.
+ * Sipariş durumuna göre mail gönderen servis.
+ * Artık Cloudinary ürün görsellerini tablo içinde gösterir.
  */
 async function sendStatusEmail(order, newStatus) {
     if (!order) return;
@@ -15,7 +15,7 @@ async function sendStatusEmail(order, newStatus) {
     let statusLabel = "Bestell-Update";
     const status = newStatus ? newStatus.toLowerCase() : "";
 
-    // Sipariş durumuna göre içerik ve konu belirleme
+    // 1. Durum Senaryoları
     if (status === "pending" || status === "eingegangen") {
         subject = "Bestellbestätigung - LUXE BERLIN";
         statusLabel = "Bestellbestätigung";
@@ -36,26 +36,40 @@ async function sendStatusEmail(order, newStatus) {
         statusLabel = "Zugestellt";
         message = "Vielen Dank für Ihr Vertrauen in LUXE BERLIN. Wir hoffen, dass Sie viel Freude mit Ihrem Kauf haben!";
     }
+    else if (status === "cancelled" || status === "storniert") {
+        subject = "Bestellung storniert - LUXE BERLIN";
+        statusLabel = "Storniert";
+        message = "Ihre Bestellung wurde erfolgreich storniert. Falls bereits Zahlungen geleistet wurden, werden diese umgehend erstattet.";
+    }
     else {
         subject = "Update zu Ihrer Bestellung";
         message = `Der aktuelle Status Ihrer Bestellung wurde aktualisiert: ${newStatus}`;
     }
 
-    // Ürün Listesi HTML Oluşturma
-    const itemsHTML = (order.items || []).map(item => `
+    // 2. Ürün Listesi HTML (Cloudinary Görselleri Dahil)
+    const itemsHTML = (order.items || []).map(item => {
+        // Eğer productId populated edilmişse görseli çek, yoksa yer tutucu koy
+        const productImg = (item.productId && item.productId.image)
+            ? item.productId.image
+            : 'https://via.placeholder.com/100?text=Luxe+Berlin';
+
+        return `
         <tr>
-            <td style="padding: 12px 0; border-bottom: 1px solid #eeeeee; font-size: 14px;">
+            <td style="padding: 12px 0; border-bottom: 1px solid #eeeeee; width: 60px;">
+                <img src="${productImg}" alt="${item.name}" width="50" height="50" style="border-radius: 6px; object-fit: cover; display: block; border: 1px solid #f0f0f0;">
+            </td>
+            <td style="padding: 12px 15px; border-bottom: 1px solid #eeeeee; font-size: 14px;">
                 <span style="font-weight: 600; color: #1c2541;">${item.qty}x</span> ${item.name}
             </td>
             <td style="padding: 12px 0; border-bottom: 1px solid #eeeeee; text-align: right; font-weight: 600; color: #c5a059; font-size: 14px;">
                 ${new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(item.price * item.qty)}
             </td>
         </tr>
-    `).join('');
+        `;
+    }).join('');
 
     try {
         const { data, error } = await resend.emails.send({
-            // Doğrulanan domain üzerinden gönderim
             from: "LUXE BERLIN <noreply@kocyigit-trade.com>",
             to: [order.customer.email],
             subject: subject,
@@ -89,15 +103,13 @@ async function sendStatusEmail(order, newStatus) {
                     <div class="content">
                         <div class="status-badge">${statusLabel}</div>
                         <h2 style="margin-top: 0; font-size: 22px;">Hallo ${order.customer.firstName},</h2>
-                        <div class="message-box">
-                            ${message}
-                        </div>
+                        <div class="message-box">${message}</div>
                         
                         <div style="margin-bottom: 10px; font-size: 12px; color: #a0aec0; font-weight: 700;">BESTELLÜBERSICHT</div>
                         <table class="order-table">
                             ${itemsHTML}
                             <tr class="total-row">
-                                <td style="padding-top: 20px;">Gesamtsumme</td>
+                                <td colspan="2" style="padding-top: 20px;">Gesamtsumme</td>
                                 <td style="padding-top: 20px; text-align: right; color: #1c2541;">
                                     ${new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(order.totalAmount)}
                                 </td>

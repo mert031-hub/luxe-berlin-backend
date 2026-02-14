@@ -4,6 +4,7 @@ const { sendStatusEmail } = require("../config/mailer");
 
 /**
  * 1️⃣ SİPARİŞ OLUŞTURMA
+ * Cloudinary görsellerini maile gönderebilmek için sipariş sonrası ürünleri içine çekiyoruz.
  */
 exports.createOrder = async (req, res) => {
     try {
@@ -25,7 +26,7 @@ exports.createOrder = async (req, res) => {
             shortId: "TEMP"
         });
 
-        // shortId Oluşturma (Mongo'nun ürettiği asıl ID'den son 6 hane)
+        // shortId Oluşturma
         const generatedShortId = `LB-${newOrder._id.toString().slice(-6).toUpperCase()}`;
         newOrder.shortId = generatedShortId;
 
@@ -36,8 +37,14 @@ exports.createOrder = async (req, res) => {
             await Product.findByIdAndUpdate(item.productId, { $inc: { stock: -item.qty } });
         }
 
+        /**
+         * 🛡️ KRİTİK DEĞİŞİKLİK: 
+         * Mail gönderilmeden önce siparişi ürün detaylarıyla (Cloudinary linkleri dahil) dolduruyoruz.
+         */
+        const populatedOrder = await Order.findById(newOrder._id).populate('items.productId');
+
         // Resend üzerinden arka planda mail gönder
-        sendStatusEmail(newOrder, "pending").catch(err =>
+        sendStatusEmail(populatedOrder, "pending").catch(err =>
             console.error("❌ Onay maili hatası:", err.message)
         );
 
@@ -96,7 +103,8 @@ exports.getOrderById = async (req, res) => {
 exports.updateOrderStatus = async (req, res) => {
     try {
         const { status } = req.body;
-        const updatedOrder = await Order.findByIdAndUpdate(req.params.id, { status }, { new: true });
+        // Güncelleme sonrası veriyi populate ediyoruz ki mailde görseller çıksın
+        const updatedOrder = await Order.findByIdAndUpdate(req.params.id, { status }, { new: true }).populate('items.productId');
 
         if (updatedOrder) {
             sendStatusEmail(updatedOrder, status).catch(err =>
@@ -138,17 +146,16 @@ exports.archiveOrder = async (req, res) => {
  */
 exports.cancelOrder = async (req, res) => {
     try {
-        const order = await Order.findById(req.params.id);
+        // İptal edilirken de ürün bilgilerini çekiyoruz
+        const order = await Order.findById(req.params.id).populate('items.productId');
         if (!order) return res.status(404).json({ message: "Bestellung nicht gefunden." });
 
-        // 🛑 KRİTİK KONTROL: Eğer sipariş "Versandt" veya "Geliefert" ise iptal edilemez.
         if (order.status === "Shipped" || order.status === "Delivered") {
             return res.status(400).json({
                 message: "Bereits versandte Bestellungen können nicht storniert werden. Bitte nutzen Sie das Widerrufsrecht."
             });
         }
 
-        // Durumu iptal olarak güncelle
         order.status = "Cancelled";
         await order.save();
 

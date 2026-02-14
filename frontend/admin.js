@@ -1,6 +1,7 @@
 /**
  * LUXE BERLIN - MASTER ADMIN JAVASCRIPT (FULL VERSION)
  * Tüm fonksiyonlar ve güvenlik katmanları dahil edilmiştir.
+ * GÜNCELLEME: alert() yerine Luxe Toast bildirim sistemi eklendi.
  */
 
 // 1. OTURUM KONTROLÜ
@@ -26,9 +27,41 @@ let pendingUpdate = { id: null, status: null, selectEl: null };
 
 const getAuthToken = () => localStorage.getItem('adminToken');
 
+// --- 💡 YENİ: LUXE TOAST BİLDİRİM SİSTEMİ ---
+function showLuxeAlert(message, type = 'success') {
+    let container = document.getElementById('luxe-toast-container');
+
+    // Eğer HTML'de container yoksa dinamik olarak oluştur
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'luxe-toast-container';
+        document.body.appendChild(container);
+    }
+
+    const toast = document.createElement('div');
+    toast.className = `luxe-toast ${type}`;
+    const icon = type === 'success' ? 'fa-check-circle' : 'fa-exclamation-triangle';
+
+    toast.innerHTML = `
+        <i class="fas ${icon}"></i>
+        <div class="toast-content">
+            <div class="toast-title">Luxe Berlin Admin</div>
+            <div class="toast-msg">${message}</div>
+        </div>
+    `;
+
+    container.appendChild(toast);
+
+    // Animasyonla kaldır
+    setTimeout(() => {
+        toast.classList.add('fade-out');
+        setTimeout(() => toast.remove(), 500);
+    }, 4000);
+}
+
 const handleAuthError = (res) => {
     if (res.status === 401) {
-        alert("Sitzung abgelaufen. Bitte melden Sie sich erneut an.");
+        showLuxeAlert("Sitzung abgelaufen. Bitte anmelden.", "error");
         window.logout();
         return null;
     }
@@ -46,8 +79,7 @@ function startAuthWatcher() {
             const now = Date.now();
 
             if (now > expiry) {
-                console.warn("Token süresi doldu, otomatik çıkış yapılıyor...");
-                alert("Ihre Sitzung ist abgelaufen.");
+                showLuxeAlert("Ihre Sitzung ist abgelaufen.", "error");
                 window.logout();
             }
         } catch (e) {
@@ -170,7 +202,6 @@ window.loadOrders = async () => {
     } catch (err) { console.error("Sipariş Yükleme Hatası:", err); }
 };
 
-// --- YENİ ONAY MODALI MANTIĞI ---
 window.openStatusConfirmModal = (id, selectElement) => {
     const oldStatus = selectElement.getAttribute('data-current');
     const newStatus = selectElement.value;
@@ -178,17 +209,14 @@ window.openStatusConfirmModal = (id, selectElement) => {
 
     if (oldStatus === newStatus) return;
 
-    // Modal İçeriğini Doldur
     document.getElementById('modal-old-status').innerText = labels[oldStatus] || oldStatus;
     document.getElementById('modal-new-status').innerText = labels[newStatus] || newStatus;
 
-    // İşlemi hafızaya al
     pendingUpdate = { id, status: newStatus, selectEl: selectElement };
 
     const confirmModal = new bootstrap.Modal(document.getElementById('statusConfirmModal'));
     confirmModal.show();
 
-    // Modal iptal edilirse (kapandığında hala id varsa) dropdown'ı geri çek
     document.getElementById('statusConfirmModal').addEventListener('hidden.bs.modal', function () {
         if (pendingUpdate.id) {
             pendingUpdate.selectEl.value = pendingUpdate.selectEl.getAttribute('data-current');
@@ -213,9 +241,10 @@ document.getElementById('confirmStatusBtn')?.addEventListener('click', async () 
 
         if (res && res.ok) {
             selectEl.setAttribute('data-current', status);
-            pendingUpdate = { id: null, status: null, selectEl: null }; // ID'yi sil ki hidden.bs.modal tetiklenince geri çekmesin
+            pendingUpdate = { id: null, status: null, selectEl: null };
             bootstrap.Modal.getInstance(document.getElementById('statusConfirmModal')).hide();
             await window.loadOrders();
+            showLuxeAlert(`Status auf ${status} aktualisiert`, "success");
             window.logActivity(`Status-Update: ${status}`, "Admin", "Success");
         }
     } catch (err) {
@@ -231,6 +260,7 @@ window.deleteOrder = async (id) => {
                 headers: { 'x-auth-token': getAuthToken() }
             }).then(handleAuthError);
             if (res && res.ok) {
+                showLuxeAlert("Bestellung gelöscht", "success");
                 window.logActivity(`Bestellung #LB-${id.slice(-6).toUpperCase()} gelöscht`, "Admin", "Deleted");
                 await window.loadOrders();
             }
@@ -238,10 +268,6 @@ window.deleteOrder = async (id) => {
     }
 };
 
-/**
- * GÜNCELLENDİ: DETAILS MODALI
- * Sipariş Kodu eklendi, Mail taşması önlendi.
- */
 window.viewDetails = async (id) => {
     const o = allOrdersData.find(item => item._id === id);
     if (!o) return;
@@ -340,6 +366,7 @@ window.restoreProduct = async (id) => {
         method: 'PUT',
         headers: { 'x-auth-token': getAuthToken() }
     }).then(handleAuthError);
+    showLuxeAlert("Produkt reaktiviert", "success");
     window.logActivity(`Produkt wiederhergestellt`, "Admin", "Success");
     await loadDashboard();
 };
@@ -350,16 +377,23 @@ window.deleteProduct = async (id) => {
             method: 'DELETE',
             headers: { 'x-auth-token': getAuthToken() }
         }).then(handleAuthError);
+        showLuxeAlert("Produkt archiviert", "success");
         window.logActivity(`Produkt archiviert`, "Admin", "Deleted");
         await loadDashboard();
     }
 };
 
+/**
+ * Ürün Kaydetme/Güncelleme (Luxe Alert Entegre Edildi)
+ */
 document.getElementById('productForm')?.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const id = document.getElementById('pId').value;
-    const formData = new FormData();
 
+    const submitBtn = document.getElementById('productSubmitBtn');
+    const originalBtnText = submitBtn.innerHTML;
+    const id = document.getElementById('pId').value;
+
+    const formData = new FormData();
     formData.append('name', document.getElementById('pName').value);
     formData.append('price', document.getElementById('pPrice').value);
     formData.append('stock', document.getElementById('pStock').value);
@@ -368,16 +402,27 @@ document.getElementById('productForm')?.addEventListener('submit', async (e) => 
     const fileInput = document.getElementById('pImageFile');
     if (fileInput && fileInput.files[0]) formData.append('image', fileInput.files[0]);
 
-    const res = await fetch(id ? `${API_URL}/products/${id}` : `${API_URL}/products`, {
-        method: id ? 'PUT' : 'POST',
-        body: formData,
-        headers: { 'x-auth-token': getAuthToken() }
-    }).then(handleAuthError);
+    try {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Hochladen...';
 
-    if (res && res.ok) {
-        alert("Erfolgreich!");
-        window.resetProductForm();
-        loadDashboard();
+        const res = await fetch(id ? `${API_URL}/products/${id}` : `${API_URL}/products`, {
+            method: id ? 'PUT' : 'POST',
+            body: formData,
+            headers: { 'x-auth-token': getAuthToken() }
+        }).then(handleAuthError);
+
+        if (res && res.ok) {
+            showLuxeAlert(id ? "Produkt erfolgreich aktualisiert!" : "Neues Produkt hinzugefügt!", "success");
+            window.resetProductForm();
+            await loadDashboard();
+        }
+    } catch (err) {
+        console.error("Yükleme Hatası:", err);
+        showLuxeAlert("Fehler beim Hochladen.", "error");
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalBtnText;
     }
 });
 
@@ -410,7 +455,8 @@ window.editProduct = async (id) => {
 window.resetProductForm = () => {
     document.getElementById('productForm').reset();
     document.getElementById('pId').value = "";
-    document.getElementById('imagePreview').classList.add('d-none');
+    const preview = document.getElementById('imagePreview');
+    if (preview) preview.classList.add('d-none');
     document.getElementById('productFormTitle').innerText = "Produkt hinzufügen";
     document.getElementById('productSubmitBtn').innerText = "Speichern";
     document.getElementById('cancelEditBtn').classList.add('d-none');
@@ -418,9 +464,13 @@ window.resetProductForm = () => {
 
 function calculateStats(orders) {
     const valid = orders.filter(o => o.status !== 'Cancelled');
-    document.getElementById('stat-count').innerText = valid.length;
-    document.getElementById('stat-revenue').innerText = euro.format(valid.reduce((s, o) => s + o.totalAmount, 0));
-    document.getElementById('stat-customers').innerText = new Set(valid.map(o => o.customer.email)).size;
+    const statCount = document.getElementById('stat-count');
+    const statRev = document.getElementById('stat-revenue');
+    const statCust = document.getElementById('stat-customers');
+
+    if (statCount) statCount.innerText = valid.length;
+    if (statRev) statRev.innerText = euro.format(valid.reduce((s, o) => s + o.totalAmount, 0));
+    if (statCust) statCust.innerText = new Set(valid.map(o => o.customer.email)).size;
 }
 
 // --- 4. YORUM YÖNETİMİ ---
@@ -479,6 +529,7 @@ window.submitReply = async () => {
     if (res && res.ok) {
         bootstrap.Modal.getInstance(document.getElementById('replyModal')).hide();
         window.loadReviews();
+        showLuxeAlert("Rezension beantwortet", "success");
         window.logActivity(`Rezension beantwortet`, "Admin", "Success");
     }
 };
@@ -489,6 +540,7 @@ window.deleteReview = async (id) => {
             method: 'DELETE',
             headers: { 'x-auth-token': getAuthToken() }
         }).then(handleAuthError);
+        showLuxeAlert("Rezension gelöscht", "success");
         window.loadReviews();
     }
 };
@@ -522,7 +574,7 @@ document.getElementById('addAdminForm')?.addEventListener('submit', async (e) =>
         body: JSON.stringify({ username, password })
     }).then(handleAuthError);
     if (res && res.ok) {
-        alert("Admin registriert!");
+        showLuxeAlert("Admin registriert!", "success");
         window.loadAdmins();
     }
 });
@@ -574,7 +626,8 @@ window.addEventListener("load", function () {
             preloader.classList.add("preloader-hidden");
             setTimeout(() => {
                 if (typeof AOS !== 'undefined') { AOS.init({ duration: 1000, once: true }); }
-                document.getElementById('adminMainContent').classList.remove('d-none');
+                const content = document.getElementById('adminMainContent');
+                if (content) content.classList.remove('d-none');
                 preloader.style.display = "none";
             }, 1000);
         }, 1200);
