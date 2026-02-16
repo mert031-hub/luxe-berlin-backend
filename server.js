@@ -1,8 +1,9 @@
 /**
- * LUXE BERLIN - OFFICIAL BACKEND SERVER (SECURE VERSION)
+ * LUXE BERLIN - OFFICIAL BACKEND SERVER (ULTRA STABLE VERSION)
  */
 
 require('dotenv').config();
+
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
@@ -10,41 +11,55 @@ const dns = require('dns');
 const cookieParser = require('cookie-parser');
 const connectDB = require('./config/db');
 
-// DNS Önceliği (Render ve MongoDB uyumu için)
+// 🔥 CRASH ÖNLEYİCİ GLOBAL HANDLERLAR
+process.on('uncaughtException', (err) => {
+    console.error('💥 UNCAUGHT EXCEPTION!');
+    console.error(err);
+});
+
+process.on('unhandledRejection', (err) => {
+    console.error('💥 UNHANDLED PROMISE REJECTION!');
+    console.error(err);
+});
+
+// DNS Önceliği (Mongo uyumu için)
 dns.setDefaultResultOrder('ipv4first');
 
 const app = express();
 
-// Veritabanı Bağlantısı
+// Eğer Nginx reverse proxy kullanıyorsan önemli
+app.set('trust proxy', 1);
+
+// --- VERİTABANI ---
 connectDB();
 
-// --- ARA YAZILIMLAR (MIDDLEWARES) ---
-app.use(cookieParser()); // Çerez işlemleri için şart
-app.use(express.json()); // JSON gövde okuma
+// --- MIDDLEWARE ---
+app.use(cookieParser());
+app.use(express.json());
 
-// 📡 İSTEK TAKİP SİSTEMİ (Render loglarında her şeyi görmeni sağlar)
+// Request log
 app.use((req, res, next) => {
-    console.log(`[${new Date().toLocaleTimeString()}] ${req.method} ${req.url}`);
+    console.log(`[${new Date().toISOString()}] ${req.method} ${req.originalUrl}`);
     next();
 });
 
-// 🛡️ ZIRHLI CORS YAPILANDIRMASI
+// --- CORS ---
 app.use(cors({
     origin: [
         'https://kocyigit-trade.com',
         'https://www.kocyigit-trade.com',
         'http://localhost:5173',
         'http://localhost:5000',
-        'http://127.0.0.1:5500' // Live Server desteği
+        'http://127.0.0.1:5500'
     ],
-    credentials: true // Çerezlerin taşınmasına izin verir
+    credentials: true
 }));
 
-// --- STATİK DOSYALAR ---
+// --- STATIC ---
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use(express.static(path.join(__dirname, 'frontend')));
 
-// --- API ROTALARI ---
+// --- ROUTES ---
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/products', require('./routes/productRoutes'));
 app.use('/api/orders', require('./routes/orderRoutes'));
@@ -53,7 +68,7 @@ app.use('/api/reviews', require('./routes/reviewRoutes'));
 app.use('/api/logs', require('./routes/logRoutes'));
 app.use('/api', require('./routes/testRoutes'));
 
-// API Durum Kontrolü
+// API Health Check
 app.get('/api-status', (req, res) => {
     res.status(200).json({
         success: true,
@@ -63,41 +78,39 @@ app.get('/api-status', (req, res) => {
     });
 });
 
-// --- 404 HATA YÖNETİMİ ---
+// --- 404 ---
 app.use((req, res) => {
     res.status(404);
+
     if (req.accepts('html')) {
-        res.sendFile(path.join(__dirname, 'frontend', '404.html'));
-        return;
+        return res.sendFile(path.join(__dirname, 'frontend', '404.html'));
     }
+
     res.json({ success: false, message: "Ressource nicht gefunden." });
 });
 
-// --- 500 KRİTİK HATA YÖNETİMİ ---
+// --- GLOBAL ERROR HANDLER ---
 app.use((err, req, res, next) => {
-    console.error("!!! CRITICAL SERVER ERROR !!!");
-    console.error(err.stack);
-    res.status(err.status || 500);
+    console.error("🚨 GLOBAL ERROR HANDLER TRIGGERED");
+    console.error(err.stack || err);
 
-    if (req.accepts('html')) {
-        res.sendFile(path.join(__dirname, 'frontend', '500.html'));
-        return;
-    }
-
-    res.json({
+    res.status(err.status || 500).json({
         success: false,
         message: "Ein interner Serverfehler ist aufgetreten!",
-        error: process.env.NODE_ENV === 'development' ? err.message : "Internal Server Error"
+        error: process.env.NODE_ENV === 'development'
+            ? err.message
+            : "Internal Server Error"
     });
 });
 
-// Sunucu Başlatma
+// --- SERVER START ---
 const PORT = process.env.PORT || 5000;
+
 app.listen(PORT, () => {
-    console.log(`--------------------------------------------------`);
-    console.log(`🚀 LUXE BERLIN SERVER IS ACTIVE (SECURE MODE)`);
+    console.log("--------------------------------------------------");
+    console.log("🚀 LUXE BERLIN SERVER IS ACTIVE (STABLE MODE)");
     console.log(`📡 PORT: ${PORT}`);
-    console.log(`📁 FRONTEND PATH: ${path.join(__dirname, 'frontend')}`);
-    console.log(`☁️ CLOUD STATUS: Ready for Cloudinary & Resend`);
-    console.log(`--------------------------------------------------`);
+    console.log(`🌍 ENV: ${process.env.NODE_ENV}`);
+    console.log(`☁️ CLOUDINARY: ${process.env.CLOUDINARY_CLOUD_NAME ? "Configured" : "NOT CONFIGURED"}`);
+    console.log("--------------------------------------------------");
 });

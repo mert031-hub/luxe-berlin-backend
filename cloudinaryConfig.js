@@ -1,22 +1,14 @@
 const cloudinary = require('cloudinary').v2;
-const multerStorageCloudinary = require('multer-storage-cloudinary');
 const multer = require('multer');
+const CloudinaryStorage = require('multer-storage-cloudinary');
 
-/**
- * 🛡️ UNIVERSAL CONSTRUCTOR FIX
- * Bazı sürümlerde obje, bazılarında direkt fonksiyon gelir.
- * Bu yapı her iki ihtimali de kapsar.
- */
-let CloudinaryStorage;
-if (multerStorageCloudinary.CloudinaryStorage) {
-    CloudinaryStorage = multerStorageCloudinary.CloudinaryStorage;
-} else {
-    CloudinaryStorage = multerStorageCloudinary;
-}
-
-// Güvenlik Kontrolü: Eğer hala constructor değilse logla
-if (typeof CloudinaryStorage !== 'function') {
-    console.error("CRITICAL: CloudinaryStorage is NOT a constructor! Check your npm version.");
+// ENV kontrolü
+if (
+    !process.env.CLOUDINARY_CLOUD_NAME ||
+    !process.env.CLOUDINARY_API_KEY ||
+    !process.env.CLOUDINARY_API_SECRET
+) {
+    throw new Error("Cloudinary environment variables are missing!");
 }
 
 cloudinary.config({
@@ -27,11 +19,8 @@ cloudinary.config({
 
 const storage = new CloudinaryStorage({
     cloudinary: cloudinary,
-    params: {
-        folder: process.env.CLOUDINARY_FOLDER || 'luxe_berlin_products',
-        allowed_formats: ['jpg', 'png', 'jpeg', 'webp'],
-        transformation: [{ width: 1000, height: 1000, crop: 'limit' }]
-    }
+    folder: process.env.CLOUDINARY_FOLDER || 'luxe_berlin_products',
+    allowedFormats: ['jpg', 'png', 'jpeg', 'webp']
 });
 
 const uploadCloud = multer({
