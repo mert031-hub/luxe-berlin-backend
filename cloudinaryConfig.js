@@ -2,11 +2,7 @@ const cloudinary = require('cloudinary').v2;
 const multerStorageCloudinary = require('multer-storage-cloudinary');
 const multer = require('multer');
 
-/**
- * 🛡️ UNIVERSAL IMPORT FIX: 
- * Bazı sürümlerde direkt, bazı sürümlerde obje içinde gelir.
- * Bu satır her iki durumda da constructor'ı doğru yakalar.
- */
+// 🛡️ BURASI ÇOK KRİTİK: Constructor hatasını çözen "Universal" tanımlama
 const CloudinaryStorage = multerStorageCloudinary.CloudinaryStorage || multerStorageCloudinary;
 
 cloudinary.config({
@@ -29,7 +25,7 @@ const storage = new CloudinaryStorage({
 
 const uploadCloud = multer({
     storage: storage,
-    limits: { fileSize: 5 * 1024 * 1024 } // Max 5MB
+    limits: { fileSize: 5 * 1024 * 1024 } // 5MB Sınırı
 });
 
 module.exports = uploadCloud;
