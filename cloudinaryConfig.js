@@ -2,11 +2,21 @@ const cloudinary = require('cloudinary').v2;
 const multerStorageCloudinary = require('multer-storage-cloudinary');
 const multer = require('multer');
 
-// 🛡️ EN ÖNEMLİ SATIR: Constructor hatasını (TypeError) evrensel olarak çözer.
-const CloudinaryStorage = multerStorageCloudinary.CloudinaryStorage || multerStorageCloudinary;
+/**
+ * 🛡️ UNIVERSAL CONSTRUCTOR FIX
+ * Bazı sürümlerde obje, bazılarında direkt fonksiyon gelir.
+ * Bu yapı her iki ihtimali de kapsar.
+ */
+let CloudinaryStorage;
+if (multerStorageCloudinary.CloudinaryStorage) {
+    CloudinaryStorage = multerStorageCloudinary.CloudinaryStorage;
+} else {
+    CloudinaryStorage = multerStorageCloudinary;
+}
 
-if (!CloudinaryStorage || typeof CloudinaryStorage !== 'function') {
-    console.error("!!! MULTER-STORAGE-CLOUDINARY YÜKLENEMEDİ !!!");
+// Güvenlik Kontrolü: Eğer hala constructor değilse logla
+if (typeof CloudinaryStorage !== 'function') {
+    console.error("CRITICAL: CloudinaryStorage is NOT a constructor! Check your npm version.");
 }
 
 cloudinary.config({
