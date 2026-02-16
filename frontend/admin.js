@@ -23,9 +23,10 @@ async function checkInitialAuth() {
 }
 
 // --- GLOBAL YAPILANDIRMA ---
+// 🛡️ DÜZELTME: Canlı ortamda belirsizliği önlemek için tam URL eklendi.
 const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
     ? 'http://localhost:5000/api'
-    : '/api';
+    : 'https://kocyigit-trade.com/api';
 
 const API = API_URL;
 const UPLOADS_URL = '';
@@ -345,7 +346,8 @@ window.loadProducts = async () => {
         if (!list) return;
         list.innerHTML = "";
         products.filter(p => p.isDeleted !== true).forEach(p => {
-            let imgSrc = p.image ? (p.image.startsWith('http') ? p.image : `/${p.image}`) : 'https://placehold.co/150';
+            // 🛡️ DÜZELTME: Render'da olmayan 'uploads' klasörüne gitmesini engelliyoruz.
+            let imgSrc = p.image && p.image.startsWith('http') ? p.image : 'https://placehold.co/150';
 
             list.innerHTML += `
                 <tr class="product-row">
@@ -371,9 +373,11 @@ window.loadArchivedProducts = async () => {
         if (!archivedList) return;
         archivedList.innerHTML = archived.length ? "" : "<tr><td class='text-muted small text-center p-3'>Keine Archiv.</td></tr>";
         archived.forEach(p => {
+            // 🛡️ DÜZELTME: Arşivde de resim kontrolü.
+            let imgSrc = p.image && p.image.startsWith('http') ? p.image : 'https://placehold.co/150';
             archivedList.innerHTML += `
             <tr>
-                <td><img src="${p.image ? (p.image.startsWith('http') ? p.image : `/${p.image}`) : 'https://placehold.co/150'}" width="30" class="grayscale rounded shadow-sm"></td>
+                <td><img src="${imgSrc}" width="30" class="grayscale rounded shadow-sm"></td>
                 <td class="small text-muted ps-3">${p.name}</td>
                 <td class="text-end"><button class="btn btn-sm btn-outline-success border-0 py-0" onclick="restoreProduct('${p._id}')">Geri Getir ♻️</button></td>
             </tr>`;
@@ -412,13 +416,20 @@ document.getElementById('productForm')?.addEventListener('submit', async (e) => 
     const originalBtnText = submitBtn.innerHTML;
     const id = document.getElementById('pId').value;
 
+    const fileInput = document.getElementById('pImageFile');
+
+    // 🛡️ DÜZELTME: 4MB üstü dosyaları yüklemeyi engelleyerek timeout'u (sonsuz dönmeyi) önler.
+    if (fileInput.files[0] && fileInput.files[0].size > 4 * 1024 * 1024) {
+        showLuxeAlert("Datei zu groß! Max. 4MB erlaubt.", "error");
+        return;
+    }
+
     const formData = new FormData();
     formData.append('name', document.getElementById('pName').value);
     formData.append('price', document.getElementById('pPrice').value);
     formData.append('stock', document.getElementById('pStock').value);
     formData.append('description', document.getElementById('pDesc').value);
 
-    const fileInput = document.getElementById('pImageFile');
     if (fileInput && fileInput.files[0]) formData.append('image', fileInput.files[0]);
 
     try {
@@ -437,10 +448,14 @@ document.getElementById('productForm')?.addEventListener('submit', async (e) => 
             window.logActivity(id ? `Produkt aktualisiert` : `Neues Produkt erstellt`, currentUser, "Success");
             window.resetProductForm();
             await loadDashboard();
+        } else if (res) {
+            // 🛡️ DÜZELTME: Hata durumunda da butonu aktif et.
+            const errData = await res.json();
+            showLuxeAlert("Fehler: " + errData.message, "error");
         }
     } catch (err) {
         console.error("Yükleme Hatası:", err);
-        showLuxeAlert("Fehler beim Hochladen.", "error");
+        showLuxeAlert("Netzwerkfehler beim Hochladen.", "error");
     } finally {
         submitBtn.disabled = false;
         submitBtn.innerHTML = originalBtnText;
@@ -464,7 +479,8 @@ window.editProduct = async (id) => {
     const previewImg = document.getElementById('previewImg');
     if (preview && previewImg && p.image) {
         preview.classList.remove('d-none');
-        previewImg.src = p.image.startsWith('http') ? p.image : `/${p.image}`;
+        // 🛡️ DÜZELTME: Preview kısmında resim yolu kontrolü.
+        previewImg.src = p.image.startsWith('http') ? p.image : 'https://placehold.co/150';
     }
 
     document.getElementById('productFormTitle').innerText = "Produkt bearbeiten";
