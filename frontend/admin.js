@@ -442,20 +442,31 @@ document.getElementById('productForm')?.addEventListener('submit', async (e) => 
             credentials: 'include'
         }).then(handleAuthError);
 
-        if (res && res.ok) {
+        // 🛡️ KRİTİK HATA YÖNETİMİ: 502/500 gibi JSON olmayan cevapları yakalar
+        if (!res) return; // handleAuthError tarafından yönetildi
+
+        if (res.ok) {
+            // Başarılı durumda JSON oku
+            const data = await res.json();
             showLuxeAlert(id ? "Produkt erfolgreich aktualisiert!" : "Neues Produkt hinzugefügt!", "success");
-            // 🛡️ KALICI LOG
             window.logActivity(id ? `Produkt aktualisiert` : `Neues Produkt erstellt`, currentUser, "Success");
             window.resetProductForm();
             await loadDashboard();
-        } else if (res) {
-            // 🛡️ DÜZELTME: Hata durumunda da butonu aktif et.
-            const errData = await res.json();
-            showLuxeAlert("Fehler: " + errData.message, "error");
+        } else {
+            // 🛡️ SyntaxError Engelleyici: JSON değilse metin olarak hata mesajını al
+            const contentType = res.headers.get("content-type");
+            if (contentType && contentType.indexOf("application/json") !== -1) {
+                const errData = await res.json();
+                showLuxeAlert("Fehler: " + (errData.message || "Unbekannter Fehler"), "error");
+            } else {
+                const errorText = await res.text();
+                console.error("Server Error HTML:", errorText);
+                showLuxeAlert("Server-Fehler (502). Bitte Render-Logs prüfen.", "error");
+            }
         }
     } catch (err) {
         console.error("Yükleme Hatası:", err);
-        showLuxeAlert("Netzwerkfehler beim Hochladen.", "error");
+        showLuxeAlert("Netzwerkfehler beim Hochladen (Timeout).", "error");
     } finally {
         submitBtn.disabled = false;
         submitBtn.innerHTML = originalBtnText;
