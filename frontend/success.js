@@ -1,9 +1,16 @@
 /**
  * LUXE BERLIN - SUCCESS PAGE LOGIC
+ * FIX: Sipariş özetine ürün görselleri eklendi.
  */
 
 const euro = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' });
-const API_URL = '/api';
+
+// API URL Senkronu
+const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    ? 'http://localhost:5000/api'
+    : '/api';
+
+const UPLOADS_URL = ''; // Gerektiğinde doldurulabilir
 
 async function loadOrderSuccess() {
     const urlParams = new URLSearchParams(window.location.search);
@@ -32,13 +39,25 @@ async function loadOrderSuccess() {
 
             if (res.ok) {
                 const list = document.getElementById('summary-list');
-                if (list) {
-                    list.innerHTML = order.items.map(item => `
-                        <div class="summary-item d-flex justify-content-between align-items-center">
-                            <span class="small"><strong>${item.qty}x</strong> ${item.name}</span>
-                            <span class="small fw-bold">${euro.format(item.price * item.qty)}</span>
-                        </div>
-                    `).join('');
+                if (list && order.items) {
+                    list.innerHTML = order.items.map(item => {
+                        // 🛡️ SENIOR FIX: Ürün görselini productId üzerinden veya yedek olarak çek
+                        const imgPath = item.productId?.image || 'https://via.placeholder.com/50';
+                        const finalImg = imgPath.startsWith('http') ? imgPath : `${UPLOADS_URL}/${imgPath}`;
+
+                        return `
+                            <div class="summary-item d-flex justify-content-between align-items-center mb-3">
+                                <div class="d-flex align-items-center">
+                                    <img src="${finalImg}" width="45" height="45" class="me-3 rounded shadow-sm" style="object-fit: cover; border: 1px solid rgba(0,0,0,0.05);">
+                                    <div class="d-flex flex-column">
+                                        <span class="small fw-bold text-dark">${item.name}</span>
+                                        <span class="text-muted" style="font-size: 0.75rem;">Menge: ${item.qty}</span>
+                                    </div>
+                                </div>
+                                <span class="small fw-bold text-navy">${euro.format(item.price * item.qty)}</span>
+                            </div>
+                        `;
+                    }).join('');
                 }
 
                 const totalEl = document.getElementById('totalAmountText');
@@ -65,9 +84,9 @@ async function loadOrderSuccess() {
 function copyOrderId() {
     const orderIdText = document.getElementById('orderIdText');
     const idBox = document.getElementById('idBox');
-    const orderId = orderIdText.innerText;
+    const orderId = orderIdText?.innerText;
 
-    if (orderId === "Laden...") return;
+    if (!orderId || orderId === "Laden...") return;
 
     navigator.clipboard.writeText(orderId).then(() => {
         idBox.classList.add('copied');
@@ -91,12 +110,11 @@ window.addEventListener("load", function () {
                     AOS.init({
                         duration: 1000,
                         once: true,
-                        offset: 50, // Fix: Mobilde daha erken görünmesi için düşürüldü
+                        offset: 50,
                         disableMutationObserver: false
                     });
                     AOS.refresh();
                 }
-                // AOS senkronizasyonu için sanal scroll tetikle
                 window.dispatchEvent(new Event('scroll'));
                 preloader.style.display = "none";
             }, 1000);

@@ -1,5 +1,7 @@
 /**
  * LUXE BERLIN - OFFICIAL BACKEND SERVER (ULTRA STABLE VERSION)
+ * OPTİMİZASYON: Gereksiz statik dosya logları filtrelendi.
+ * ENTEGRASYON: Admin Dashboard ve GDPR Zamanlayıcı eklendi.
  */
 
 require('dotenv').config();
@@ -10,6 +12,10 @@ const path = require('path');
 const dns = require('dns');
 const cookieParser = require('cookie-parser');
 const connectDB = require('./config/db');
+
+// 🛡️ ENTEGRASYON EKLEMELERİ
+const cron = require('node-cron'); // npm install node-cron yapmalısın
+const runGdprCleanup = require('./utils/gdprManager');
 
 // 🔥 CRASH ÖNLEYİCİ GLOBAL HANDLERLAR
 process.on('uncaughtException', (err) => {
@@ -33,13 +39,26 @@ app.set('trust proxy', 1);
 // --- VERİTABANI ---
 connectDB();
 
+// 🛡️ DSGVO/GDPR ZAMANLAYICI (Her gece 03:00'te otomatik temizlik yapar)
+cron.schedule('0 3 * * *', () => {
+    runGdprCleanup();
+});
+
 // --- MIDDLEWARE ---
 app.use(cookieParser());
 app.use(express.json());
 
-// Request log
+// 🛡️ OPTİMİZE EDİLMİŞ REQUEST LOG (Gürültü Filtresi)
 app.use((req, res, next) => {
-    console.log(`[${new Date().toISOString()}] ${req.method} ${req.originalUrl}`);
+    // Terminalde GÖRMEK İSTEMEDİĞİN dosya uzantıları
+    const ignoreExtensions = ['.css', '.js', '.png', '.jpg', '.jpeg', '.svg', '.json', '.ico', '.map'];
+    const isStaticFile = ignoreExtensions.some(ext => req.url.toLowerCase().endsWith(ext));
+
+    // Sadece önemli istekleri (API, HTML veya Root) logla
+    if (!isStaticFile) {
+        const timestamp = new Date().toISOString();
+        console.log(`[${timestamp}] ${req.method} ${req.originalUrl}`);
+    }
     next();
 });
 
@@ -60,6 +79,10 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use(express.static(path.join(__dirname, 'frontend')));
 
 // --- ROUTES ---
+
+// 🛡️ KRİTİK: Frontend Admin Paneli ile Backend Dashboard'u bağlayan köprü
+app.use('/api/admin', require('./routes/adminRoutes'));
+
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/products', require('./routes/productRoutes'));
 app.use('/api/orders', require('./routes/orderRoutes'));

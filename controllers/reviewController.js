@@ -1,6 +1,5 @@
 const Review = require('../models/Review');
 
-// Tüm yorumları getir
 exports.getAllReviews = async (req, res) => {
     try {
         const reviews = await Review.find().sort({ createdAt: -1 });
@@ -10,10 +9,14 @@ exports.getAllReviews = async (req, res) => {
     }
 };
 
-// Yeni yorum oluştur
 exports.createReview = async (req, res) => {
     try {
-        const newReview = new Review(req.body);
+        // Model ile uyum için req.body içindeki veriyi map ediyoruz
+        const newReview = new Review({
+            name: req.body.name,
+            text: req.body.text || req.body.comment, // fallback
+            rating: req.body.rating || req.body.stars // fallback
+        });
         await newReview.save();
         res.status(201).json(newReview);
     } catch (err) {
@@ -21,7 +24,6 @@ exports.createReview = async (req, res) => {
     }
 };
 
-// Admin Cevabı
 exports.replyToReview = async (req, res) => {
     try {
         const updatedReview = await Review.findByIdAndUpdate(
@@ -35,12 +37,11 @@ exports.replyToReview = async (req, res) => {
     }
 };
 
-// Yorum Sil
-exports.deleteReview = async (req, res) => {
+exports.deleteReview = async (id) => {
     try {
-        await Review.findByIdAndDelete(req.params.id);
-        res.json({ message: "Rezension gelöscht." });
+        await Review.findByIdAndDelete(id);
+        return { success: true };
     } catch (err) {
-        res.status(500).json({ message: "Fehler beim Löschen." });
+        throw err;
     }
 };

@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const orderController = require('../controllers/orderController');
+const auth = require('../middlewares/auth');
 
 /**
  * LUXE BERLIN - ORDER ROUTES
@@ -11,19 +12,19 @@ const orderController = require('../controllers/orderController');
 router.post('/', orderController.createOrder);
 
 // 2. Tüm siparişleri listeleme (Admin Panel)
-router.get('/', orderController.getAllOrders);
+router.get('/', auth, orderController.getAllOrders);
 
 // 3. Tekil sipariş sorgulama (Tracking)
 router.get('/:id', orderController.getOrderById);
 
 // 4. Sipariş durumunu güncelleme (Admin Panel)
-router.put('/:id', orderController.updateOrderStatus);
+router.put('/:id', auth, orderController.updateOrderStatus);
 
 // 5. Siparişi veritabanından tamamen silme
-router.delete('/:id', orderController.deleteOrder);
+router.delete('/:id', auth, orderController.deleteOrder);
 
 // 6. Siparişi arşivleme (Admin Panel)
-router.patch('/:id/archive', orderController.archiveOrder);
+router.patch('/:id/archive', auth, orderController.archiveOrder);
 
 // 7. Sipariş İptal Etme (Müşteri/Yasal İptal Sistemi)
 router.post('/:id/cancel', orderController.cancelOrder);

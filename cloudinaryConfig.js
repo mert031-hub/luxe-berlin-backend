@@ -1,15 +1,9 @@
 const cloudinary = require('cloudinary').v2;
-const multer = require('multer');
-const CloudinaryStorage = require('multer-storage-cloudinary');
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
 
-// ENV kontrolü
-if (
-    !process.env.CLOUDINARY_CLOUD_NAME ||
-    !process.env.CLOUDINARY_API_KEY ||
-    !process.env.CLOUDINARY_API_SECRET
-) {
-    throw new Error("Cloudinary environment variables are missing!");
-}
+/**
+ * LUXE BERLIN - CLOUDINARY CONFIG (V8)
+ */
 
 cloudinary.config({
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -19,13 +13,15 @@ cloudinary.config({
 
 const storage = new CloudinaryStorage({
     cloudinary: cloudinary,
-    folder: process.env.CLOUDINARY_FOLDER || 'luxe_berlin_products',
-    allowedFormats: ['jpg', 'png', 'jpeg', 'webp']
+    params: {
+        folder: process.env.CLOUDINARY_FOLDER || 'luxe_berlin_products',
+        allowed_formats: ['jpg', 'png', 'jpeg', 'webp'],
+        transformation: [{ width: 1000, height: 1000, crop: 'limit' }]
+    }
 });
 
-const uploadCloud = multer({
-    storage: storage,
-    limits: { fileSize: 5 * 1024 * 1024 }
-});
-
-module.exports = uploadCloud;
+// 🛡️ KRİTİK: Nesne olarak export ediyoruz ki Router içinden storage'ı alabilsin.
+module.exports = {
+    cloudinary,
+    storage
+};

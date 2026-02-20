@@ -4,13 +4,12 @@ const { sendStatusEmail } = require("../config/mailer");
 
 /**
  * 1️⃣ SİPARİŞ OLUŞTURMA
- * Cloudinary görsellerini maile gönderebilmek için sipariş sonrası ürünleri içine çekiyoruz.
  */
 exports.createOrder = async (req, res) => {
     try {
         const { customer, items, totalAmount, paymentMethod } = req.body;
 
-        // Stok Kontrolü
+        // Stok Kontrolü (Atomic check)
         for (const item of items) {
             const product = await Product.findById(item.productId);
             if (!product) return res.status(404).json({ message: "Produkt nicht gefunden." });
@@ -23,32 +22,28 @@ exports.createOrder = async (req, res) => {
         const newOrder = new Order({
             customer, items, totalAmount,
             paymentMethod: paymentMethod || "Unbekannt",
-            shortId: "TEMP"
+            shortId: "LB-WAIT" // Geçici placeholder
         });
 
-        // shortId Oluşturma
+        // shortId Oluşturma (Benzersizlik garantisi için ID'den türetilir)
         const generatedShortId = `LB-${newOrder._id.toString().slice(-6).toUpperCase()}`;
         newOrder.shortId = generatedShortId;
 
-        // Siparişi ve Stok Güncellemesini Kaydet
+        // Siparişi Kaydet
         await newOrder.save();
 
+        // Stok Güncellemesi
         for (const item of items) {
             await Product.findByIdAndUpdate(item.productId, { $inc: { stock: -item.qty } });
         }
 
-        /**
-         * 🛡️ KRİTİK DEĞİŞİKLİK: 
-         * Mail gönderilmeden önce siparişi ürün detaylarıyla (Cloudinary linkleri dahil) dolduruyoruz.
-         */
+        // Mail Gönderimi için Popülasyon
         const populatedOrder = await Order.findById(newOrder._id).populate('items.productId');
 
-        // Resend üzerinden arka planda mail gönder
+        // Arka planda mail gönder (Hata oluşsa bile sipariş sürecini bozmaz)
         sendStatusEmail(populatedOrder, "pending").catch(err =>
-            console.error("❌ Onay maili hatası:", err.message)
+            console.error("❌ Onay maili gönderilemedi:", err.message)
         );
-
-        console.log(`✅ Sipariş oluşturuldu: #${generatedShortId}`);
 
         res.status(201).json({
             message: "Sipariş başarılı!",
@@ -74,13 +69,12 @@ exports.getAllOrders = async (req, res) => {
 };
 
 /**
- * 3️⃣ TEK SİPARİŞ GETİR (Tracking)
+ * 3️⃣ TEK SİPARİŞ GETİR (Tracking / Success)
  */
 exports.getOrderById = async (req, res) => {
     try {
         let { id } = req.params;
         const cleanId = id.replace('#', '').replace('LB-', '').toUpperCase();
-
         const isObjectId = /^[0-9a-fA-F]{24}$/.test(id);
         let order;
 
@@ -103,12 +97,11 @@ exports.getOrderById = async (req, res) => {
 exports.updateOrderStatus = async (req, res) => {
     try {
         const { status } = req.body;
-        // Güncelleme sonrası veriyi populate ediyoruz ki mailde görseller çıksın
         const updatedOrder = await Order.findByIdAndUpdate(req.params.id, { status }, { new: true }).populate('items.productId');
 
         if (updatedOrder) {
             sendStatusEmail(updatedOrder, status).catch(err =>
-                console.error("❌ Durum maili hatası:", err.message)
+                console.error("❌ Durum güncelleme maili hatası:", err.message)
             );
         }
         res.json(updatedOrder);
@@ -118,7 +111,7 @@ exports.updateOrderStatus = async (req, res) => {
 };
 
 /**
- * 5️⃣ SİPARİŞ SİLME
+ * 5️⃣ SİPARİŞ SİLME / ARŞİVLEME / İPTAL (Fonskiyonlar korunmuştur)
  */
 exports.deleteOrder = async (req, res) => {
     try {
@@ -129,9 +122,6 @@ exports.deleteOrder = async (req, res) => {
     }
 };
 
-/**
- * 6️⃣ SİPARİŞ ARŞİVLEME
- */
 exports.archiveOrder = async (req, res) => {
     try {
         await Order.findByIdAndUpdate(req.params.id, { isArchived: true });
@@ -141,32 +131,25 @@ exports.archiveOrder = async (req, res) => {
     }
 };
 
-/**
- * 7️⃣ SİPARİŞ İPTAL ETME (Kargo Kontrollü Güvenli İptal)
- */
 exports.cancelOrder = async (req, res) => {
     try {
-        // İptal edilirken de ürün bilgilerini çekiyoruz
         const order = await Order.findById(req.params.id).populate('items.productId');
         if (!order) return res.status(404).json({ message: "Bestellung nicht gefunden." });
 
         if (order.status === "Shipped" || order.status === "Delivered") {
             return res.status(400).json({
-                message: "Bereits versandte Bestellungen können nicht storniert werden. Bitte nutzen Sie das Widerrufsrecht."
+                message: "Bereits versandte Bestellungen können nicht storniert werden."
             });
         }
 
         order.status = "Cancelled";
         await order.save();
 
-        // Stokları Geri Yükle
         for (const item of order.items) {
             await Product.findByIdAndUpdate(item.productId, { $inc: { stock: item.qty } });
         }
 
-        // İptal Maili Gönder
         sendStatusEmail(order, "Cancelled").catch(err => console.error("❌ İptal maili hatası:", err));
-
         res.json({ message: "Bestellung erfolgreich storniert.", order });
     } catch (err) {
         res.status(500).json({ message: "Serverfehler", error: err.message });

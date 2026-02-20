@@ -12,6 +12,7 @@ router.post('/login', authController.login);
  */
 // GÜVENLİK KALKANI TEKRAR AKTİF! 🔒
 router.post('/register', auth, authController.register);
+
 // --- KORUMALI ROTALAR (Token Gerektirenler) ---
 router.post('/logout', auth, authController.logout);
 router.get('/me', auth, authController.getMe);

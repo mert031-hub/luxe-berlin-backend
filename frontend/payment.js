@@ -5,6 +5,7 @@
 let products = [];
 let cart = JSON.parse(localStorage.getItem('luxeCartArray')) || [];
 
+// API URL - Diğer dosyalarla senkronize edildi
 const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
     ? 'http://localhost:5000/api'
     : '/api';
@@ -82,7 +83,16 @@ window.confirmClearFullCart = () => {
 
 window.updateCartItemQty = (id, d) => {
     const i = cart.find(x => x.id === id), p = products.find(x => x.id === id);
-    if (i && p && i.qty + d >= 1 && i.qty + d <= p.stock) {
+    if (!i || !p) return;
+
+    // 🛡️ SENIOR FIX: Eğer miktar 1 iken eksiye basılırsa ürünü sil.
+    if (i.qty + d < 1) {
+        removeFromCart(id);
+        return;
+    }
+
+    // Stok sınırları dahilinde artır/azalt
+    if (i.qty + d <= p.stock) {
         i.qty += d;
         localStorage.setItem('luxeCartArray', JSON.stringify(cart));
         loadCheckout();
@@ -152,11 +162,11 @@ document.getElementById('checkoutForm')?.addEventListener('submit', async (e) =>
             window.location.href = `./success.html?orderId=${result.orderId}&displayId=${result.shortId}`;
         } else {
             alert("Fehler: " + (result.message || "Bestellung fehlgeschlagen."));
+            if (btn) { btn.disabled = false; btn.innerText = "ZAHLUNGSPFLICHTIG BESTELLEN"; }
         }
     } catch (err) {
         console.error("Ödeme hatası:", err);
         alert("Serververbindung fehlgeschlagen. Bitte versuchen Sie es später erneut.");
-    } finally {
         if (btn) { btn.disabled = false; btn.innerText = "ZAHLUNGSPFLICHTIG BESTELLEN"; }
     }
 });

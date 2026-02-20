@@ -25,10 +25,10 @@ const OrderSchema = new mongoose.Schema({
             },
             name: { type: String, required: true },
             qty: { type: Number, required: true, min: 1 },
-            price: { type: Number, required: true }
+            price: { type: Number, required: true, min: 0 }
         }
     ],
-    totalAmount: { type: Number, required: true },
+    totalAmount: { type: Number, required: true, min: 0 },
     paymentMethod: { type: String, default: "Unbekannt" },
     status: { type: String, default: 'Pending' },
     date: { type: Date, default: Date.now },
@@ -36,10 +36,8 @@ const OrderSchema = new mongoose.Schema({
 });
 
 // 🚀 BACKEND OPTİMİZASYONU (EK İNDEKSLER)
-// Not: shortId indeksi yukarıdaki unique: true ile otomatik oluşturulduğu için buraya tekrar eklemiyoruz.
-
-OrderSchema.index({ "customer.email": 1 }); // Müşteri geçmişi ve filtreleme sorguları için
-OrderSchema.index({ status: 1 });           // Admin panelindeki durum filtrelemeleri için
-OrderSchema.index({ date: -1 });            // En yeni siparişlerin her zaman en üstte hızlı gelmesi için
+OrderSchema.index({ "customer.email": 1 }); // Müşteri geçmişi için
+OrderSchema.index({ status: 1 });           // Durum filtrelemeleri için
+OrderSchema.index({ date: -1 });            // Hızlı sıralama için
 
 module.exports = mongoose.model('Order', OrderSchema);

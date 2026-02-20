@@ -3,6 +3,9 @@
  * Tüm özellikler: Sepet Onarımı, Miktar Koruması, 1 Yorum Sınırı, Karakter Sayacı, 
  * İsim Sınırı (50 Karakter) ve Küfür Filtresi Onarımı.
  * GÜNCELLEME: Yorum ses efekti kaldırıldı.
+ * FIX: Back butonu sonrası ürün hortlama ve grid senkronizasyon sorunu giderildi.
+ * FIX: Manuel miktar girişindeki "1"in arkasına ekleme (append) bug'ı giderildi.
+ * NEW: Boş sepetle ödeme sayfasına gidiş engellendi (Checkout Guard).
  */
 
 // --- GLOBAL DEĞİŞKENLER ---
@@ -91,6 +94,9 @@ function renderProducts(listToDisplay) {
     const grid = document.getElementById('product-grid-container');
     if (!grid) return;
 
+    // 🛡️ SENIOR FIX: Render sırasında daima LocalStorage'daki en güncel sepeti kullan.
+    cart = JSON.parse(localStorage.getItem('luxeCartArray')) || [];
+
     grid.innerHTML = listToDisplay.map(p => {
         const inCart = cart.find(i => i.id === p.id)?.qty || 0;
         const avail = p.stock - inCart;
@@ -170,7 +176,6 @@ async function initTestimonials() {
     if (showMoreWrapper) showMoreWrapper.style.display = testimonials.length > shownReviewsCount ? "block" : "none";
 }
 
-// ONARIM: Yorum Sayaç Mantığı & İsim Sınırı (50 Karakter)
 function initReviewCounter() {
     const revTextArea = document.getElementById('revText');
     const charCounter = document.getElementById('char-count');
@@ -191,7 +196,6 @@ function initReviewCounter() {
     }
 }
 
-// ONARIM: Daha Fazla Göster Buton Etkileşimi
 document.addEventListener('click', function (e) {
     if (e.target && e.target.id === 'showMoreReviewsBtn') {
         shownReviewsCount += 6;
@@ -236,7 +240,6 @@ document.getElementById('reviewForm')?.addEventListener('submit', async (e) => {
             await initTestimonials();
             e.target.reset();
             document.getElementById('char-count').innerText = "0 / 500";
-            // GÜNCELLEME: Sesli uyarı buradan kaldırıldı.
             new bootstrap.Modal(document.getElementById('reviewLimitModal')).show();
         }
     } catch (err) {
@@ -249,12 +252,27 @@ window.setupModal = function (id) {
     selectedProduct = products.find(p => p.id === id);
     if (!selectedProduct) return;
 
+    cart = JSON.parse(localStorage.getItem('luxeCartArray')) || [];
     const inCart = cart.find(i => i.id === selectedProduct.id)?.qty || 0;
     const avail = selectedProduct.stock - inCart;
     currentQty = avail > 0 ? 1 : 0;
 
+    const qtyInput = document.getElementById('qtyInput');
     document.getElementById('mImg').src = selectedProduct.img;
     document.getElementById('mTitle').innerText = selectedProduct.name;
+
+    // SENIOR UX: Input'a tıklandığında otomatik tümünü seç
+    if (qtyInput) {
+        qtyInput.onfocus = function () { this.select(); };
+        qtyInput.onblur = function () {
+            if (this.value === "" || parseInt(this.value) < 1) {
+                currentQty = avail > 0 ? 1 : 0;
+                this.value = currentQty;
+                updateModalUI();
+            }
+        };
+    }
+
     const errorDisplay = document.getElementById('mQtyError');
     if (errorDisplay) { errorDisplay.innerText = ""; errorDisplay.style.display = "none"; }
 
@@ -272,12 +290,14 @@ function updateModalUI() {
     const avail = selectedProduct.stock - inCart;
 
     const qtyInput = document.getElementById('qtyInput');
-    if (qtyInput) qtyInput.value = currentQty;
+    if (qtyInput && document.activeElement !== qtyInput) {
+        qtyInput.value = currentQty;
+    }
 
     document.getElementById('mPriceDisplay').innerText = euro.format(selectedProduct.price * currentQty);
 
     const addBtn = document.getElementById('add-to-cart-btn');
-    if (addBtn) addBtn.disabled = avail <= 0;
+    if (addBtn) addBtn.disabled = avail <= 0 || currentQty <= 0;
 
     const statusBox = document.getElementById('mStockStatus');
     if (statusBox) {
@@ -310,13 +330,26 @@ window.validateManualQty = function (input) {
     const errorDisplay = document.getElementById('mQtyError');
 
     let valStr = input.value.replace(/[^0-9]/g, '');
+
+    if (valStr === "") {
+        currentQty = 0;
+        document.getElementById('mPriceDisplay').innerText = euro.format(0);
+        const addBtn = document.getElementById('add-to-cart-btn');
+        if (addBtn) addBtn.disabled = true;
+        return;
+    }
+
     let val = parseInt(valStr);
 
-    if (isNaN(val) || val < 1) { val = 1; if (errorDisplay) errorDisplay.style.display = "none"; }
     if (val > avail) {
         val = avail;
-        if (errorDisplay) { errorDisplay.innerText = `Maximal ${avail} Stück verfügbar.`; errorDisplay.style.display = "block"; }
-    } else { if (errorDisplay) errorDisplay.style.display = "none"; }
+        if (errorDisplay) {
+            errorDisplay.innerText = `Maximal ${avail} Stück verfügbar.`;
+            errorDisplay.style.display = "block";
+        }
+    } else {
+        if (errorDisplay) errorDisplay.style.display = "none";
+    }
 
     currentQty = val;
     input.value = val;
@@ -330,6 +363,9 @@ window.blockNonIntegers = function (e) {
 // --- 6. SEPET YÖNETİMİ VE ONARIMI ---
 window.addToCart = function () {
     if (currentQty <= 0) return;
+
+    cart = JSON.parse(localStorage.getItem('luxeCartArray')) || [];
+
     const item = cart.find(i => i.id === selectedProduct.id);
     if (item) item.qty += currentQty;
     else cart.push({ id: selectedProduct.id, qty: currentQty });
@@ -340,6 +376,19 @@ window.addToCart = function () {
 
     bootstrap.Modal.getInstance(document.getElementById('luxeModal')).hide();
     showLuxeAlert("Artikel zum Warenkorb hinzugefügt.", "success");
+}
+
+/**
+ * 🛡️ SENIOR FIX: Ödeme sayfasına gidişi kontrol eden bekçi fonksiyonu
+ */
+window.handleCheckoutNavigation = function (e) {
+    const currentCart = JSON.parse(localStorage.getItem('luxeCartArray')) || [];
+    if (currentCart.length === 0) {
+        if (e) e.preventDefault();
+        showLuxeAlert("Ihr Warenkorb ist leer. Bitte fügen Sie zuerst ein Produkt hinzu.", "warning");
+        return false;
+    }
+    return true;
 }
 
 function updateCartUI() {
@@ -357,8 +406,15 @@ function updateCartUI() {
     const floatTotal = document.getElementById('float-total-amount');
 
     if (floatBar && floatTotal) {
-        if (totalQty > 0) { floatBar.classList.add('active'); floatTotal.innerText = euro.format(totalPrice); }
-        else floatBar.classList.remove('active');
+        if (totalQty > 0) {
+            floatBar.classList.add('active');
+            floatTotal.innerText = euro.format(totalPrice);
+            // Floating bar'a tıklandığında kontrolü tetikle
+            floatBar.onclick = (e) => handleCheckoutNavigation(e);
+        } else {
+            floatBar.classList.remove('active');
+            floatBar.onclick = null;
+        }
     }
 
     if (validCartItems.length !== cart.length) {
@@ -373,6 +429,17 @@ document.addEventListener('DOMContentLoaded', () => {
     initTheme();
     initTestimonials();
     initReviewCounter();
+
+    // 🛡️ SENIOR FIX: Tüm checkout ve ödeme linklerini bekçiye bağla
+    document.querySelectorAll('a[href*="checkout"], a[href*="payment"], a[href*="cart.html"]').forEach(link => {
+        link.addEventListener('click', (e) => handleCheckoutNavigation(e));
+    });
+});
+
+window.addEventListener('pageshow', (event) => {
+    cart = JSON.parse(localStorage.getItem('luxeCartArray')) || [];
+    if (products.length > 0) renderProducts(products);
+    updateCartUI();
 });
 
 window.addEventListener("load", function () {

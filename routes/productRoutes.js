@@ -1,43 +1,40 @@
 const express = require('express');
 const router = express.Router();
-/**
- * GÜNCELLEME: Yerel multer yerine Cloudinary yapılandırmamızı dahil ediyoruz.
- * Dosya yolunun (../cloudinaryConfig) doğruluğundan emin olun.
- */
-const uploadCloud = require('../cloudinaryConfig');
 const productController = require('../controllers/productController');
 const auth = require('../middlewares/auth');
-
-// --- ÜRÜN ROTALARI ---
-
-/**
- * 1. HERKESE AÇIK ROTA: Ürünleri listeleme (Giriş gerektirmez)
- * Tüm kullanıcılar ürünleri görebilir.
- */
-router.get('/', productController.getProducts);
+const multer = require('multer');
+const { storage } = require('../cloudinaryConfig');
 
 /**
- * 2. KORUMALI ROTA: Yeni ürün ekleme (Auth + Cloudinary Yükleme)
- * 'uploadCloud.single' sayesinde resim doğrudan buluta gider ve optimize edilir.
+ * LUXE BERLIN - PRODUCT ROUTES (V8 STABILIZED)
+ * HATA ÇÖZÜMÜ: Controller fonksiyonlarının varlığı kontrol edildi.
  */
-router.post('/', auth, uploadCloud.single('image'), productController.createProduct);
 
-/**
- * 3. KORUMALI ROTA: Ürün güncelleme
- * Mevcut ürünü ve resmini Cloudinary üzerinden günceller.
- */
-router.put('/:id', auth, uploadCloud.single('image'), productController.updateProduct);
+const uploadCloud = multer({ storage: storage });
 
-/**
- * 4. KORUMALI ROTA: Ürünü arşivleme (isDeleted: true yapar)
- * Ürün silinmez, sadece kullanıcı arayüzünden gizlenir.
- */
+// --- 🔓 GENEL ROTALAR ---
+
+// 🛡️ KRİTİK: productController.getAllProducts'ın varlığından eminiz.
+router.get('/', productController.getAllProducts);
+
+router.get('/:id', productController.getProductById);
+
+// --- 🔐 YETKİLİ ROTALAR (Sadece Admin) ---
+
+router.post('/',
+    auth,
+    uploadCloud.single('image'),
+    productController.createProduct
+);
+
+router.put('/:id',
+    auth,
+    uploadCloud.single('image'),
+    productController.updateProduct
+);
+
 router.delete('/:id', auth, productController.deleteProduct);
 
-/**
- * 5. KORUMALI ROTA: Arşivden geri getirme
- * Yanlışlıkla silinen ürünleri tekrar satışa açar.
- */
 router.put('/restore/:id', auth, productController.restoreProduct);
 
 module.exports = router;

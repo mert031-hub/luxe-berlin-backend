@@ -63,12 +63,11 @@ exports.login = async (req, res) => {
             { expiresIn: '4h' }
         );
 
-        // 🛡️ KRİTİK: Token'ı çereze koyuyoruz, body'e değil!
         res.cookie('token', token, {
-            httpOnly: true, // XSS koruması (JS okuyamaz)
-            secure: process.env.NODE_ENV === 'production', // Canlıda sadece HTTPS
-            sameSite: 'Strict', // CSRF koruması
-            maxAge: 4 * 60 * 60 * 1000 // 4 Saat
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'Strict',
+            maxAge: 4 * 60 * 60 * 1000
         });
 
         res.json({
@@ -82,13 +81,11 @@ exports.login = async (req, res) => {
     }
 };
 
-// 🛡️ Logout (Çerezi temizler)
 exports.logout = async (req, res) => {
     res.clearCookie('token');
     res.json({ message: "Abmeldung erfolgreich. 👋" });
 };
 
-// 🛡️ GetMe (Aktif kullanıcıyı döner)
 exports.getMe = async (req, res) => {
     try {
         const user = await User.findById(req.user.id).select('-password');
@@ -98,7 +95,6 @@ exports.getMe = async (req, res) => {
     }
 };
 
-// 🛡️ Status (Oturum kontrolü için)
 exports.getStatus = async (req, res) => {
     res.status(200).json({ authenticated: true });
 };
