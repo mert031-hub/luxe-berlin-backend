@@ -1,7 +1,7 @@
 /**
- * LUXE BERLIN - OFFICIAL BACKEND SERVER (ULTRA STABLE VERSION)
- * OPTİMİZASYON: Gereksiz statik dosya logları filtrelendi.
- * ENTEGRASYON: Admin Dashboard ve GDPR Zamanlayıcı eklendi.
+ * LUXE BERLIN - OFFICIAL BACKEND SERVER (ULTRA STABLE & FAST VERSION)
+ * OPTİMİZASYON: Gzip/Brotli Sıkıştırma (Compression) ve Static Caching eklendi.
+ * ENTEGRASYON: Admin Dashboard ve GDPR Zamanlayıcı korundu.
  */
 
 require('dotenv').config();
@@ -11,10 +11,11 @@ const cors = require('cors');
 const path = require('path');
 const dns = require('dns');
 const cookieParser = require('cookie-parser');
+const compression = require('compression'); // 🚀 Hız paketi
 const connectDB = require('./config/db');
 
 // 🛡️ ENTEGRASYON EKLEMELERİ
-const cron = require('node-cron'); // npm install node-cron yapmalısın
+const cron = require('node-cron');
 const runGdprCleanup = require('./utils/gdprManager');
 
 // 🔥 CRASH ÖNLEYİCİ GLOBAL HANDLERLAR
@@ -33,6 +34,18 @@ dns.setDefaultResultOrder('ipv4first');
 
 const app = express();
 
+// --- ⚡ HIZ VE PERFORMANS MİDDLEWARE'LERİ ---
+
+// 1. Gzip Sıkıştırma: Veri transfer boyutunu %70'e kadar düşürür.
+app.use(compression());
+
+// 2. Static Caching: Tarayıcılara statik dosyaları (logo, js, css) önbelleğe almasını söyler.
+// Bu sayede siteye ikinci kez giren bir müşteri, dosyaları tekrar indirmez, anında açılır.
+const staticOptions = {
+    maxAge: '1d', // Dosyalar 1 gün boyunca tarayıcı önbelleğinde saklanır
+    etag: true
+};
+
 // Eğer Nginx reverse proxy kullanıyorsan önemli
 app.set('trust proxy', 1);
 
@@ -50,11 +63,9 @@ app.use(express.json());
 
 // 🛡️ OPTİMİZE EDİLMİŞ REQUEST LOG (Gürültü Filtresi)
 app.use((req, res, next) => {
-    // Terminalde GÖRMEK İSTEMEDİĞİN dosya uzantıları
     const ignoreExtensions = ['.css', '.js', '.png', '.jpg', '.jpeg', '.svg', '.json', '.ico', '.map'];
     const isStaticFile = ignoreExtensions.some(ext => req.url.toLowerCase().endsWith(ext));
 
-    // Sadece önemli istekleri (API, HTML veya Root) logla
     if (!isStaticFile) {
         const timestamp = new Date().toISOString();
         console.log(`[${timestamp}] ${req.method} ${req.originalUrl}`);
@@ -75,14 +86,12 @@ app.use(cors({
 }));
 
 // --- STATIC ---
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-app.use(express.static(path.join(__dirname, 'frontend')));
+// Uploads ve Frontend klasörlerine performans (cache) ayarları uygulandı.
+app.use('/uploads', express.static(path.join(__dirname, 'uploads'), staticOptions));
+app.use(express.static(path.join(__dirname, 'frontend'), staticOptions));
 
 // --- ROUTES ---
-
-// 🛡️ KRİTİK: Frontend Admin Paneli ile Backend Dashboard'u bağlayan köprü
 app.use('/api/admin', require('./routes/adminRoutes'));
-
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/products', require('./routes/productRoutes'));
 app.use('/api/orders', require('./routes/orderRoutes'));
@@ -104,11 +113,9 @@ app.get('/api-status', (req, res) => {
 // --- 404 ---
 app.use((req, res) => {
     res.status(404);
-
     if (req.accepts('html')) {
         return res.sendFile(path.join(__dirname, 'frontend', '404.html'));
     }
-
     res.json({ success: false, message: "Ressource nicht gefunden." });
 });
 
@@ -120,9 +127,7 @@ app.use((err, req, res, next) => {
     res.status(err.status || 500).json({
         success: false,
         message: "Ein interner Serverfehler ist aufgetreten!",
-        error: process.env.NODE_ENV === 'development'
-            ? err.message
-            : "Internal Server Error"
+        error: process.env.NODE_ENV === 'development' ? err.message : "Internal Server Error"
     });
 });
 
@@ -131,9 +136,10 @@ const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
     console.log("--------------------------------------------------");
-    console.log("🚀 LUXE BERLIN SERVER IS ACTIVE (STABLE MODE)");
+    console.log("🚀 LUXE BERLIN SERVER IS ACTIVE (FAST & STABLE)");
     console.log(`📡 PORT: ${PORT}`);
     console.log(`🌍 ENV: ${process.env.NODE_ENV}`);
+    console.log(`⚡ SPEED: Compression & Caching Active`);
     console.log(`☁️ CLOUDINARY: ${process.env.CLOUDINARY_CLOUD_NAME ? "Configured" : "NOT CONFIGURED"}`);
     console.log("--------------------------------------------------");
 });

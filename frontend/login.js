@@ -1,13 +1,37 @@
 /**
  * LUXE BERLIN - ADMIN LOGIN LOGIC (SECURE VERSION)
+ * Stage 2 Mühürü: Luxe Toast Sistemi ve Generic Hata Yönetimi eklendi.
  */
 
-// --- DINAMİK API YAPILANDIRMASI ---
 const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
     ? 'http://localhost:5000/api'
     : '/api';
 
-// 1. PRELOADER & AOS INITIALIZATION
+// --- 💡 LUXE TOAST SİSTEMİ (Login Özel) ---
+function showLuxeAlert(message, type = 'success') {
+    let container = document.getElementById('luxe-toast-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'luxe-toast-container';
+        document.body.appendChild(container);
+    }
+    const toast = document.createElement('div');
+    toast.className = `luxe-toast ${type}`;
+    const icon = type === 'success' ? 'fa-check-circle' : 'fa-exclamation-triangle';
+    toast.innerHTML = `
+        <i class="fas ${icon}"></i>
+        <div class="toast-content">
+            <div class="toast-title">Luxe Berlin Gate</div>
+            <div class="toast-msg">${message}</div>
+        </div>`;
+    container.appendChild(toast);
+    setTimeout(() => {
+        toast.classList.add('fade-out');
+        setTimeout(() => toast.remove(), 500);
+    }, 4000);
+}
+
+// 1. PRELOADER & AOS
 window.addEventListener("load", function () {
     const preloader = document.getElementById("preloader");
     if (preloader) {
@@ -31,33 +55,32 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
     const username = document.getElementById('user').value;
     const password = document.getElementById('pass').value;
 
-    // Butonu geçici olarak devre dışı bırak
     loginBtn.disabled = true;
-    loginBtn.innerText = "Authentifizierung...";
+    loginBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Authentifizierung...';
 
     try {
         const response = await fetch(`${API_URL}/auth/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username, password }),
-            // 🛡️ KRİTİK: Backend'den gelen HttpOnly çerezini kabul et
-            credentials: 'include'
+            credentials: 'include' // 🛡️ HttpOnly Cookie için şart
         });
 
         const data = await response.json();
 
         if (response.ok) {
-            // ❌ localStorage.setItem('adminToken', ...) SİLİNDİ!
-            // Tarayıcı çerezi otomatik olarak kilitledi.
-            window.location.href = 'admin.html';
+            showLuxeAlert("Zugriff gewährt. Willkommen.", "success");
+            setTimeout(() => {
+                window.location.href = 'admin.html';
+            }, 1000);
         } else {
-            alert("Zugriff verweigert: " + (data.message || "Falsche Daten"));
+            showLuxeAlert(data.message || "Anmeldung fehlgeschlagen.", "error");
             loginBtn.disabled = false;
             loginBtn.innerText = "Internal Access";
         }
     } catch (err) {
         console.error("Login Fehler:", err);
-        alert("Serververbindung fehlgeschlagen! Bitte prüfen Sie Ihre Verbindung.");
+        showLuxeAlert("Verbindung zum Secure-Gateway fehlgeschlagen.", "error");
         loginBtn.disabled = false;
         loginBtn.innerText = "Internal Access";
     }

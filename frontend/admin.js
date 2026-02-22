@@ -2,6 +2,8 @@
  * LUXE BERLIN - MASTER ADMIN JAVASCRIPT (HARDENED SECURITY VERSION)
  * Tüm fonksiyonlar korunmuş, oturum yönetimi HttpOnly Cookie sistemine taşınmıştır.
  * LOG SİSTEMİ: Veritabanı tabanlı ve kalıcı hale getirilmiştir.
+ * STAGE 2: Dashboard İstatistikleri ve Grafik Senkronizasyonu Entegre Edildi.
+ * FIX: Durum değişikliği iptal edildiğinde select kutusunun eski haline dönmemesi hatası giderildi.
  */
 
 // --- GLOBAL DEĞİŞKENLER ---
@@ -23,7 +25,7 @@ async function checkInitialAuth() {
 }
 
 // --- GLOBAL YAPILANDIRMA ---
-// 🛡️ DÜZELTME: Canlı ortamda belirsizliği önlemek için tam URL eklendi.
+// 🛡️ DÜZELTME: Canlı ortamda belirsizliği önlemek için tam URL kontrolü.
 const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
     ? 'http://localhost:5000/api'
     : 'https://kocyigit-trade.com/api';
@@ -79,7 +81,6 @@ const handleAuthError = (res) => {
     return res;
 };
 
-// 🛡️ GÜVENLİK GÜNCELLEMESİ: Token parse etmek yerine backend'e durum sorar.
 function startAuthWatcher() {
     setInterval(async () => {
         try {
@@ -114,6 +115,7 @@ window.loadLogs = async () => {
     } catch (err) { console.error("Loglar yüklenemedi:", err); }
 };
 
+// 🛡️ DURAK 2 GÜNCELLEMESİ: DASHBOARD VE İSTATİSTİK YÖNETİMİ
 async function loadDashboard() {
     await window.loadLogs(); // 🛡️ İlk olarak kalıcı logları çekiyoruz
     if (typeof window.loadOrders === 'function') await window.loadOrders();
@@ -122,44 +124,69 @@ async function loadDashboard() {
     if (typeof window.loadArchivedProducts === 'function') await window.loadArchivedProducts();
     if (typeof window.loadReviews === 'function') await window.loadReviews();
 
-    // Dashboard yükleme logunu veritabanına kaydet
+    // Backend /admin/stats rotasından gerçek verileri çekiyoruz (Stage 2 Senkronu)
+    try {
+        const res = await fetch(`${API_URL}/admin/stats`, { credentials: 'include' }).then(handleAuthError);
+        if (!res) return;
+        const data = await res.json();
+
+        if (data.success) {
+            // Stat kartlarını güncelle
+            document.getElementById('stat-count').innerText = data.stats.totalOrders;
+            document.getElementById('stat-revenue').innerText = euro.format(data.stats.revenue);
+            document.getElementById('stat-customers').innerText = data.stats.pendingOrders;
+
+            // Grafiği backend verisiyle mühürle
+            if (data.salesChart) {
+                renderSalesChart(allOrdersData, currentChartMode, data.salesChart);
+            }
+        }
+    } catch (e) {
+        console.error("Dashboard Stats loading failed:", e);
+    }
+
     window.logActivity("Dashboard vollständig geladen", currentUser, "Success");
 }
 
 // --- 1. ANALİTİK GRAFİĞİ ---
-function renderSalesChart(orders, mode = 'monthly') {
+function renderSalesChart(orders, mode = 'monthly', backendChartData = null) {
     const canvas = document.getElementById('salesChart');
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     currentChartMode = mode;
 
-    const validOrders = orders.filter(o => o.status !== 'Cancelled');
     let labels = [];
     let data = [];
-    const now = new Date();
 
-    if (mode === 'daily') {
-        labels = [...Array(7)].map((_, i) => {
-            const d = new Date(); d.setDate(d.getDate() - (6 - i));
-            return d.toLocaleDateString('de-DE', { weekday: 'short' });
-        });
-        data = labels.map((_, i) => {
-            const d = new Date(); d.setDate(d.getDate() - (6 - i));
-            const ds = d.toLocaleDateString('de-DE');
-            return validOrders.filter(o => new Date(o.date).toLocaleDateString('de-DE') === ds).reduce((s, o) => s + o.totalAmount, 0);
-        });
-    }
-    else if (mode === 'weekly') {
-        labels = ["4. Woche", "3. Woche", "2. Woche", "Diese Woche"];
-        data = [3, 2, 1, 0].map(w => {
-            const start = new Date(); start.setDate(now.getDate() - (w * 7 + 7));
-            const end = new Date(); end.setDate(now.getDate() - (w * 7));
-            return validOrders.filter(o => { const d = new Date(o.date); return d >= start && d < end; }).reduce((s, o) => s + o.totalAmount, 0);
-        });
-    }
-    else {
-        labels = ["Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"];
-        data = labels.map((_, i) => validOrders.filter(o => new Date(o.date).getMonth() === i && new Date(o.date).getFullYear() === now.getFullYear()).reduce((s, o) => s + o.totalAmount, 0));
+    // SENIOR FIX: Eğer backend'den gelen hazır grafik verisi varsa öncelikli onu kullan
+    if (backendChartData && backendChartData.length > 0) {
+        labels = backendChartData.map(d => `${d._id.month}/${d._id.year}`);
+        data = backendChartData.map(d => d.total);
+    } else {
+        // Fallback: Eski local hesaplama mantığı (Gereksiz satır eksiltmiyoruz)
+        const validOrders = orders.filter(o => o.status !== 'Cancelled');
+        const now = new Date();
+        if (mode === 'daily') {
+            labels = [...Array(7)].map((_, i) => {
+                const d = new Date(); d.setDate(d.getDate() - (6 - i));
+                return d.toLocaleDateString('de-DE', { weekday: 'short' });
+            });
+            data = labels.map((_, i) => {
+                const d = new Date(); d.setDate(d.getDate() - (6 - i));
+                const ds = d.toLocaleDateString('de-DE');
+                return validOrders.filter(o => new Date(o.date).toLocaleDateString('de-DE') === ds).reduce((s, o) => s + o.totalAmount, 0);
+            });
+        } else if (mode === 'weekly') {
+            labels = ["4. Woche", "3. Woche", "2. Woche", "Diese Woche"];
+            data = [3, 2, 1, 0].map(w => {
+                const start = new Date(); start.setDate(now.getDate() - (w * 7 + 7));
+                const end = new Date(); end.setDate(now.getDate() - (w * 7));
+                return validOrders.filter(o => { const d = new Date(o.date); return d >= start && d < end; }).reduce((s, o) => s + o.totalAmount, 0);
+            });
+        } else {
+            labels = ["Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"];
+            data = labels.map((_, i) => validOrders.filter(o => new Date(o.date).getMonth() === i && new Date(o.date).getFullYear() === now.getFullYear()).reduce((s, o) => s + o.totalAmount, 0));
+        }
     }
 
     if (salesChart) salesChart.destroy();
@@ -247,6 +274,16 @@ window.openStatusConfirmModal = (id, selectElement) => {
     confirmModal.show();
 };
 
+// 🛡️ KRİTİK FIX: Onay modalı kapandığında (X, İptal veya dışarı tıklama), seçimi eski haline geri döndür.
+document.getElementById('statusConfirmModal')?.addEventListener('hidden.bs.modal', function () {
+    if (pendingUpdate.id && pendingUpdate.selectEl) {
+        // 'data-current' içindeki kaydedilmiş orijinal değeri select kutusuna geri bas.
+        pendingUpdate.selectEl.value = pendingUpdate.selectEl.getAttribute('data-current');
+        // Geçici nesneyi temizle.
+        pendingUpdate = { id: null, status: null, selectEl: null };
+    }
+});
+
 document.getElementById('confirmStatusBtn')?.addEventListener('click', async () => {
     const { id, status, selectEl } = pendingUpdate;
     if (!id) return;
@@ -260,12 +297,14 @@ document.getElementById('confirmStatusBtn')?.addEventListener('click', async () 
         }).then(handleAuthError);
 
         if (res && res.ok) {
+            // Başarılı durumda 'data-current' özniteliğini yeni durumla güncelle.
             selectEl.setAttribute('data-current', status);
+            // hidden.bs.modal olayının tetiklenip revert yapmaması için pendingUpdate'i temizliyoruz.
             pendingUpdate = { id: null, status: null, selectEl: null };
+
             bootstrap.Modal.getInstance(document.getElementById('statusConfirmModal')).hide();
-            await window.loadOrders();
+            await loadDashboard(); // Stage 2: Grafik ve Statlar anlık güncellenir
             showLuxeAlert(`Status auf ${status} aktualisiert`, "success");
-            // 🛡️ KALICI LOG
             window.logActivity(`Status-Update: ${status}`, currentUser, "Success");
         }
     } catch (err) {
@@ -282,7 +321,6 @@ window.deleteOrder = async (id) => {
             }).then(handleAuthError);
             if (res && res.ok) {
                 showLuxeAlert("Bestellung gelöscht", "success");
-                // 🛡️ KALICI LOG
                 window.logActivity(`Bestellung #LB-${id.slice(-6).toUpperCase()} gelöscht`, currentUser, "Deleted");
                 await window.loadOrders();
             }
@@ -442,26 +480,20 @@ document.getElementById('productForm')?.addEventListener('submit', async (e) => 
             credentials: 'include'
         }).then(handleAuthError);
 
-        // 🛡️ KRİTİK HATA YÖNETİMİ: 502/500 gibi JSON olmayan cevapları yakalar
-        if (!res) return; // handleAuthError tarafından yönetildi
+        if (!res) return;
 
         if (res.ok) {
-            // Başarılı durumda JSON oku
-            const data = await res.json();
             showLuxeAlert(id ? "Produkt erfolgreich aktualisiert!" : "Neues Produkt hinzugefügt!", "success");
             window.logActivity(id ? `Produkt aktualisiert` : `Neues Produkt erstellt`, currentUser, "Success");
             window.resetProductForm();
             await loadDashboard();
         } else {
-            // 🛡️ SyntaxError Engelleyici: JSON değilse metin olarak hata mesajını al
             const contentType = res.headers.get("content-type");
             if (contentType && contentType.indexOf("application/json") !== -1) {
                 const errData = await res.json();
                 showLuxeAlert("Fehler: " + (errData.message || "Unbekannter Fehler"), "error");
             } else {
-                const errorText = await res.text();
-                console.error("Server Error HTML:", errorText);
-                showLuxeAlert("Server-Fehler (502). Bitte Render-Logs prüfen.", "error");
+                showLuxeAlert("Server-Fehler (502). Bitte logs prüfen.", "error");
             }
         }
     } catch (err) {
@@ -490,7 +522,6 @@ window.editProduct = async (id) => {
     const previewImg = document.getElementById('previewImg');
     if (preview && previewImg && p.image) {
         preview.classList.remove('d-none');
-        // 🛡️ DÜZELTME: Preview kısmında resim yolu kontrolü.
         previewImg.src = p.image.startsWith('http') ? p.image : 'https://placehold.co/150';
     }
 
@@ -539,7 +570,7 @@ window.loadReviews = async () => {
                 <tr class="review-row">
                     <td class="small text-muted">${new Date(r.createdAt).toLocaleDateString('de-DE')}</td>
                     <td class="reviewer-name fw-bold">${r.name}</td>
-                    <td>${"⭐".repeat(r.stars)}</td>
+                    <td>${"⭐".repeat(r.rating || r.stars)}</td>
                     <td class="review-text small" style="max-width: 250px;">${r.text}</td>
                     <td>
                         ${r.adminReply
@@ -557,7 +588,7 @@ window.loadReviews = async () => {
 
 window.openReplyModal = (id, existingReply) => {
     document.getElementById('replyReviewId').value = id;
-    document.getElementById('adminReplyText').value = existingReply;
+    document.getElementById('adminReplyText').value = existingReply !== 'undefined' ? existingReply : "";
     new bootstrap.Modal(document.getElementById('replyModal')).show();
 };
 
@@ -576,7 +607,6 @@ window.submitReply = async () => {
         bootstrap.Modal.getInstance(document.getElementById('replyModal')).hide();
         window.loadReviews();
         showLuxeAlert("Rezension beantwortet", "success");
-        // 🛡️ KALICI LOG
         window.logActivity(`Rezension beantwortet`, currentUser, "Success");
     }
 };
@@ -588,7 +618,6 @@ window.deleteReview = async (id) => {
             credentials: 'include'
         }).then(handleAuthError);
         showLuxeAlert("Rezension gelöscht", "success");
-        // 🛡️ KALICI LOG
         window.logActivity(`Rezension gelöscht`, currentUser, "Deleted");
         window.loadReviews();
     }
@@ -619,7 +648,6 @@ window.deleteAdmin = async (id) => {
 
             if (res && res.ok) {
                 showLuxeAlert("Admin wurde entfernt", "success");
-                // 🛡️ KALICI LOG
                 window.logActivity(`Admin gelöscht`, currentUser, "Deleted");
                 await window.loadAdmins();
             }
@@ -643,14 +671,12 @@ document.getElementById('addAdminForm')?.addEventListener('submit', async (e) =>
     }).then(handleAuthError);
     if (res && res.ok) {
         showLuxeAlert("Admin registriert!", "success");
-        // 🛡️ KALICI LOG
         window.logActivity(`Yeni Admin Oluşturuldu: ${username}`, currentUser, "Success");
         document.getElementById('addAdminForm').reset();
         window.loadAdmins();
     }
 });
 
-// 🛡️ GÜNCELLEME: Logları veritabanına kaydeder ve arayüzü yeniler.
 window.logActivity = async (action, user, status) => {
     try {
         await fetch(`${API_URL}/logs`, {
@@ -659,7 +685,6 @@ window.logActivity = async (action, user, status) => {
             credentials: 'include',
             body: JSON.stringify({ action, user, status })
         });
-        // Kaydettikten sonra listeyi veritabanından güncel olarak çekiyoruz.
         await window.loadLogs();
     } catch (err) {
         console.error("Log kaydedilemedi:", err);

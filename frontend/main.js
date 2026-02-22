@@ -1,11 +1,8 @@
 /**
- * LUXE BERLIN - CORE JAVASCRIPT
+ * LUXE BERLIN - CORE JAVASCRIPT (ULTRA STABLE)
  * Tüm özellikler: Sepet Onarımı, Miktar Koruması, 1 Yorum Sınırı, Karakter Sayacı, 
  * İsim Sınırı (50 Karakter) ve Küfür Filtresi Onarımı.
- * GÜNCELLEME: Yorum ses efekti kaldırıldı.
- * FIX: Back butonu sonrası ürün hortlama ve grid senkronizasyon sorunu giderildi.
- * FIX: Manuel miktar girişindeki "1"in arkasına ekleme (append) bug'ı giderildi.
- * NEW: Boş sepetle ödeme sayfasına gidiş engellendi (Checkout Guard).
+ * FIX: Cookie Banner Revert ve yasal onay mantığı eklendi.
  */
 
 // --- GLOBAL DEĞİŞKENLER ---
@@ -94,7 +91,6 @@ function renderProducts(listToDisplay) {
     const grid = document.getElementById('product-grid-container');
     if (!grid) return;
 
-    // 🛡️ SENIOR FIX: Render sırasında daima LocalStorage'daki en güncel sepeti kullan.
     cart = JSON.parse(localStorage.getItem('luxeCartArray')) || [];
 
     grid.innerHTML = listToDisplay.map(p => {
@@ -124,8 +120,7 @@ window.filterProducts = function () {
     renderProducts(filtered);
 }
 
-// --- 4. YORUM YÖNETİMİ VE KRİTİK FONKSİYONLAR ---
-
+// --- 4. YORUM YÖNETİMİ ---
 function censorText(text) {
     if (!text) return "";
     const regex = new RegExp(badWords.join("|"), "gi");
@@ -247,7 +242,7 @@ document.getElementById('reviewForm')?.addEventListener('submit', async (e) => {
     }
 });
 
-// --- 5. MODAL VE MİKTAR (MENGE) KORUMASI ---
+// --- 5. MODAL VE MİKTAR KORUMASI ---
 window.setupModal = function (id) {
     selectedProduct = products.find(p => p.id === id);
     if (!selectedProduct) return;
@@ -261,7 +256,6 @@ window.setupModal = function (id) {
     document.getElementById('mImg').src = selectedProduct.img;
     document.getElementById('mTitle').innerText = selectedProduct.name;
 
-    // SENIOR UX: Input'a tıklandığında otomatik tümünü seç
     if (qtyInput) {
         qtyInput.onfocus = function () { this.select(); };
         qtyInput.onblur = function () {
@@ -360,7 +354,7 @@ window.blockNonIntegers = function (e) {
     if ([".", ",", "e", "E", "+", "-"].includes(e.key)) e.preventDefault();
 }
 
-// --- 6. SEPET YÖNETİMİ VE ONARIMI ---
+// --- 6. SEPET YÖNETİMİ ---
 window.addToCart = function () {
     if (currentQty <= 0) return;
 
@@ -378,9 +372,6 @@ window.addToCart = function () {
     showLuxeAlert("Artikel zum Warenkorb hinzugefügt.", "success");
 }
 
-/**
- * 🛡️ SENIOR FIX: Ödeme sayfasına gidişi kontrol eden bekçi fonksiyonu
- */
 window.handleCheckoutNavigation = function (e) {
     const currentCart = JSON.parse(localStorage.getItem('luxeCartArray')) || [];
     if (currentCart.length === 0) {
@@ -409,7 +400,6 @@ function updateCartUI() {
         if (totalQty > 0) {
             floatBar.classList.add('active');
             floatTotal.innerText = euro.format(totalPrice);
-            // Floating bar'a tıklandığında kontrolü tetikle
             floatBar.onclick = (e) => handleCheckoutNavigation(e);
         } else {
             floatBar.classList.remove('active');
@@ -423,14 +413,45 @@ function updateCartUI() {
     }
 }
 
-// --- 7. BAŞLATMA VE MOBİL AOS FIX ---
+// --- 🍪 🛡️ 7. DSVGO COOKIE CONSENT LOGIC ---
+function initCookieConsent() {
+    const banner = document.getElementById('luxe-cookie-banner');
+    const btnAccept = document.getElementById('btn-cookie-accept');
+    const btnReject = document.getElementById('btn-cookie-reject');
+
+    if (!banner || !btnAccept || !btnReject) return;
+
+    // LocalStorage kontrolü
+    const consent = localStorage.getItem('luxeCookieConsent');
+
+    if (!consent) {
+        // Kullanıcı daha önce seçim yapmamışsa 1.5 sn sonra göster
+        setTimeout(() => {
+            banner.style.display = 'block';
+        }, 1500);
+    }
+
+    btnAccept.addEventListener('click', () => {
+        localStorage.setItem('luxeCookieConsent', 'accepted');
+        banner.style.animation = 'toastFadeOut 0.5s ease forwards';
+        setTimeout(() => { banner.style.display = 'none'; }, 500);
+    });
+
+    btnReject.addEventListener('click', () => {
+        localStorage.setItem('luxeCookieConsent', 'rejected');
+        banner.style.animation = 'toastFadeOut 0.5s ease forwards';
+        setTimeout(() => { banner.style.display = 'none'; }, 500);
+    });
+}
+
+// --- 8. BAŞLATMA ---
 document.addEventListener('DOMContentLoaded', () => {
     fetchProducts();
     initTheme();
     initTestimonials();
     initReviewCounter();
+    initCookieConsent(); // 🛡️ Çerez korumasını devreye al
 
-    // 🛡️ SENIOR FIX: Tüm checkout ve ödeme linklerini bekçiye bağla
     document.querySelectorAll('a[href*="checkout"], a[href*="payment"], a[href*="cart.html"]').forEach(link => {
         link.addEventListener('click', (e) => handleCheckoutNavigation(e));
     });

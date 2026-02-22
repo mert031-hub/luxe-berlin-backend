@@ -1,5 +1,9 @@
 const Review = require('../models/Review');
 
+/**
+ * LUXE BERLIN - REVIEW CONTROLLER
+ */
+
 exports.getAllReviews = async (req, res) => {
     try {
         const reviews = await Review.find().sort({ createdAt: -1 });
@@ -11,11 +15,11 @@ exports.getAllReviews = async (req, res) => {
 
 exports.createReview = async (req, res) => {
     try {
-        // Model ile uyum için req.body içindeki veriyi map ediyoruz
+        // Model ile tam uyum (text/comment & rating/stars fallbacks)
         const newReview = new Review({
             name: req.body.name,
-            text: req.body.text || req.body.comment, // fallback
-            rating: req.body.rating || req.body.stars // fallback
+            text: req.body.text || req.body.comment,
+            rating: req.body.rating || req.body.stars || 5
         });
         await newReview.save();
         res.status(201).json(newReview);
@@ -31,17 +35,19 @@ exports.replyToReview = async (req, res) => {
             { adminReply: req.body.replyText },
             { new: true }
         );
+        if (!updatedReview) return res.status(404).json({ message: "Rezension nicht gefunden." });
         res.json(updatedReview);
     } catch (err) {
         res.status(500).json({ message: "Fehler beim Antworten." });
     }
 };
 
-exports.deleteReview = async (id) => {
+exports.deleteReview = async (req, res) => {
     try {
-        await Review.findByIdAndDelete(id);
-        return { success: true };
+        const deleted = await Review.findByIdAndDelete(req.params.id);
+        if (!deleted) return res.status(404).json({ message: "Rezension nicht gefunden." });
+        res.json({ success: true, message: "Rezension gelöscht." });
     } catch (err) {
-        throw err;
+        res.status(500).json({ message: "Fehler beim Löschen." });
     }
 };
