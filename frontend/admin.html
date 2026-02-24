@@ -36,6 +36,19 @@
     </nav>
 
     <main id="adminMainContent" class="container py-4 py-md-5 d-none">
+
+        <div class="row g-4 mb-4 d-none" id="critical-stock-alert">
+            <div class="col-12">
+                <div class="alert alert-danger border-0 shadow-sm rounded-4 d-flex align-items-center mb-0 py-3">
+                    <i class="fas fa-exclamation-triangle fa-2x me-3 animate-pulse"></i>
+                    <div>
+                        <h6 class="fw-bold mb-1">Kritischer Lagerbestand!</h6>
+                        <p class="small mb-0 text-dark" id="low-stock-list"></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="row g-3 g-md-4 mb-4 text-center text-white">
             <div class="col-6 col-md-4" data-aos="fade-up" data-aos-delay="100">
                 <div class="stat-card bg-navy h-100">
@@ -82,6 +95,47 @@
                     <div style="height: 300px; position: relative;">
                         <canvas id="statusChart"></canvas>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4 mb-4" data-aos="fade-up">
+            <div class="col-lg-7">
+                <div class="card border-0 shadow-sm rounded-4 p-4 h-100">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h5 class="fw-bold mb-0 text-navy">🏆 Top-Seller Produkte</h5>
+                        <span
+                            class="badge bg-gold-light text-gold px-3 py-2 rounded-pill small fw-bold">Best-Performance</span>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-borderless align-middle mb-0">
+                            <tbody id="top-products-list">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-5">
+                <div
+                    class="card border-0 shadow-sm rounded-4 p-4 h-100 bg-navy text-white position-relative overflow-hidden">
+                    <div class="position-absolute top-0 end-0 p-3 opacity-25">
+                        <i class="fas fa-chart-pie fa-5x"></i>
+                    </div>
+                    <h5 class="fw-bold mb-4">Schnellanalyse</h5>
+                    <div class="mb-4">
+                        <p class="small opacity-75 mb-1">Durchschnittlicher Bestellwert (AOV)</p>
+                        <h3 id="stat-aov" class="fw-bold text-gold">0,00 €</h3>
+                    </div>
+                    <hr class="opacity-25">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <span>Bestellungen heute</span>
+                        <span class="badge bg-success px-3 py-2" id="today-order-count">0</span>
+                    </div>
+                    <button class="btn btn-gold w-100 rounded-pill mt-auto fw-bold py-2 shadow"
+                        onclick="exportOrdersToCSV()">
+                        <i class="fas fa-file-export me-2"></i> CSV Export (Bestellungen)
+                    </button>
                 </div>
             </div>
         </div>
@@ -209,7 +263,7 @@
                         <span class="input-group-text bg-white border-end-0"><i
                                 class="fas fa-search text-muted"></i></span>
                         <input type="text" id="logSearch" class="form-control border-start-0 ps-0"
-                            placeholder="Admin oder Aktion suchen...">
+                            placeholder="Admin veya aksiyon ara...">
                     </div>
                 </div>
                 <div class="table-scroll-container" style="max-height: 350px;">
@@ -260,8 +314,7 @@
                 <div class="modal-body p-5 text-center">
                     <div class="status-icon-circle"><i class="fas fa-exchange-alt fa-2x"></i></div>
                     <h4 class="fw-bold mb-2">Status ändern?</h4>
-                    <p class="text-muted small mb-4">Möchten Sie den Status dieser Bestellung wirklich aktualisieren?
-                    </p>
+                    <p class="text-muted small mb-4">Möchten Sie den Status gerçekten aktualisieren?</p>
                     <div
                         class="status-change-box d-flex align-items-center justify-content-center gap-3 mb-4 p-3 rounded-3">
                         <div class="text-center"><span

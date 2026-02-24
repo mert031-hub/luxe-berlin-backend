@@ -1,18 +1,22 @@
 /**
- * LUXE BERLIN - MASTER ADMIN JAVASCRIPT (HARDENED SECURITY VERSION)
- * Tüm fonksiyonlar korunmuş, oturum yönetimi HttpOnly Cookie sistemine taşınmıştır.
- * LOG SİSTEMİ: Veritabanı tabanlı ve kalıcı hale getirilmiştir (DSGVO-konform).
- * UPDATE: Analitik grafikleri genişletildi (Umsatz-Line + Status-Doughnut).
+ * LUXE BERLIN - MASTER ADMIN JAVASCRIPT (ULTIMATE ENTERPRISE VERSION)
+ * ---------------------------------------------------------------
+ * - HARDENED SECURITY: HttpOnly Cookie tabanlı oturum yönetimi.
+ * - ANALYTICS V2: Çift eksenli (Umsatz & Volumen) Çizgi Grafik.
+ * - OPERATIONAL INTEL: Sipariş Durum Pastası (Doughnut Chart).
+ * - INVENTORY RADAR: Kritik Stok Uyarı Sistemi.
+ * - SALES ENGINE: Top-Seller ürün analizi ve AOV hesaplama.
+ * - DATA EXPORT: CSV formatında sipariş raporlama.
+ * - FIX: Order Details modalına Telefon Numarası entegre edildi.
  */
 
 // --- GLOBAL DEĞİŞKENLER ---
 let currentUser = "Admin";
 let salesChart = null;
-let statusChart = null; // Pasta grafiği referansı
+let statusChart = null;
 let allOrdersData = [];
+let allProductsData = [];
 let currentChartMode = 'monthly';
-
-// Geçici veri saklama (Onay bekleyen işlem için)
 let pendingUpdate = { id: null, status: null, selectEl: null };
 
 // --- 1. OTURUM KONTROLÜ (GÜVENLİ YÖNTEM) ---
@@ -35,6 +39,8 @@ const API_URL = window.location.hostname === 'localhost' || window.location.host
     ? 'http://localhost:5000/api'
     : 'https://kocyigit-trade.com/api';
 
+const API = API_URL;
+const UPLOADS_URL = '';
 const euro = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' });
 
 // --- 💡 LUXE TOAST BİLDİRİM SİSTEMİ ---
@@ -122,16 +128,13 @@ async function loadDashboard() {
         if (!res) return;
         const data = await res.json();
         if (data.success) {
-            document.getElementById('stat-count').innerText = data.stats.totalOrders;
-            document.getElementById('stat-revenue').innerText = euro.format(data.stats.revenue);
-            document.getElementById('stat-customers').innerText = data.stats.pendingOrders;
             if (data.salesChart) { renderSalesChart(allOrdersData, currentChartMode, data.salesChart); }
         }
     } catch (e) { console.error("Dashboard Stats loading failed:", e); }
     window.logActivity("Dashboard erfolgreich geladen", currentUser, "Success");
 }
 
-// --- 🛡️ 1. ANALİTİK GRAFİĞİ (GELİŞMİŞ ÇİFT EKSENLİ) ---
+// --- 🛡️ 1. ANALİTİK MOTORU: ÇİFT EKSENLİ ÇİZGİ GRAFİK ---
 function renderSalesChart(orders, mode = 'monthly', backendChartData = null) {
     const canvas = document.getElementById('salesChart');
     if (!canvas) return;
@@ -185,75 +188,50 @@ function renderSalesChart(orders, mode = 'monthly', backendChartData = null) {
     }
 
     if (salesChart) salesChart.destroy();
-
-    if (typeof Chart !== 'undefined') {
-        salesChart = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: labels,
-                datasets: [
-                    {
-                        label: 'Umsatz (€)',
-                        data: revenueData,
-                        borderColor: '#c5a059',
-                        backgroundColor: 'rgba(197, 160, 89, 0.1)',
-                        borderWidth: 3,
-                        fill: true,
-                        tension: 0.4,
-                        yAxisID: 'y'
-                    },
-                    {
-                        label: 'Bestellungen',
-                        data: orderCountData,
-                        borderColor: '#1c2541',
-                        borderDash: [5, 5],
-                        borderWidth: 2,
-                        fill: false,
-                        tension: 0.4,
-                        yAxisID: 'y1'
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                interaction: { mode: 'index', intersect: false },
-                plugins: {
-                    legend: { display: true, position: 'top' },
-                    tooltip: {
-                        callbacks: {
-                            label: function (context) {
-                                let label = context.dataset.label || '';
-                                if (label.includes('Umsatz')) return label + ': ' + euro.format(context.parsed.y);
-                                return label + ': ' + context.parsed.y + ' Stück';
-                            }
+    salesChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [
+                { label: 'Umsatz (€)', data: revenueData, borderColor: '#c5a059', backgroundColor: 'rgba(197, 160, 89, 0.1)', borderWidth: 3, fill: true, tension: 0.4, yAxisID: 'y' },
+                { label: 'Bestellungen', data: orderCountData, borderColor: '#1c2541', borderDash: [5, 5], borderWidth: 2, fill: false, tension: 0.4, yAxisID: 'y1' }
+            ]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+                legend: { display: true, position: 'top' },
+                tooltip: {
+                    callbacks: {
+                        label: function (context) {
+                            let label = context.dataset.label || '';
+                            if (label.includes('Umsatz')) return label + ': ' + euro.format(context.parsed.y);
+                            return label + ': ' + context.parsed.y + ' Stück';
                         }
                     }
-                },
-                scales: {
-                    y: { type: 'linear', display: true, position: 'left', beginAtZero: true, title: { display: true, text: 'Euro (€)' } },
-                    y1: { type: 'linear', display: true, position: 'right', beginAtZero: true, grid: { drawOnChartArea: false }, title: { display: true, text: 'Bestellungen' } }
                 }
+            },
+            scales: {
+                y: { type: 'linear', display: true, position: 'left', beginAtZero: true, title: { display: true, text: 'Euro (€)' } },
+                y1: { type: 'linear', display: true, position: 'right', beginAtZero: true, grid: { drawOnChartArea: false }, title: { display: true, text: 'Bestellungen' } }
             }
-        });
-    }
+        }
+    });
 }
 
-// --- 🛡️ 2. YENİ: PASTA (DOUGHNUT) GRAFİĞİ: SİPARİŞ DURUMU ---
+// --- 🛡️ 2. OPERASYONEL PANEL: DOUGHNUT GRAFİĞİ ---
 function renderStatusChart(orders) {
     const canvas = document.getElementById('statusChart');
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
-
     const statusCounts = {
         'Delivered': orders.filter(o => o.status === 'Delivered').length,
         'Pending': orders.filter(o => o.status === 'Pending' || o.status === 'Processing').length,
         'Shipped': orders.filter(o => o.status === 'Shipped').length,
         'Cancelled': orders.filter(o => o.status === 'Cancelled').length
     };
-
     if (statusChart) statusChart.destroy();
-
     statusChart = new Chart(ctx, {
         type: 'doughnut',
         data: {
@@ -261,21 +239,63 @@ function renderStatusChart(orders) {
             datasets: [{
                 data: [statusCounts.Delivered, statusCounts.Pending, statusCounts.Shipped, statusCounts.Cancelled],
                 backgroundColor: ['#198754', '#ffc107', '#0dcaf0', '#dc3545'],
-                borderWidth: 0,
-                hoverOffset: 15
+                borderWidth: 0, hoverOffset: 15
             }]
         },
         options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            cutout: '75%',
-            plugins: {
-                legend: { display: true, position: 'bottom', labels: { padding: 20, usePointStyle: true } },
-                tooltip: { callbacks: { label: (ctx) => ` ${ctx.label}: ${ctx.raw} Bestellungen` } }
-            }
+            responsive: true, maintainAspectRatio: false, cutout: '75%',
+            plugins: { legend: { display: true, position: 'bottom', labels: { padding: 20, usePointStyle: true } } }
         }
     });
 }
+
+// --- 🛡️ 3. ZEKÂ KATMANI: STOK RADARI & TOP-SELLER ---
+function updateInventoryAlerts(products) {
+    const lowStock = products.filter(p => p.stock <= 5 && !p.isDeleted);
+    const alertDiv = document.getElementById('critical-stock-alert');
+    const listText = document.getElementById('low-stock-list');
+    if (lowStock.length > 0) {
+        alertDiv.classList.remove('d-none');
+        listText.innerText = lowStock.map(p => `${p.name} (${p.stock} adet kaldı)`).join(', ');
+    } else { alertDiv.classList.add('d-none'); }
+}
+
+function calculateTopSellers(orders) {
+    const productCounts = {};
+    const validOrders = orders.filter(o => o.status !== 'Cancelled');
+    validOrders.forEach(order => {
+        order.items.forEach(item => { productCounts[item.name] = (productCounts[item.name] || 0) + item.qty; });
+    });
+    const topSellers = Object.entries(productCounts).sort((a, b) => b[1] - a[1]).slice(0, 5);
+    const listContainer = document.getElementById('top-products-list');
+    if (!listContainer) return;
+    listContainer.innerHTML = topSellers.map(([name, qty], index) => `
+        <tr>
+            <td width="40"><span class="fw-bold text-muted">#${index + 1}</span></td>
+            <td><div class="fw-bold text-navy">${name}</div></td>
+            <td class="text-end text-muted small">${qty} Verkauft</td>
+            <td class="text-end"><div class="progress" style="height: 6px; width: 60px; margin-left: auto;">
+                <div class="progress-bar bg-gold" style="width: ${100 - (index * 15)}%"></div>
+            </div></td>
+        </tr>`).join('');
+}
+
+// 🛡️ DATA EXPORT SİSTEMİ
+window.exportOrdersToCSV = () => {
+    if (allOrdersData.length === 0) return showLuxeAlert("Keine Daten zum Exportieren.", "error");
+    let csv = "Datum;Kunde;Betrag;Status;Zahlung\n";
+    allOrdersData.forEach(o => {
+        const row = `${new Date(o.date).toLocaleDateString()};${o.customer.firstName} ${o.customer.lastName};${o.totalAmount};${o.status};${o.paymentMethod}`;
+        csv += row + "\n";
+    });
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.setAttribute("download", `Luxe_Berlin_Orders_${new Date().toLocaleDateString()}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+};
 
 window.changeChartMode = (mode) => {
     document.querySelectorAll('.btn-chart-toggle').forEach(btn => btn.classList.remove('active'));
@@ -283,7 +303,7 @@ window.changeChartMode = (mode) => {
     renderSalesChart(allOrdersData, mode);
 };
 
-// --- 2. SİPARİŞ YÖNETİMİ ---
+// --- 🛡️ 4. SİPARİŞ YÖNETİMİ ---
 window.loadOrders = async () => {
     try {
         const res = await fetch(`${API_URL}/orders`, { credentials: 'include' }).then(handleAuthError);
@@ -316,8 +336,11 @@ window.loadOrders = async () => {
                 </tr>`;
         });
         calculateStats(orders);
-        renderSalesChart(orders, currentChartMode); // Line chart tetikle
-        renderStatusChart(orders); // Pasta chart tetikle
+        renderSalesChart(orders, currentChartMode);
+        renderStatusChart(orders);
+        calculateTopSellers(orders);
+        const todayStr = new Date().toLocaleDateString();
+        document.getElementById('today-order-count').innerText = orders.filter(o => new Date(o.date).toLocaleDateString() === todayStr).length;
     } catch (err) { console.error("Sipariş Yükleme Hatası:", err); }
 };
 
@@ -327,12 +350,9 @@ window.openStatusConfirmModal = (id, selectElement) => {
     const labels = { 'Pending': 'Ausstehend', 'Processing': 'Bearbeitung', 'Shipped': 'Versandt', 'Delivered': 'Geliefert', 'Cancelled': 'Storniert' };
     if (oldStatus === newStatus) return;
     pendingUpdate = { id, status: newStatus, selectEl: selectElement };
-    const oldEl = document.getElementById('modal-old-status');
-    const newEl = document.getElementById('modal-new-status');
-    if (oldEl) oldEl.innerText = labels[oldStatus] || oldStatus;
-    if (newEl) newEl.innerText = labels[newStatus] || newStatus;
-    const confirmModal = new bootstrap.Modal(document.getElementById('statusConfirmModal'));
-    confirmModal.show();
+    document.getElementById('modal-old-status').innerText = labels[oldStatus] || oldStatus;
+    document.getElementById('modal-new-status').innerText = labels[newStatus] || newStatus;
+    new bootstrap.Modal(document.getElementById('statusConfirmModal')).show();
 };
 
 document.getElementById('statusConfirmModal')?.addEventListener('hidden.bs.modal', function () {
@@ -347,17 +367,15 @@ document.getElementById('confirmStatusBtn')?.addEventListener('click', async () 
     if (!id) return;
     try {
         const res = await fetch(`${API_URL}/orders/${id}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
-            body: JSON.stringify({ status })
+            method: 'PUT', headers: { 'Content-Type': 'application/json' },
+            credentials: 'include', body: JSON.stringify({ status })
         }).then(handleAuthError);
         if (res && res.ok) {
             selectEl.setAttribute('data-current', status);
             pendingUpdate = { id: null, status: null, selectEl: null };
             bootstrap.Modal.getInstance(document.getElementById('statusConfirmModal')).hide();
             await loadDashboard();
-            showLuxeAlert(`Status erfolgreich auf ${status} aktualisiert`, "success");
+            showLuxeAlert(`Status auf ${status} aktualisiert`, "success");
             window.logActivity(`Status-Update: ${status}`, currentUser, "Success");
         }
     } catch (err) { console.error("Update Hatası:", err); }
@@ -366,10 +384,7 @@ document.getElementById('confirmStatusBtn')?.addEventListener('click', async () 
 window.deleteOrder = async (id) => {
     if (confirm("Möchten Sie diese Bestellung gerçekten löschen?")) {
         try {
-            const res = await fetch(`${API_URL}/orders/${id}`, {
-                method: 'DELETE',
-                credentials: 'include'
-            }).then(handleAuthError);
+            const res = await fetch(`${API_URL}/orders/${id}`, { method: 'DELETE', credentials: 'include' }).then(handleAuthError);
             if (res && res.ok) {
                 showLuxeAlert("Bestellung gelöscht", "success");
                 window.logActivity(`Bestellung #LB-${id.slice(-6).toUpperCase()} gelöscht`, currentUser, "Deleted");
@@ -379,6 +394,7 @@ window.deleteOrder = async (id) => {
     }
 };
 
+// 🛡️ KRİTİK: SİPARİŞ DETAY MODALI (TELEFON NUMARASI EKLENDİ)
 window.viewDetails = async (id) => {
     const o = allOrdersData.find(item => item._id === id);
     if (!o) return;
@@ -390,22 +406,27 @@ window.viewDetails = async (id) => {
                 <h4 class="fw-bold mb-0 text-navy" style="letter-spacing: 1px;">${o.shortId || '#LB-' + o._id.slice(-6).toUpperCase()}</h4>
             </div>
             <div class="row mb-3">
-                <div class="col-md-6 mb-3 mb-md-0">
+                <div class="col-md-4 mb-3 mb-md-0">
                     <label class="small fw-bold text-muted d-block mb-1">Zahlungsart</label>
-                    <div class="p-2 bg-white rounded border">💰 ${o.paymentMethod || 'Unbekannt'}</div>
+                    <div class="p-2 bg-white rounded border h-100">💰 ${o.paymentMethod || 'Unbekannt'}</div>
                 </div>
-                <div class="col-md-6">
-                    <label class="small fw-bold text-muted d-block mb-1">Kontakt</label>
-                    <div class="p-2 bg-white rounded border small">📧 ${o.customer.email}</div>
+                <div class="col-md-8">
+                    <label class="small fw-bold text-muted d-block mb-1">Kontaktinformationen</label>
+                    <div class="p-2 bg-white rounded border small">
+                        📧 <strong>Email:</strong> ${o.customer.email}<br>
+                        📞 <strong>Telefon:</strong> ${o.customer.phone || 'Nicht angegeben'}
+                    </div>
                 </div>
             </div>
             <div class="mb-4">
-                <label class="small fw-bold text-muted d-block mb-1">Adresse</label>
+                <label class="small fw-bold text-muted d-block mb-1">Lieferadresse</label>
                 <div class="p-3 bg-light rounded-3 border">📍 ${o.customer.address}</div>
             </div>
             <div>
                 <label class="small fw-bold text-muted d-block mb-1">Produkte</label>
-                ${o.items.map(i => `<div class="d-flex justify-content-between border-bottom py-2 small"><span>${i.qty}x ${i.name}</span><strong>${euro.format(i.price * i.qty)}</strong></div>`).join('')}
+                <div class="table-responsive">
+                    ${o.items.map(i => `<div class="d-flex justify-content-between align-items-center border-bottom py-2 small"><span>${i.qty}x ${i.name}</span><strong class="text-navy">${euro.format(i.price * i.qty)}</strong></div>`).join('')}
+                </div>
                 <div class="d-flex justify-content-between mt-3 fw-bold fs-5 pt-2 border-top">
                     <span>Gesamtbetrag:</span><span class="text-primary">${euro.format(o.totalAmount)}</span>
                 </div>
@@ -414,12 +435,13 @@ window.viewDetails = async (id) => {
     }
 };
 
-// --- 3. ÜRÜN YÖNETİMİ ---
+// --- 🛡️ 5. ÜRÜN YÖNETİMİ ---
 window.loadProducts = async () => {
     try {
         const res = await fetch(`${API_URL}/products`, { credentials: 'include' }).then(handleAuthError);
         if (!res) return;
         const products = await res.json();
+        allProductsData = products;
         const list = document.getElementById('admin-product-list');
         if (!list) return;
         list.innerHTML = "";
@@ -430,13 +452,12 @@ window.loadProducts = async () => {
                     <td><div class="product-img-box-small"><img src="${imgSrc}"></div></td>
                     <td><strong class="product-name">${p.name}</strong></td>
                     <td>${euro.format(p.price)}</td>
-                    <td>${p.stock}</td>
-                    <td class="text-end">
-                        <button class="btn btn-sm btn-outline-primary border-0 me-2" onclick="editProduct('${p._id}')">✎</button>
-                        <button class="btn btn-sm btn-outline-danger border-0" onclick="deleteProduct('${p._id}')">🗑️</button>
-                    </td>
+                    <td><span class="badge ${p.stock <= 5 ? 'bg-danger' : 'bg-light text-dark'}">${p.stock}</span></td>
+                    <td class="text-end"><button class="btn btn-sm btn-outline-primary border-0 me-2" onclick="editProduct('${p._id}')">✎</button>
+                        <button class="btn btn-sm btn-outline-danger border-0" onclick="deleteProduct('${p._id}')">🗑️</button></td>
                 </tr>`;
         });
+        updateInventoryAlerts(products);
     } catch (err) { console.error(err); }
 };
 
@@ -450,23 +471,21 @@ window.loadArchivedProducts = async () => {
         archivedList.innerHTML = archived.length ? "" : "<tr><td class='text-muted small text-center p-3'>Keine Archiv vorhanden.</td></tr>";
         archived.forEach(p => {
             let imgSrc = p.image && p.image.startsWith('http') ? p.image : 'https://placehold.co/150';
-            archivedList.innerHTML += `<tr><td><img src="${imgSrc}" width="30" class="grayscale rounded shadow-sm"></td><td class="small text-muted ps-3">${p.name}</td><td class="text-end"><button class="btn btn-sm btn-outline-success border-0 py-0" onclick="restoreProduct('${p._id}')">Wiederherstellen ♻️</button></td></tr>`;
+            archivedList.innerHTML += `<tr><td><img src="${imgSrc}" width="30" class="grayscale rounded shadow-sm"></td><td class="small text-muted ps-3">${p.name}</td><td class="text-end"><button class="btn btn-sm btn-outline-success border-0 py-0" onclick="restoreProduct('${p._id}')">♻️</button></td></tr>`;
         });
     } catch (err) { console.error(err); }
 };
 
 window.restoreProduct = async (id) => {
     await fetch(`${API_URL}/products/restore/${id}`, { method: 'PUT', credentials: 'include' }).then(handleAuthError);
-    showLuxeAlert("Produkt erfolgreich reaktiviert", "success");
-    window.logActivity(`Produkt wiederhergestellt`, currentUser, "Success");
+    showLuxeAlert("Produkt reaktiviert", "success");
     await loadDashboard();
 };
 
 window.deleteProduct = async (id) => {
-    if (confirm("Möchten Sie dieses Produkt wirklich archivieren?")) {
+    if (confirm("Produkt archivieren?")) {
         await fetch(`${API_URL}/products/${id}`, { method: 'DELETE', credentials: 'include' }).then(handleAuthError);
-        showLuxeAlert("Produkt erfolgreich archiviert", "success");
-        window.logActivity(`Produkt archiviert`, currentUser, "Deleted");
+        showLuxeAlert("Produkt archiviert", "success");
         await loadDashboard();
     }
 };
@@ -477,42 +496,22 @@ document.getElementById('productForm')?.addEventListener('submit', async (e) => 
     const originalBtnText = submitBtn.innerHTML;
     const id = document.getElementById('pId').value;
     const fileInput = document.getElementById('pImageFile');
-
-    if (fileInput.files[0] && fileInput.files[0].size > 4 * 1024 * 1024) {
-        showLuxeAlert("Datei zu groß! Max. 4MB erlaubt.", "error");
-        return;
-    }
-
+    if (fileInput.files[0] && fileInput.files[0].size > 4 * 1024 * 1024) { showLuxeAlert("Datei zu groß!", "error"); return; }
     const formData = new FormData();
     formData.append('name', document.getElementById('pName').value);
     formData.append('price', document.getElementById('pPrice').value);
     formData.append('stock', document.getElementById('pStock').value);
     formData.append('description', document.getElementById('pDesc').value);
     if (fileInput && fileInput.files[0]) formData.append('image', fileInput.files[0]);
-
     try {
         submitBtn.disabled = true;
         submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Wird hochgeladen...';
-        const res = await fetch(id ? `${API_URL}/products/${id}` : `${API_URL}/products`, {
-            method: id ? 'PUT' : 'POST',
-            body: formData,
-            credentials: 'include'
-        });
-        if (!res.ok) {
-            const errData = await res.json().catch(() => ({ message: "Serverfehler" }));
-            throw new Error(errData.message || "Unerwarteter Fehler");
-        }
-        showLuxeAlert(id ? "Aktualisiert!" : "Produkt erfolgreich erstellt!", "success");
-        window.logActivity(id ? `Produkt aktualisiert` : `Neues Produkt erstellt`, currentUser, "Success");
-        window.resetProductForm();
-        await loadDashboard();
-    } catch (err) {
-        console.error("Yükleme Hatası:", err);
-        showLuxeAlert("Fehler: " + err.message, "error");
-    } finally {
-        submitBtn.disabled = false;
-        submitBtn.innerHTML = originalBtnText;
-    }
+        const res = await fetch(id ? `${API_URL}/products/${id}` : `${API_URL}/products`, { method: id ? 'PUT' : 'POST', body: formData, credentials: 'include' });
+        if (!res.ok) { throw new Error("Serverfehler"); }
+        showLuxeAlert(id ? "Aktualisiert!" : "Produkt erstellt!", "success");
+        window.resetProductForm(); await loadDashboard();
+    } catch (err) { showLuxeAlert("Fehler: " + err.message, "error"); }
+    finally { submitBtn.disabled = false; submitBtn.innerHTML = originalBtnText; }
 });
 
 window.editProduct = async (id) => {
@@ -527,11 +526,7 @@ window.editProduct = async (id) => {
     document.getElementById('pStock').value = p.stock;
     document.getElementById('pDesc').value = p.description || "";
     const preview = document.getElementById('imagePreview');
-    const previewImg = document.getElementById('previewImg');
-    if (preview && previewImg && p.image) {
-        preview.classList.remove('d-none');
-        previewImg.src = p.image.startsWith('http') ? p.image : 'https://placehold.co/150';
-    }
+    if (preview && p.image) { preview.classList.remove('d-none'); document.getElementById('previewImg').src = p.image; }
     document.getElementById('productFormTitle').innerText = "Produkt bearbeiten";
     document.getElementById('productSubmitBtn').innerText = "Aktualisieren";
     document.getElementById('cancelEditBtn').classList.remove('d-none');
@@ -541,8 +536,7 @@ window.editProduct = async (id) => {
 window.resetProductForm = () => {
     document.getElementById('productForm').reset();
     document.getElementById('pId').value = "";
-    const preview = document.getElementById('imagePreview');
-    if (preview) preview.classList.add('d-none');
+    document.getElementById('imagePreview').classList.add('d-none');
     document.getElementById('productFormTitle').innerText = "Produkt hinzufügen";
     document.getElementById('productSubmitBtn').innerText = "Speichern";
     document.getElementById('cancelEditBtn').classList.add('d-none');
@@ -550,15 +544,15 @@ window.resetProductForm = () => {
 
 function calculateStats(orders) {
     const valid = orders.filter(o => o.status !== 'Cancelled');
-    const statCount = document.getElementById('stat-count');
-    const statRev = document.getElementById('stat-revenue');
-    const statCust = document.getElementById('stat-customers');
-    if (statCount) statCount.innerText = valid.length;
-    if (statRev) statRev.innerText = euro.format(valid.reduce((s, o) => s + o.totalAmount, 0));
-    if (statCust) statCust.innerText = new Set(valid.map(o => o.customer.email)).size;
+    const totalRev = valid.reduce((s, o) => s + o.totalAmount, 0);
+    const aov = valid.length > 0 ? totalRev / valid.length : 0;
+    document.getElementById('stat-count').innerText = valid.length;
+    document.getElementById('stat-revenue').innerText = euro.format(totalRev);
+    document.getElementById('stat-customers').innerText = new Set(valid.map(o => o.customer.email)).size;
+    document.getElementById('stat-aov').innerText = euro.format(aov);
 }
 
-// --- 4. YORUM YÖNETİMİ ---
+// --- 🛡️ 6. YORUM YÖNETİMİ ---
 window.loadReviews = async () => {
     try {
         const res = await fetch(`${API_URL}/reviews`, { credentials: 'include' }).then(handleAuthError);
@@ -575,10 +569,8 @@ window.loadReviews = async () => {
                     <td>${"⭐".repeat(r.rating || r.stars)}</td>
                     <td class="review-text small" style="max-width: 250px;">${r.text}</td>
                     <td>${r.adminReply ? `<span class="admin-reply-badge">✓</span>` : `<span class="badge bg-light text-muted border">Keine Antwort</span>`}</td>
-                    <td class="text-end">
-                        <button class="btn btn-sm btn-outline-gold me-2" onclick="openReplyModal('${r._id}', '${r.adminReply || ''}')">💬</button>
-                        <button class="btn btn-sm btn-outline-danger" onclick="deleteReview('${r._id}')">🗑️</button>
-                    </td>
+                    <td class="text-end"><button class="btn btn-sm btn-outline-gold me-2" onclick="openReplyModal('${r._id}', '${r.adminReply || ''}')">💬</button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="deleteReview('${r._id}')">🗑️</button></td>
                 </tr>`;
         });
     } catch (err) { console.error(err); }
@@ -594,28 +586,25 @@ window.submitReply = async () => {
     const id = document.getElementById('replyReviewId').value;
     const replyText = document.getElementById('adminReplyText').value;
     const res = await fetch(`${API_URL}/reviews/reply/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
         credentials: 'include', body: JSON.stringify({ replyText })
     }).then(handleAuthError);
     if (res && res.ok) {
         bootstrap.Modal.getInstance(document.getElementById('replyModal')).hide();
         window.loadReviews();
         showLuxeAlert("Antwort erfolgreich gespeichert", "success");
-        window.logActivity(`Rezension beantwortet`, currentUser, "Success");
     }
 };
 
 window.deleteReview = async (id) => {
     if (confirm("Möchten Sie diese Rezension gerçekten löschen?")) {
         await fetch(`${API_URL}/reviews/${id}`, { method: 'DELETE', credentials: 'include' }).then(handleAuthError);
-        showLuxeAlert("Rezension erfolgreich gelöscht", "success");
-        window.logActivity(`Rezension gelöscht`, currentUser, "Deleted");
+        showLuxeAlert("Rezension gelöscht", "success");
         window.loadReviews();
     }
-}
+};
 
-// --- 5. ADMIN & LOG YÖNETİMİ ---
+// --- 🛡️ 7. ADMIN & LOG YÖNETİMİ ---
 window.loadAdmins = async () => {
     const res = await fetch(`${API_URL}/auth/users`, { credentials: 'include' }).then(handleAuthError);
     if (!res) return;
@@ -629,14 +618,10 @@ window.loadAdmins = async () => {
 };
 
 window.deleteAdmin = async (id) => {
-    if (confirm("Möchten Sie diesen Administrator gerçekten entfernen?")) {
+    if (confirm("Administrator entfernen?")) {
         try {
             const res = await fetch(`${API_URL}/auth/users/${id}`, { method: 'DELETE', credentials: 'include' }).then(handleAuthError);
-            if (res && res.ok) {
-                showLuxeAlert("Administrator wurde entfernt", "success");
-                window.logActivity(`Admin gelöscht`, currentUser, "Deleted");
-                await window.loadAdmins();
-            }
+            if (res && res.ok) { showLuxeAlert("Admin entfernt", "success"); await window.loadAdmins(); }
         } catch (err) { console.error("Admin Error:", err); }
     }
 };
@@ -645,30 +630,18 @@ document.getElementById('addAdminForm')?.addEventListener('submit', async (e) =>
     e.preventDefault();
     const username = document.getElementById('newAdminUser')?.value;
     const password = document.getElementById('newAdminPass')?.value;
-    const res = await fetch(`${API_URL}/auth/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include', body: JSON.stringify({ username, password })
-    }).then(handleAuthError);
-    if (res && res.ok) {
-        showLuxeAlert("Erfolgreich registriert!", "success");
-        document.getElementById('addAdminForm').reset();
-        window.loadAdmins();
-    }
+    const res = await fetch(`${API_URL}/auth/register`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ username, password }) }).then(handleAuthError);
+    if (res && res.ok) { showLuxeAlert("Erfolgreich registriert!", "success"); document.getElementById('addAdminForm').reset(); window.loadAdmins(); }
 });
 
 window.logActivity = async (action, user, status) => {
     try {
-        await fetch(`${API_URL}/logs`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include', body: JSON.stringify({ action, user, status })
-        });
+        await fetch(`${API_URL}/logs`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ action, user, status }) });
         await window.loadLogs();
     } catch (err) { console.error("Log error"); }
 };
 
-// --- ARAMA FİLTRELERİ (FIXED & EKSİKSİZ) ---
+// --- 🛡️ 8. FİLTRE MOTORLARI ---
 document.getElementById('logSearch')?.addEventListener('input', (e) => {
     const term = e.target.value.toLowerCase().trim();
     const rows = document.querySelectorAll('.log-row');
@@ -701,6 +674,7 @@ window.logout = async () => {
     finally { window.location.href = 'login.html'; }
 };
 
+// --- 🛡️ 9. BAŞLATICI (INITIALIZER) ---
 document.addEventListener('DOMContentLoaded', async () => {
     await checkInitialAuth();
     loadDashboard();
