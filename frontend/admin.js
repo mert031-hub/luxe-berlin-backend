@@ -1,9 +1,19 @@
 /**
  * LUXE BERLIN - MASTER ADMIN JAVASCRIPT (HARDENED SECURITY VERSION)
+ * Tüm fonksiyonlar korunmuş, oturum yönetimi HttpOnly Cookie sistemine taşınmıştır.
+ * LOG SİSTEMİ: Veritabanı tabanlı ve kalıcı hale getirilmiştir (DSGVO-konform).
+ * UPDATE: Analitik grafikleri genişletildi (Umsatz-Line + Status-Doughnut).
  */
 
 // --- GLOBAL DEĞİŞKENLER ---
 let currentUser = "Admin";
+let salesChart = null;
+let statusChart = null; // Pasta grafiği referansı
+let allOrdersData = [];
+let currentChartMode = 'monthly';
+
+// Geçici veri saklama (Onay bekleyen işlem için)
+let pendingUpdate = { id: null, status: null, selectEl: null };
 
 // --- 1. OTURUM KONTROLÜ (GÜVENLİ YÖNTEM) ---
 async function checkInitialAuth() {
@@ -25,16 +35,7 @@ const API_URL = window.location.hostname === 'localhost' || window.location.host
     ? 'http://localhost:5000/api'
     : 'https://kocyigit-trade.com/api';
 
-const API = API_URL;
-const UPLOADS_URL = '';
 const euro = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' });
-
-let salesChart = null;
-let allOrdersData = [];
-let currentChartMode = 'monthly';
-
-// Geçici veri saklama (Onay bekleyen işlem için)
-let pendingUpdate = { id: null, status: null, selectEl: null };
 
 // --- 💡 LUXE TOAST BİLDİRİM SİSTEMİ ---
 function showLuxeAlert(message, type = 'success') {
@@ -61,7 +62,7 @@ function showLuxeAlert(message, type = 'success') {
     }, 4000);
 }
 
-// 🛡️ GÜVENLİK GÜNCELLEMESİ: Hata yönetimi
+// 🛡️ GÜVENLİK GÜNCELLEMESİ
 const handleAuthError = (res) => {
     if (res && res.status === 401) {
         showLuxeAlert("Sitzung abgelaufen. Bitte erneut anmelden.", "error");
@@ -130,63 +131,155 @@ async function loadDashboard() {
     window.logActivity("Dashboard erfolgreich geladen", currentUser, "Success");
 }
 
-// --- 1. ANALİTİK GRAFİĞİ ---
+// --- 🛡️ 1. ANALİTİK GRAFİĞİ (GELİŞMİŞ ÇİFT EKSENLİ) ---
 function renderSalesChart(orders, mode = 'monthly', backendChartData = null) {
     const canvas = document.getElementById('salesChart');
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     currentChartMode = mode;
+
     let labels = [];
-    let data = [];
+    let revenueData = [];
+    let orderCountData = [];
+
+    const validOrders = orders.filter(o => o.status !== 'Cancelled');
+    const now = new Date();
 
     if (backendChartData && backendChartData.length > 0) {
         labels = backendChartData.map(d => `${d._id.month}/${d._id.year}`);
-        data = backendChartData.map(d => d.total);
+        revenueData = backendChartData.map(d => d.total);
+        orderCountData = backendChartData.map(d => d.count || 0);
     } else {
-        const validOrders = orders.filter(o => o.status !== 'Cancelled');
-        const now = new Date();
         if (mode === 'daily') {
             labels = [...Array(7)].map((_, i) => {
                 const d = new Date(); d.setDate(d.getDate() - (6 - i));
                 return d.toLocaleDateString('de-DE', { weekday: 'short' });
             });
-            data = labels.map((_, i) => {
+            revenueData = labels.map((_, i) => {
                 const d = new Date(); d.setDate(d.getDate() - (6 - i));
                 const ds = d.toLocaleDateString('de-DE');
                 return validOrders.filter(o => new Date(o.date).toLocaleDateString('de-DE') === ds).reduce((s, o) => s + o.totalAmount, 0);
             });
+            orderCountData = labels.map((_, i) => {
+                const d = new Date(); d.setDate(d.getDate() - (6 - i));
+                const ds = d.toLocaleDateString('de-DE');
+                return validOrders.filter(o => new Date(o.date).toLocaleDateString('de-DE') === ds).length;
+            });
         } else if (mode === 'weekly') {
             labels = ["4. Woche", "3. Woche", "2. Woche", "Diese Woche"];
-            data = [3, 2, 1, 0].map(w => {
+            revenueData = [3, 2, 1, 0].map(w => {
                 const start = new Date(); start.setDate(now.getDate() - (w * 7 + 7));
                 const end = new Date(); end.setDate(now.getDate() - (w * 7));
                 return validOrders.filter(o => { const d = new Date(o.date); return d >= start && d < end; }).reduce((s, o) => s + o.totalAmount, 0);
             });
+            orderCountData = [3, 2, 1, 0].map(w => {
+                const start = new Date(); start.setDate(now.getDate() - (w * 7 + 7));
+                const end = new Date(); end.setDate(now.getDate() - (w * 7));
+                return validOrders.filter(o => { const d = new Date(o.date); return d >= start && d < end; }).length;
+            });
         } else {
             labels = ["Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"];
-            data = labels.map((_, i) => validOrders.filter(o => new Date(o.date).getMonth() === i && new Date(o.date).getFullYear() === now.getFullYear()).reduce((s, o) => s + o.totalAmount, 0));
+            revenueData = labels.map((_, i) => validOrders.filter(o => new Date(o.date).getMonth() === i && new Date(o.date).getFullYear() === now.getFullYear()).reduce((s, o) => s + o.totalAmount, 0));
+            orderCountData = labels.map((_, i) => validOrders.filter(o => new Date(o.date).getMonth() === i && new Date(o.date).getFullYear() === now.getFullYear()).length);
         }
     }
 
     if (salesChart) salesChart.destroy();
+
     if (typeof Chart !== 'undefined') {
         salesChart = new Chart(ctx, {
             type: 'line',
             data: {
                 labels: labels,
-                datasets: [{
-                    label: `Umsatz (€)`, data: data, borderColor: '#c5a059', borderWidth: 3, backgroundColor: 'rgba(197, 160, 89, 0.1)', fill: true, tension: 0.4, pointRadius: 5
-                }]
+                datasets: [
+                    {
+                        label: 'Umsatz (€)',
+                        data: revenueData,
+                        borderColor: '#c5a059',
+                        backgroundColor: 'rgba(197, 160, 89, 0.1)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4,
+                        yAxisID: 'y'
+                    },
+                    {
+                        label: 'Bestellungen',
+                        data: orderCountData,
+                        borderColor: '#1c2541',
+                        borderDash: [5, 5],
+                        borderWidth: 2,
+                        fill: false,
+                        tension: 0.4,
+                        yAxisID: 'y1'
+                    }
+                ]
             },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
+                plugins: {
+                    legend: { display: true, position: 'top' },
+                    tooltip: {
+                        callbacks: {
+                            label: function (context) {
+                                let label = context.dataset.label || '';
+                                if (label.includes('Umsatz')) return label + ': ' + euro.format(context.parsed.y);
+                                return label + ': ' + context.parsed.y + ' Stück';
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: { type: 'linear', display: true, position: 'left', beginAtZero: true, title: { display: true, text: 'Euro (€)' } },
+                    y1: { type: 'linear', display: true, position: 'right', beginAtZero: true, grid: { drawOnChartArea: false }, title: { display: true, text: 'Bestellungen' } }
+                }
+            }
         });
     }
 }
 
+// --- 🛡️ 2. YENİ: PASTA (DOUGHNUT) GRAFİĞİ: SİPARİŞ DURUMU ---
+function renderStatusChart(orders) {
+    const canvas = document.getElementById('statusChart');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+
+    const statusCounts = {
+        'Delivered': orders.filter(o => o.status === 'Delivered').length,
+        'Pending': orders.filter(o => o.status === 'Pending' || o.status === 'Processing').length,
+        'Shipped': orders.filter(o => o.status === 'Shipped').length,
+        'Cancelled': orders.filter(o => o.status === 'Cancelled').length
+    };
+
+    if (statusChart) statusChart.destroy();
+
+    statusChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Geliefert', 'In Arbeit', 'Versandt', 'Storniert'],
+            datasets: [{
+                data: [statusCounts.Delivered, statusCounts.Pending, statusCounts.Shipped, statusCounts.Cancelled],
+                backgroundColor: ['#198754', '#ffc107', '#0dcaf0', '#dc3545'],
+                borderWidth: 0,
+                hoverOffset: 15
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '75%',
+            plugins: {
+                legend: { display: true, position: 'bottom', labels: { padding: 20, usePointStyle: true } },
+                tooltip: { callbacks: { label: (ctx) => ` ${ctx.label}: ${ctx.raw} Bestellungen` } }
+            }
+        }
+    });
+}
+
 window.changeChartMode = (mode) => {
-    const target = event ? event.target : null;
     document.querySelectorAll('.btn-chart-toggle').forEach(btn => btn.classList.remove('active'));
-    if (target) target.classList.add('active');
+    event?.target.classList.add('active');
     renderSalesChart(allOrdersData, mode);
 };
 
@@ -223,6 +316,8 @@ window.loadOrders = async () => {
                 </tr>`;
         });
         calculateStats(orders);
+        renderSalesChart(orders, currentChartMode); // Line chart tetikle
+        renderStatusChart(orders); // Pasta chart tetikle
     } catch (err) { console.error("Sipariş Yükleme Hatası:", err); }
 };
 
@@ -262,14 +357,14 @@ document.getElementById('confirmStatusBtn')?.addEventListener('click', async () 
             pendingUpdate = { id: null, status: null, selectEl: null };
             bootstrap.Modal.getInstance(document.getElementById('statusConfirmModal')).hide();
             await loadDashboard();
-            showLuxeAlert(`Status erfolgreich aktualisiert`, "success");
+            showLuxeAlert(`Status erfolgreich auf ${status} aktualisiert`, "success");
             window.logActivity(`Status-Update: ${status}`, currentUser, "Success");
         }
     } catch (err) { console.error("Update Hatası:", err); }
 });
 
 window.deleteOrder = async (id) => {
-    if (confirm("Möchten Sie diese Bestellung wirklich unwiderruflich löschen?")) {
+    if (confirm("Möchten Sie diese Bestellung gerçekten löschen?")) {
         try {
             const res = await fetch(`${API_URL}/orders/${id}`, {
                 method: 'DELETE',
@@ -300,22 +395,17 @@ window.viewDetails = async (id) => {
                     <div class="p-2 bg-white rounded border">💰 ${o.paymentMethod || 'Unbekannt'}</div>
                 </div>
                 <div class="col-md-6">
-                    <label class="small fw-bold text-muted d-block mb-1">Kontaktinformationen</label>
-                    <div class="p-2 bg-white rounded border small" style="word-break: break-all;">
-                        📧 ${o.customer.email}<br>
-                        📞 ${o.customer.phone || 'Nicht angegeben'}
-                    </div>
+                    <label class="small fw-bold text-muted d-block mb-1">Kontakt</label>
+                    <div class="p-2 bg-white rounded border small">📧 ${o.customer.email}</div>
                 </div>
             </div>
             <div class="mb-4">
-                <label class="small fw-bold text-muted d-block mb-1">Lieferadresse</label>
+                <label class="small fw-bold text-muted d-block mb-1">Adresse</label>
                 <div class="p-3 bg-light rounded-3 border">📍 ${o.customer.address}</div>
             </div>
             <div>
-                <label class="small fw-bold text-muted d-block mb-1">Bestellte Produkte</label>
-                <div class="table-responsive">
-                    ${o.items.map(i => `<div class="d-flex justify-content-between align-items-center border-bottom py-2 small"><span>${i.qty}x ${i.name}</span><strong class="text-navy">${euro.format(i.price * i.qty)}</strong></div>`).join('')}
-                </div>
+                <label class="small fw-bold text-muted d-block mb-1">Produkte</label>
+                ${o.items.map(i => `<div class="d-flex justify-content-between border-bottom py-2 small"><span>${i.qty}x ${i.name}</span><strong>${euro.format(i.price * i.qty)}</strong></div>`).join('')}
                 <div class="d-flex justify-content-between mt-3 fw-bold fs-5 pt-2 border-top">
                     <span>Gesamtbetrag:</span><span class="text-primary">${euro.format(o.totalAmount)}</span>
                 </div>
@@ -381,7 +471,6 @@ window.deleteProduct = async (id) => {
     }
 };
 
-// 🛡️ SENIOR FIX: KRİTİK ÜRÜN EKLEME (TAKILMA KORUMALI)
 document.getElementById('productForm')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const submitBtn = document.getElementById('productSubmitBtn');
@@ -404,28 +493,23 @@ document.getElementById('productForm')?.addEventListener('submit', async (e) => 
     try {
         submitBtn.disabled = true;
         submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Wird hochgeladen...';
-
         const res = await fetch(id ? `${API_URL}/products/${id}` : `${API_URL}/products`, {
             method: id ? 'PUT' : 'POST',
             body: formData,
             credentials: 'include'
         });
-
         if (!res.ok) {
             const errData = await res.json().catch(() => ({ message: "Serverfehler" }));
             throw new Error(errData.message || "Unerwarteter Fehler");
         }
-
         showLuxeAlert(id ? "Aktualisiert!" : "Produkt erfolgreich erstellt!", "success");
         window.logActivity(id ? `Produkt aktualisiert` : `Neues Produkt erstellt`, currentUser, "Success");
         window.resetProductForm();
         await loadDashboard();
-
     } catch (err) {
         console.error("Yükleme Hatası:", err);
         showLuxeAlert("Fehler: " + err.message, "error");
     } finally {
-        // ✅ KRİTİK: Butonu her koşulda resetleyerek takılı kalmayı önler
         submitBtn.disabled = false;
         submitBtn.innerHTML = originalBtnText;
     }
@@ -442,14 +526,12 @@ window.editProduct = async (id) => {
     document.getElementById('pPrice').value = p.price;
     document.getElementById('pStock').value = p.stock;
     document.getElementById('pDesc').value = p.description || "";
-
     const preview = document.getElementById('imagePreview');
     const previewImg = document.getElementById('previewImg');
     if (preview && previewImg && p.image) {
         preview.classList.remove('d-none');
         previewImg.src = p.image.startsWith('http') ? p.image : 'https://placehold.co/150';
     }
-
     document.getElementById('productFormTitle').innerText = "Produkt bearbeiten";
     document.getElementById('productSubmitBtn').innerText = "Aktualisieren";
     document.getElementById('cancelEditBtn').classList.remove('d-none');
@@ -525,7 +607,7 @@ window.submitReply = async () => {
 };
 
 window.deleteReview = async (id) => {
-    if (confirm("Möchten Sie diese Rezension wirklich löschen?")) {
+    if (confirm("Möchten Sie diese Rezension gerçekten löschen?")) {
         await fetch(`${API_URL}/reviews/${id}`, { method: 'DELETE', credentials: 'include' }).then(handleAuthError);
         showLuxeAlert("Rezension erfolgreich gelöscht", "success");
         window.logActivity(`Rezension gelöscht`, currentUser, "Deleted");
@@ -547,7 +629,7 @@ window.loadAdmins = async () => {
 };
 
 window.deleteAdmin = async (id) => {
-    if (confirm("Möchten Sie diesen Administrator wirklich entfernen?")) {
+    if (confirm("Möchten Sie diesen Administrator gerçekten entfernen?")) {
         try {
             const res = await fetch(`${API_URL}/auth/users/${id}`, { method: 'DELETE', credentials: 'include' }).then(handleAuthError);
             if (res && res.ok) {
@@ -555,7 +637,7 @@ window.deleteAdmin = async (id) => {
                 window.logActivity(`Admin gelöscht`, currentUser, "Deleted");
                 await window.loadAdmins();
             }
-        } catch (err) { console.error("Admin Silme Hatası:", err); showLuxeAlert("Fehler beim Entfernen", "error"); }
+        } catch (err) { console.error("Admin Error:", err); }
     }
 };
 
@@ -569,8 +651,7 @@ document.getElementById('addAdminForm')?.addEventListener('submit', async (e) =>
         credentials: 'include', body: JSON.stringify({ username, password })
     }).then(handleAuthError);
     if (res && res.ok) {
-        showLuxeAlert("Neuer Administrator erfolgreich registriert!", "success");
-        window.logActivity(`Neuer Admin erstellt: ${username}`, currentUser, "Success");
+        showLuxeAlert("Erfolgreich registriert!", "success");
         document.getElementById('addAdminForm').reset();
         window.loadAdmins();
     }
@@ -584,17 +665,14 @@ window.logActivity = async (action, user, status) => {
             credentials: 'include', body: JSON.stringify({ action, user, status })
         });
         await window.loadLogs();
-    } catch (err) { console.error("Log kaydedilemedi:", err); }
+    } catch (err) { console.error("Log error"); }
 };
 
 // --- ARAMA FİLTRELERİ (FIXED & EKSİKSİZ) ---
 document.getElementById('logSearch')?.addEventListener('input', (e) => {
     const term = e.target.value.toLowerCase().trim();
     const rows = document.querySelectorAll('.log-row');
-    rows.forEach(row => {
-        const rowContent = row.innerText.toLowerCase();
-        row.style.display = rowContent.includes(term) ? "" : "none";
-    });
+    rows.forEach(row => { row.style.display = row.innerText.toLowerCase().includes(term) ? "" : "none"; });
 });
 
 document.getElementById('orderSearch')?.addEventListener('input', (e) => {
@@ -615,13 +693,9 @@ document.getElementById('productSearch')?.addEventListener('input', (e) => {
 
 document.getElementById('reviewSearch')?.addEventListener('input', (e) => {
     const term = e.target.value.toLowerCase();
-    document.querySelectorAll('.review-row').forEach(row => {
-        const text = row.querySelector('.review-text').innerText.toLowerCase();
-        row.style.display = text.includes(term) ? "" : "none";
-    });
+    document.querySelectorAll('.review-row').forEach(row => { row.style.display = row.innerText.toLowerCase().includes(term) ? "" : "none"; });
 });
 
-// 🛡️ GÜVENLİK GÜNCELLEMESİ: Logout
 window.logout = async () => {
     try { await fetch(`${API_URL}/auth/logout`, { method: 'POST', credentials: 'include' }); }
     finally { window.location.href = 'login.html'; }
