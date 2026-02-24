@@ -1,32 +1,36 @@
 const Product = require('../models/Product');
 
 /**
- * LUXE BERLIN - PRODUCT CONTROLLER (V8)
+ * LUXE BERLIN - PRODUCT CONTROLLER (MASTER VERSION)
  * Tüm fonksiyonlar eksiksiz korunmuş, export hataları giderilmiştir.
+ * Alman Standartları: Hata mesajları Almanca ve kullanıcı dostudur.
  */
 
-// 🛡️ 1. TÜM ÜRÜNLERİ GETİR
+// 1. TÜM ÜRÜNLERİ GETİR
 exports.getAllProducts = async (req, res) => {
     try {
         const products = await Product.find().sort({ createdAt: -1 });
         res.status(200).json(products);
     } catch (err) {
-        res.status(500).json({ success: false, message: err.message });
+        console.error("GetAllProducts Error:", err);
+        res.status(500).json({ success: false, message: "Fehler beim Laden der Produkte: " + err.message });
     }
 };
 
-// 🛡️ 2. TEK ÜRÜN GETİR
+// 2. TEK ÜRÜN GETİR
 exports.getProductById = async (req, res) => {
     try {
         const product = await Product.findById(req.params.id);
-        if (!product) return res.status(404).json({ success: false, message: "Produkt nicht gefunden" });
+        if (!product) {
+            return res.status(404).json({ success: false, message: "Produkt nicht gefunden" });
+        }
         res.status(200).json(product);
     } catch (err) {
-        res.status(500).json({ success: false, message: err.message });
+        res.status(500).json({ success: false, message: "Ungültige Produkt-ID" });
     }
 };
 
-// 🛡️ 3. YENİ ÜRÜN OLUŞTUR (Cloudinary Destekli)
+// 3. YENİ ÜRÜN OLUŞTUR (Cloudinary Destekli)
 exports.createProduct = async (req, res) => {
     try {
         const { name, price, stock, description } = req.body;
@@ -34,10 +38,14 @@ exports.createProduct = async (req, res) => {
         // Cloudinary'den dönen URL'i alıyoruz
         const imageUrl = req.file ? req.file.path : null;
 
+        if (!name || !price) {
+            return res.status(400).json({ success: false, message: "Name und Preis sind erforderlich" });
+        }
+
         const newProduct = new Product({
             name,
             price,
-            stock,
+            stock: stock || 0,
             description,
             image: imageUrl
         });
@@ -45,11 +53,12 @@ exports.createProduct = async (req, res) => {
         await newProduct.save();
         res.status(201).json({ success: true, product: newProduct });
     } catch (err) {
-        res.status(500).json({ success: false, message: err.message });
+        console.error("CreateProduct Error:", err);
+        res.status(500).json({ success: false, message: "Fehler beim Erstellen: " + err.message });
     }
 };
 
-// 🛡️ 4. ÜRÜN GÜNCELLE
+// 4. ÜRÜN GÜNCELLE
 exports.updateProduct = async (req, res) => {
     try {
         const { name, price, stock, description } = req.body;
@@ -60,28 +69,39 @@ exports.updateProduct = async (req, res) => {
         }
 
         const product = await Product.findByIdAndUpdate(req.params.id, updateData, { new: true });
+
+        if (!product) {
+            return res.status(404).json({ success: false, message: "Produkt zum Aktualisieren nicht gefunden" });
+        }
+
         res.status(200).json({ success: true, product });
     } catch (err) {
-        res.status(500).json({ success: false, message: err.message });
+        res.status(500).json({ success: false, message: "Fehler beim Aktualisieren: " + err.message });
     }
 };
 
-// 🛡️ 5. ÜRÜN ARŞİVLE (Soft Delete)
+// 5. ÜRÜN ARŞİVLE (Soft Delete - DSGVO Konform)
 exports.deleteProduct = async (req, res) => {
     try {
-        await Product.findByIdAndUpdate(req.params.id, { isDeleted: true });
-        res.status(200).json({ success: true, message: "Produkt archiviert" });
+        const product = await Product.findByIdAndUpdate(req.params.id, { isDeleted: true }, { new: true });
+        if (!product) {
+            return res.status(404).json({ success: false, message: "Produkt nicht gefunden" });
+        }
+        res.status(200).json({ success: true, message: "Produkt erfolgreich archiviert" });
     } catch (err) {
-        res.status(500).json({ success: false, message: err.message });
+        res.status(500).json({ success: false, message: "Fehler beim Archivieren" });
     }
 };
 
-// 🛡️ 6. ÜRÜN GERİ GETİR (Restore)
+// 6. ÜRÜN GERİ GETİR (Restore)
 exports.restoreProduct = async (req, res) => {
     try {
-        await Product.findByIdAndUpdate(req.params.id, { isDeleted: false });
-        res.status(200).json({ success: true, message: "Produkt wiederhergestellt" });
+        const product = await Product.findByIdAndUpdate(req.params.id, { isDeleted: false }, { new: true });
+        if (!product) {
+            return res.status(404).json({ success: false, message: "Produkt nicht gefunden" });
+        }
+        res.status(200).json({ success: true, message: "Produkt erfolgreich wiederhergestellt" });
     } catch (err) {
-        res.status(500).json({ success: false, message: err.message });
+        res.status(500).json({ success: false, message: "Wiederherstellung fehlgeschlagen" });
     }
 };

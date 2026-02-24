@@ -6,14 +6,17 @@ const resend = new Resend(process.env.RESEND_API_KEY);
  * Sipariş durumuna göre mail gönderen servis.
  */
 async function sendStatusEmail(order, newStatus) {
-    if (!order || !order.customer || !order.customer.email) return;
+    if (!order || !order.customer || !order.customer.email) {
+        console.error("❌ Mail gönderilemedi: Eksik sipariş veya müşteri bilgisi.");
+        return;
+    }
 
     let subject = "";
     let message = "";
     let statusLabel = "Bestell-Update";
     const status = newStatus ? newStatus.toLowerCase() : "";
 
-    // Durum Belirleme
+    // Durum Belirleme (Almanca)
     if (status === "pending" || status === "eingegangen") {
         subject = "Bestellbestätigung - LUXE BERLIN";
         statusLabel = "Bestellbestätigung";
@@ -46,9 +49,10 @@ async function sendStatusEmail(order, newStatus) {
 
     // Ürün Tablosu (HTML)
     const itemsHTML = (order.items || []).map(item => {
+        // Popüle edilmiş üründen görseli al, yoksa placeholder kullan
         const productImg = (item.productId && item.productId.image)
             ? item.productId.image
-            : 'https://via.placeholder.com/100?text=Luxe+Berlin';
+            : 'https://kocyigit-trade.com/favicon.png';
 
         return `
         <tr>
@@ -66,7 +70,8 @@ async function sendStatusEmail(order, newStatus) {
     }).join('');
 
     try {
-        await resend.emails.send({
+        const data = await resend.emails.send({
+            // 🛡️ ÇOK KRİTİK: noreply@kocyigit-trade.com adresinin Resend Dashboard'da doğrulanmış olması gerekir.
             from: "LUXE BERLIN <noreply@kocyigit-trade.com>",
             to: [order.customer.email],
             subject: subject,
@@ -127,6 +132,7 @@ async function sendStatusEmail(order, newStatus) {
             </html>
             `
         });
+        console.log("📧 Resend Yanıtı (Mail ID):", data.id);
     } catch (err) {
         console.error("❌ Mail servis hatası:", err.message);
     }

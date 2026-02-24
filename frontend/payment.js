@@ -1,11 +1,10 @@
 /**
- * LUXE BERLIN - CHECKOUT LOGIC
+ * LUXE BERLIN - CHECKOUT LOGIC (ULTRA STABLE & STRIPE READY)
  */
 
 let products = [];
 let cart = JSON.parse(localStorage.getItem('luxeCartArray')) || [];
 
-// API URL - Diğer dosyalarla senkronize edildi
 const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
     ? 'http://localhost:5000/api'
     : '/api';
@@ -85,13 +84,11 @@ window.updateCartItemQty = (id, d) => {
     const i = cart.find(x => x.id === id), p = products.find(x => x.id === id);
     if (!i || !p) return;
 
-    // 🛡️ SENIOR FIX: Eğer miktar 1 iken eksiye basılırsa ürünü sil.
     if (i.qty + d < 1) {
         removeFromCart(id);
         return;
     }
 
-    // Stok sınırları dahilinde artır/azalt
     if (i.qty + d <= p.stock) {
         i.qty += d;
         localStorage.setItem('luxeCartArray', JSON.stringify(cart));
@@ -105,6 +102,7 @@ window.removeFromCart = (id) => {
     loadCheckout();
 };
 
+// 🛡️ REVIZE: STRIPE CHECKOUT INTEGRATION
 document.getElementById('checkoutForm')?.addEventListener('submit', async (e) => {
     e.preventDefault();
 
@@ -114,59 +112,48 @@ document.getElementById('checkoutForm')?.addEventListener('submit', async (e) =>
     const phone = document.getElementById('orderPhone').value.trim();
     const address = document.getElementById('orderAddress').value.trim();
 
+    // 🛡️ Validasyonlar Korundu
     const nameRegex = /^[A-Za-zÀ-ž\s]{2,}$/;
     if (!nameRegex.test(firstName) || !nameRegex.test(lastName)) {
-        return alert("Bitte geben Sie einen gültigen Namen ein (nur Buchstaben, mind. 2 Zeichen).");
+        return alert("Bitte geben Sie einen gültigen Namen ein.");
     }
-
     const phoneRegex = /^\+?[0-9]{7,15}$/;
     if (!phoneRegex.test(phone.replace(/\s/g, ""))) {
         return alert("Bitte geben Sie eine gültige Telefonnummer ein.");
     }
-
     if (address.length < 10) {
         return alert("Bitte geben Sie eine vollständige Lieferadresse ein.");
     }
-
     if (!document.getElementById('checkAGB').checked || !document.getElementById('checkPrivacy').checked) {
         return alert("Bitte akzeptieren Sie die AGB und Datenschutzbestimmungen.");
     }
 
-    const currentTotal = cart.reduce((acc, item) => {
-        const p = products.find(x => x.id === item.id);
-        return acc + (p ? p.price * item.qty : 0);
-    }, 0);
-
-    const orderData = {
-        customer: { firstName, lastName, email, phone, address },
-        items: cart.map(item => {
-            const p = products.find(x => x.id === item.id);
-            return { productId: p.id, name: p.name, qty: item.qty, price: p.price };
-        }),
-        totalAmount: currentTotal,
-        paymentMethod: document.querySelector('input[name="pay"]:checked')?.parentElement.querySelector('small').innerText.trim() || "KARTE"
-    };
-
     const btn = document.querySelector('.btn-order-submit');
-    if (btn) { btn.disabled = true; btn.innerText = "VERARBEITUNG..."; }
+    if (btn) { btn.disabled = true; btn.innerText = "AUTHENTIFIZIERUNG..."; }
 
     try {
-        const response = await fetch(`${API_URL}/orders`, {
+        // Backend Stripe Session isteği
+        const response = await fetch(`${API_URL}/payment/create-checkout-session`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(orderData)
+            body: JSON.stringify({
+                cartItems: cart,
+                customerInfo: { firstName, lastName, email, phone, address }
+            })
         });
-        const result = await response.json();
-        if (response.ok) {
-            localStorage.removeItem('luxeCartArray');
-            window.location.href = `./success.html?orderId=${result.orderId}&displayId=${result.shortId}`;
+
+        const session = await response.json();
+
+        if (session.url) {
+            // Sepeti temizlemiyoruz, başarılı ödemeden sonra success.html temizleyecek.
+            window.location.href = session.url;
         } else {
-            alert("Fehler: " + (result.message || "Bestellung fehlgeschlagen."));
+            alert("Fehler: " + (session.message || "Stripe Sitzung konnte nicht erstellt werden."));
             if (btn) { btn.disabled = false; btn.innerText = "ZAHLUNGSPFLICHTIG BESTELLEN"; }
         }
     } catch (err) {
         console.error("Ödeme hatası:", err);
-        alert("Serververbindung fehlgeschlagen. Bitte versuchen Sie es später erneut.");
+        alert("Serververbindung fehlgeschlagen.");
         if (btn) { btn.disabled = false; btn.innerText = "ZAHLUNGSPFLICHTIG BESTELLEN"; }
     }
 });

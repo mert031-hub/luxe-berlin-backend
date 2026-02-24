@@ -3,7 +3,7 @@ const Product = require("../models/Product");
 const { sendStatusEmail } = require("../config/mailer");
 
 /**
- * 1️⃣ SİPARİŞ OLUŞTURMA
+ * 1️⃣ SİPARİŞ OLUŞTURMA (Manuel veya Yedek Sistem)
  */
 exports.createOrder = async (req, res) => {
     try {
@@ -57,7 +57,28 @@ exports.createOrder = async (req, res) => {
 };
 
 /**
- * 2️⃣ TÜM SİPARİŞLERİ GETİR (Admin Panel)
+ * 🛡️ 2️⃣ STRIPE SESSION ID İLE SİPARİŞ GETİR (Success Sayfası İçin)
+ */
+exports.getOrderBySession = async (req, res) => {
+    try {
+        const { sessionId } = req.params;
+
+        // Veritabanında Stripe oturumuna ait siparişi buluyoruz
+        const order = await Order.findOne({ stripeSessionId: sessionId }).populate('items.productId');
+
+        if (!order) {
+            return res.status(404).json({ message: "Bestellung noch nicht im System." });
+        }
+
+        res.json(order);
+    } catch (err) {
+        console.error("❌ Stripe Session sorgu hatası:", err.message);
+        res.status(500).json({ message: "Fehler beim Abrufen", error: err.message });
+    }
+};
+
+/**
+ * 3️⃣ TÜM SİPARİŞLERİ GETİR (Admin Panel)
  */
 exports.getAllOrders = async (req, res) => {
     try {
@@ -69,7 +90,7 @@ exports.getAllOrders = async (req, res) => {
 };
 
 /**
- * 3️⃣ TEK SİPARİŞ GETİR (Tracking / Success)
+ * 4️⃣ TEK SİPARİŞ GETİR (Tracking)
  */
 exports.getOrderById = async (req, res) => {
     try {
@@ -92,7 +113,7 @@ exports.getOrderById = async (req, res) => {
 };
 
 /**
- * 4️⃣ DURUM GÜNCELLEME
+ * 5️⃣ DURUM GÜNCELLEME
  */
 exports.updateOrderStatus = async (req, res) => {
     try {
@@ -111,7 +132,7 @@ exports.updateOrderStatus = async (req, res) => {
 };
 
 /**
- * 5️⃣ SİPARİŞ SİLME / ARŞİVLEME / İPTAL (Fonskiyonlar korunmuştur)
+ * 6️⃣ SİPARİŞ SİLME / ARŞİVLEME / İPTAL
  */
 exports.deleteOrder = async (req, res) => {
     try {

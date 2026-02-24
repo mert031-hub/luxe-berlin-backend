@@ -1,7 +1,7 @@
 /**
- * LUXE BERLIN - OFFICIAL BACKEND SERVER (ULTRA STABLE & FAST VERSION)
- * OPTİMİZASYON: Gzip/Brotli Sıkıştırma (Compression) ve Static Caching eklendi.
- * ENTEGRASYON: Admin Dashboard ve GDPR Zamanlayıcı korundu.
+ * LUXE BERLIN - OFFICIAL BACKEND SERVER (ULTRA STABLE & FAST)
+ * OPTİMİZASYON: Gzip/Brotli Sıkıştırma, Static Caching ve DNS Önceliği.
+ * GÜVENLİK: Global Exception Handlers ve Stripe Webhook İmza Doğrulaması.
  */
 
 require('dotenv').config();
@@ -11,69 +11,67 @@ const cors = require('cors');
 const path = require('path');
 const dns = require('dns');
 const cookieParser = require('cookie-parser');
-const compression = require('compression'); // 🚀 Hız paketi
+const compression = require('compression');
 const connectDB = require('./config/db');
-
-// 🛡️ ENTEGRASYON EKLEMELERİ
 const cron = require('node-cron');
 const runGdprCleanup = require('./utils/gdprManager');
+const paymentController = require('./controllers/paymentController');
 
 // 🔥 CRASH ÖNLEYİCİ GLOBAL HANDLERLAR
 process.on('uncaughtException', (err) => {
-    console.error('💥 UNCAUGHT EXCEPTION!');
-    console.error(err);
+    console.error('💥 KRITISCHER FEHLER (Uncaught Exception):', err);
 });
 
 process.on('unhandledRejection', (err) => {
-    console.error('💥 UNHANDLED PROMISE REJECTION!');
-    console.error(err);
+    console.error('💥 KRITISCHER FEHLER (Unhandled Rejection):', err);
 });
 
-// DNS Önceliği (Mongo uyumu için)
+// DNS Önceliği (MongoDB bağlantı hızı için)
 dns.setDefaultResultOrder('ipv4first');
 
 const app = express();
 
-// --- ⚡ HIZ VE PERFORMANS MİDDLEWARE'LERİ ---
+// --- ⚡ HIZ VE PERFORMANS ---
 
-// 1. Gzip Sıkıştırma: Veri transfer boyutunu %70'e kadar düşürür.
+// 1. Gzip Sıkıştırma: Veri boyutunu düşürür.
 app.use(compression());
 
-// 2. Static Caching: Tarayıcılara statik dosyaları (logo, js, css) önbelleğe almasını söyler.
-// Bu sayede siteye ikinci kez giren bir müşteri, dosyaları tekrar indirmez, anında açılır.
+// 2. Static Caching: Statik dosyalar için 1 günlük tarayıcı önbelleği.
 const staticOptions = {
-    maxAge: '1d', // Dosyalar 1 gün boyunca tarayıcı önbelleğinde saklanır
+    maxAge: '1d',
     etag: true
 };
 
-// Eğer Nginx reverse proxy kullanıyorsan önemli
+// --- STRIPE WEBHOOK (DİKKAT: JSON'dan ÖNCE OLMALI) ---
+// Stripe imza doğrulaması için gövdenin (body) ham/raw formatta olması gerekir.
+app.post('/api/payment/webhook', express.raw({ type: 'application/json' }), paymentController.stripeWebhook);
+
+// --- STANDART MIDDLEWARE ---
+app.use(express.json());
+app.use(cookieParser());
 app.set('trust proxy', 1);
 
 // --- VERİTABANI ---
 connectDB();
 
-// 🛡️ DSGVO/GDPR ZAMANLAYICI (Her gece 03:00'te otomatik temizlik yapar)
+// 🛡️ DSGVO/GDPR ZAMANLAYICI (Her gece 03:00'te temizlik yapar)
 cron.schedule('0 3 * * *', () => {
+    console.log("🕒 GDPR-Bereinigung wird gestartet...");
     runGdprCleanup();
 });
 
-// --- MIDDLEWARE ---
-app.use(cookieParser());
-app.use(express.json());
-
-// 🛡️ OPTİMİZE EDİLMİŞ REQUEST LOG (Gürültü Filtresi)
+// --- REQUEST LOGGING ---
 app.use((req, res, next) => {
     const ignoreExtensions = ['.css', '.js', '.png', '.jpg', '.jpeg', '.svg', '.json', '.ico', '.map'];
     const isStaticFile = ignoreExtensions.some(ext => req.url.toLowerCase().endsWith(ext));
 
     if (!isStaticFile) {
-        const timestamp = new Date().toISOString();
-        console.log(`[${timestamp}] ${req.method} ${req.originalUrl}`);
+        console.log(`[${new Date().toISOString()}] ${req.method} ${req.originalUrl}`);
     }
     next();
 });
 
-// --- CORS ---
+// --- CORS AYARLARI ---
 app.use(cors({
     origin: [
         'https://kocyigit-trade.com',
@@ -85,8 +83,7 @@ app.use(cors({
     credentials: true
 }));
 
-// --- STATIC ---
-// Uploads ve Frontend klasörlerine performans (cache) ayarları uygulandı.
+// --- STATIC ASSETS ---
 app.use('/uploads', express.static(path.join(__dirname, 'uploads'), staticOptions));
 app.use(express.static(path.join(__dirname, 'frontend'), staticOptions));
 
@@ -99,18 +96,18 @@ app.use('/api/contact', require('./routes/contactRoutes'));
 app.use('/api/reviews', require('./routes/reviewRoutes'));
 app.use('/api/logs', require('./routes/logRoutes'));
 app.use('/api', require('./routes/testRoutes'));
+app.use('/api/payment', require('./routes/paymentRoutes'));
 
-// API Health Check
+// API Durum Kontrolü
 app.get('/api-status', (req, res) => {
     res.status(200).json({
         success: true,
-        message: 'Luxe Berlin API is online and running! 🚀',
-        timestamp: new Date().toLocaleString('de-DE'),
-        db_status: 'Connected'
+        message: 'Luxe Berlin API ist online! 🚀',
+        timestamp: new Date().toLocaleString('de-DE')
     });
 });
 
-// --- 404 ---
+// --- 404 HANDLER ---
 app.use((req, res) => {
     res.status(404);
     if (req.accepts('html')) {
@@ -121,7 +118,7 @@ app.use((req, res) => {
 
 // --- GLOBAL ERROR HANDLER ---
 app.use((err, req, res, next) => {
-    console.error("🚨 GLOBAL ERROR HANDLER TRIGGERED");
+    console.error("🚨 GLOBALER SERVERFEHLER:");
     console.error(err.stack || err);
 
     res.status(err.status || 500).json({
@@ -131,15 +128,11 @@ app.use((err, req, res, next) => {
     });
 });
 
-// --- SERVER START ---
+// --- BAŞLATMA ---
 const PORT = process.env.PORT || 5000;
-
 app.listen(PORT, () => {
     console.log("--------------------------------------------------");
-    console.log("🚀 LUXE BERLIN SERVER IS ACTIVE (FAST & STABLE)");
-    console.log(`📡 PORT: ${PORT}`);
-    console.log(`🌍 ENV: ${process.env.NODE_ENV}`);
-    console.log(`⚡ SPEED: Compression & Caching Active`);
-    console.log(`☁️ CLOUDINARY: ${process.env.CLOUDINARY_CLOUD_NAME ? "Configured" : "NOT CONFIGURED"}`);
+    console.log(`🚀 LUXE BERLIN SERVER AKTIV AUF PORT: ${PORT}`);
+    console.log(`⚡ Performance: Kompression & Caching aktiv`);
     console.log("--------------------------------------------------");
 });

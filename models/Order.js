@@ -1,13 +1,16 @@
 const mongoose = require('mongoose');
 
 /**
- * LUXE BERLIN - Sipariş Veri Modeli
- * Müşteri bilgileri, ürünler ve ödeme durumlarını tutar.
- * Optimizasyon: shortId alanı benzersizdir ve indekslenmiştir.
+ * LUXE BERLIN - Sipariş Veri Modeli (STRIPE & PERFORMANCE OPTIMIZED)
+ * Müşteri bilgileri, ürünler ve ödeme verilerini tutar.
  */
 const OrderSchema = new mongoose.Schema({
-    // shortId üzerindeki unique: true özelliği otomatik olarak bir index oluşturur.
+    // 🛡️ Müşteriye görünen kısa ID (Benzersizlik garantisi)
     shortId: { type: String, unique: true, required: true },
+
+    // 🛡️ Stripe tarafındaki oturum ID'si (Success sayfası sorguları için)
+    // Uyarıyı önlemek için buradaki "index: true" kaldırıldı, en altta manuel olarak eklendi.
+    stripeSessionId: { type: String },
 
     customer: {
         firstName: { type: String, required: true },
@@ -29,15 +32,30 @@ const OrderSchema = new mongoose.Schema({
         }
     ],
     totalAmount: { type: Number, required: true, min: 0 },
-    paymentMethod: { type: String, default: "Unbekannt" },
+    paymentMethod: { type: String, default: "KARTE (Stripe)" },
+
+    // 🛡️ Finansal Ödeme Durumu (Paid, Pending, Failed)
+    paymentStatus: { type: String, default: 'Pending' },
+
+    // 🛡️ Operasyonel Sipariş Durumu (Pending, Shipped, Delivered, Cancelled)
     status: { type: String, default: 'Pending' },
+
     date: { type: Date, default: Date.now },
     isArchived: { type: Boolean, default: false }
 });
 
-// 🚀 BACKEND OPTİMİZASYONU (EK İNDEKSLER)
-OrderSchema.index({ "customer.email": 1 }); // Müşteri geçmişi için
-OrderSchema.index({ status: 1 });           // Durum filtrelemeleri için
-OrderSchema.index({ date: -1 });            // Hızlı sıralama için
+// --- 🚀 BACKEND OPTİMİZASYONU (İNDEKSLER) ---
+
+// Müşteri e-postası ile hızlı sorgulama (Müşteri geçmişi analitiği için)
+OrderSchema.index({ "customer.email": 1 });
+
+// Sipariş durumu filtrelemeleri (Admin Panel hızı için)
+OrderSchema.index({ status: 1 });
+
+// En yeni siparişleri en üstte getirmek için hızlı sıralama
+OrderSchema.index({ date: -1 });
+
+// 🛡️ KRİTİK: Success sayfasındaki 'by-session' sorgusunun milisaniyeler içinde bitmesi için.
+OrderSchema.index({ stripeSessionId: 1 });
 
 module.exports = mongoose.model('Order', OrderSchema);

@@ -8,25 +8,29 @@ const auth = require('../middlewares/auth');
  * Tüm sipariş operasyonlarının API uç noktaları.
  */
 
-// 1. Yeni sipariş oluşturma (Checkout)
+// 🛡️ 1. ÖNEMLİ: Stripe Session ID ile sipariş sorgulama
+// Bu rota, alttaki /:id rotasından ÖNCE gelmelidir (404 hatasını önlemek için).
+router.get('/by-session/:sessionId', orderController.getOrderBySession);
+
+// 2. Yeni sipariş oluşturma (Checkout / Manuel)
 router.post('/', orderController.createOrder);
 
-// 2. Tüm siparişleri listeleme (Admin Panel)
+// 3. Tüm siparişleri listeleme (Admin Panel)
 router.get('/', auth, orderController.getAllOrders);
 
-// 3. Tekil sipariş sorgulama (Tracking)
+// 4. Tekil sipariş sorgulama (Tracking / ID veya ShortID ile)
 router.get('/:id', orderController.getOrderById);
 
-// 4. Sipariş durumunu güncelleme (Admin Panel)
+// 5. Sipariş durumunu güncelleme (Admin Panel)
 router.put('/:id', auth, orderController.updateOrderStatus);
 
-// 5. Siparişi veritabanından tamamen silme
+// 6. Siparişi veritabanından tamamen silme (Admin Panel)
 router.delete('/:id', auth, orderController.deleteOrder);
 
-// 6. Siparişi arşivleme (Admin Panel)
+// 7. Siparişi arşivleme (Admin Panel)
 router.patch('/:id/archive', auth, orderController.archiveOrder);
 
-// 7. Sipariş İptal Etme (Müşteri/Yasal İptal Sistemi)
+// 8. Sipariş İptal Etme (Müşteri/Yasal İptal Sistemi)
 router.post('/:id/cancel', orderController.cancelOrder);
 
 module.exports = router;
