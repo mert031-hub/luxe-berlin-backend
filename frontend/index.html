@@ -26,6 +26,7 @@
                 <ul class="navbar-nav ms-auto align-items-center">
                     <li class="nav-item"><a class="nav-link" href="#produkte">Kollektion</a></li>
                     <li class="nav-item"><a class="nav-link" href="#testimonials">Bewertungen</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#besuch">Besuch</a></li>
                     <li class="nav-item"><a class="nav-link fw-bold" href="track.html"
                             style="color: var(--gold);">Bestellverfolgung</a></li>
                     <li class="nav-item">
@@ -64,6 +65,10 @@
 
     <main class="container my-5 py-4" id="produkte" data-aos="fade-up">
         <div id="product-grid-container" class="row g-4"></div>
+        <div class="text-center mt-5" id="show-more-products-wrapper" style="display: none;">
+            <button id="showMoreProductsBtn" class="btn btn-outline-dark rounded-pill px-5 fw-bold">MEHR PRODUKTE
+                ANZEIGEN</button>
+        </div>
     </main>
 
     <section id="testimonials" class="py-5 bg-light border-top border-bottom">
@@ -116,35 +121,6 @@
         </div>
     </section>
 
-    <div id="luxe-floating-cart" class="floating-cart-pill">
-        <div class="float-price-info">
-            <small>Gesamtbetrag</small>
-            <span id="float-total-amount">0,00 €</span>
-        </div>
-        <a href="payment.html" class="float-checkout-btn">
-            ZUR KASSE <i class="fas fa-chevron-right"></i>
-        </a>
-    </div>
-
-    <div class="modal fade" id="reviewLimitModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content border-0 shadow-lg" style="border-radius: 25px;">
-                <div class="modal-body text-center p-5">
-                    <div class="display-4 mb-3">✨</div>
-                    <h4 class="fw-bold mb-3" style="font-family: 'Playfair Display'; color: #1c2541;">Herzlichen Dank!
-                    </h4>
-                    <p class="text-muted mb-4">
-                        Pro Bestellung haben Sie ein Limit von 1 Bewertung. Wir schätzen Ihr Feedback sehr!
-                        <br><br>
-                        Um weitere Erfahrungen teilt, schauen Sie sich gerne unsere neuen Kollektionen an.
-                    </p>
-                    <button type="button" class="btn btn-gold rounded-pill px-5 fw-bold"
-                        data-bs-dismiss="modal">VERSTANDEN</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <section class="social-area py-5" id="social">
         <div class="container text-center">
             <h2 class="mb-5" style="font-family:'Playfair Display'; color: var(--midnight);" data-aos="fade-in">
@@ -166,6 +142,83 @@
         </div>
     </section>
 
+    <section id="besuch" class="visit-us-area py-5 bg-white border-top">
+        <div class="container">
+            <div class="row align-items-center g-5">
+                <div class="col-lg-6" data-aos="fade-right">
+                    <div class="map-wrapper shadow-lg rounded-4 overflow-hidden" style="border: 1px solid var(--gold);">
+                        <iframe
+                            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d84786.7771112035!2d9.86004943205216!3d48.38767353284531!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x4799646998350bfd%3A0x41f6bb7a5df7d90!2sUlm%2C%20Almanya!5e0!3m2!1str!2str!4v1772224142487!5m2!1str!2str"
+                            width="100%" height="450" style="border:0;" allowfullscreen="" loading="lazy"
+                            referrerpolicy="no-referrer-when-downgrade">
+                        </iframe>
+                    </div>
+                </div>
+                <div class="col-lg-6" data-aos="fade-left">
+                    <div class="visit-content ps-lg-4">
+                        <h2 class="display-6 fw-bold mb-4" style="font-family: 'Playfair Display';">Besuchen Sie unser
+                            Ladengeschäft</h2>
+                        <p class="text-muted mb-4">Erleben Sie die Welt von <strong>LUXE BERLIN</strong> und
+                            <strong>KOÇYİĞİT GmbH</strong> hautnah. Entdecken Sie exklusive Produkte von <strong>MAGUREX
+                                Care</strong> und <strong>YAŞAM GARDEN</strong> vor Ort.
+                        </p>
+
+                        <div class="contact-card mb-4">
+                            <div class="d-flex mb-3 align-items-center">
+                                <div class="icon-circle me-3"><i class="fas fa-location-dot"></i></div>
+                                <div>
+                                    <h6 class="mb-0 fw-bold">Anschrift</h6><span class="small text-muted">[Ihre
+                                        Adresse], Berlin</span>
+                                </div>
+                            </div>
+                            <div class="d-flex mb-3 align-items-center">
+                                <div class="icon-circle me-3"><i class="fas fa-phone"></i></div>
+                                <div>
+                                    <h6 class="mb-0 fw-bold">Telefon</h6><span class="small text-muted">+49 7344
+                                        9526770</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="hours-box p-4 rounded-4 bg-light border-start border-gold border-4">
+                            <h5 class="fw-bold mb-3"><i class="far fa-clock me-2"></i> Öffnungszeiten</h5>
+                            <div class="d-flex justify-content-between mb-1"><span>Mo - Fr:</span><span
+                                    class="fw-bold">09:00 - 18:00</span></div>
+                            <div class="d-flex justify-content-between"><span>Samstag:</span><span class="fw-bold">10:00
+                                    - 16:00</span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div id="luxe-floating-cart" class="floating-cart-pill">
+        <div class="float-price-info">
+            <small>Gesamtbetrag</small>
+            <span id="float-total-amount">0,00 €</span>
+        </div>
+        <a href="payment.html" class="float-checkout-btn">
+            ZUR KASSE <i class="fas fa-chevron-right"></i>
+        </a>
+    </div>
+
+    <div class="modal fade" id="reviewLimitModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg" style="border-radius: 25px;">
+                <div class="modal-body text-center p-5">
+                    <div class="display-4 mb-3">✨</div>
+                    <h4 class="fw-bold mb-3" style="font-family: 'Playfair Display'; color: #1c2541;">Herzlichen Dank!
+                    </h4>
+                    <p class="text-muted mb-4">Pro Bestellung haben Sie ein Limit von 1 Bewertung. Wir schätzen Ihr
+                        Feedback sehr!</p>
+                    <button type="button" class="btn btn-gold rounded-pill px-5 fw-bold"
+                        data-bs-dismiss="modal">VERSTANDEN</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="modal fade" id="luxeModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-centered">
             <div class="modal-content border-0 shadow-lg">
@@ -179,16 +232,12 @@
                         <h2 id="mTitle" class="fw-bold mb-3"
                             style="font-family:'Playfair Display'; color: var(--midnight);"></h2>
                         <div id="mDesc" class="text-muted small mb-4"></div>
-
                         <div id="mQtyError" class="text-danger small fw-bold mb-1 animate-fadeIn"
                             style="display:none; font-size: 0.75rem;"></div>
-
                         <div class="mb-4">
                             <h3 id="mPriceDisplay" class="fw-bold mb-1" style="color: var(--gold);"></h3>
                             <div id="mStockStatus"
                                 class="bg-light text-dark fw-bold border p-2 px-3 d-inline-block rounded-1"></div>
-                            <div id="mStockWarning" class="text-danger small mt-2 fw-bold" style="display:none;">Limit
-                                erreicht!</div>
                         </div>
                         <div class="d-flex align-items-center mb-4">
                             <label class="small fw-bold text-uppercase me-3 opacity-50">Menge:</label>
@@ -217,7 +266,7 @@
                 <a href="Widerruf.html" class="mx-2 text-decoration-none text-muted footer-link">Widerrufsbelehrung</a>
                 <a href="agb.html" class="mx-2 text-decoration-none text-muted footer-link">AGB</a>
             </div>
-            <p class="mb-1">&copy; 2026 LUXE BERLIN. Alle Rechte vorbehalten.</p>
+            <p class="mb-1">© 2026 LUXE BERLIN. Alle Rechte vorbehalten.</p>
             <p class="mb-0">Fragen? <a href="contact.html" class="fw-bold text-decoration-none"
                     style="color: var(--gold);">Kontaktieren Sie uns</a></p>
         </div>
@@ -228,12 +277,8 @@
             <div class="row align-items-center">
                 <div class="col-lg-8 mb-3 mb-lg-0 text-start">
                     <h5 class="fw-bold mb-1">Datenschutz & Cookies 🍪</h5>
-                    <p class="mb-0 small opacity-75">
-                        Wir verwenden Cookies, um Ihr Einkaufserlebnis zu verbessern. Einige sind notwendig, während
-                        andere uns helfen, diese Website und Ihre Erfahrung zu verbessern. Details finden Sie in unserer
-                        <a href="Datenschutz.html"
-                            class="text-white text-decoration-underline">Datenschutzerklärung</a>.
-                    </p>
+                    <p class="mb-0 small opacity-75">Wir verwenden Cookies, um Ihr Einkaufserlebnis zu verbessern.
+                        Details finden Sie in unserer Datenschutzerklärung.</p>
                 </div>
                 <div class="col-lg-4 text-lg-end">
                     <button id="btn-cookie-reject" class="btn btn-outline-light btn-sm rounded-pill px-3 me-2">Nur
@@ -264,7 +309,7 @@
     <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
     <script src="main.js"></script>
     <script src="cartSync.js"></script>
-
+    <script>AOS.init();</script>
 </body>
 
 </html>

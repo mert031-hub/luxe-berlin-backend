@@ -1,8 +1,7 @@
 /**
  * LUXE BERLIN - CORE JAVASCRIPT (ULTRA STABLE)
- * Tüm özellikler: Sepet Onarımı, Miktar Koruması, 1 Yorum Sınırı, Karakter Sayacı, 
- * İsim Sınırı (50 Karakter) ve Küfür Filtresi Onarımı.
- * FIX: Cookie Banner Revert ve yasal onay mantığı eklendi.
+ * Tüm özellikler: Ürün Sınırı (9 Ürün), Sepet Onarımı, Miktar Koruması, 1 Yorum Sınırı, 
+ * Karakter Sayacı, İsim Sınırı (50 Karakter) ve Küfür Filtresi Onarımı.
  */
 
 // --- GLOBAL DEĞİŞKENLER ---
@@ -10,6 +9,9 @@ let products = [];
 let cart = JSON.parse(localStorage.getItem('luxeCartArray')) || [];
 const euro = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' });
 let selectedProduct = null, currentQty = 1;
+
+// ÜRÜN VE YORUM GÖSTERİM SINIRLARI
+let shownProductsCount = 9; // Başlangıçta 9 ürün gösterilecek
 let shownReviewsCount = 6;
 let testimonials = [];
 
@@ -89,11 +91,15 @@ async function fetchProducts() {
 
 function renderProducts(listToDisplay) {
     const grid = document.getElementById('product-grid-container');
+    const showMoreProductsWrapper = document.getElementById('show-more-products-wrapper');
     if (!grid) return;
 
     cart = JSON.parse(localStorage.getItem('luxeCartArray')) || [];
 
-    grid.innerHTML = listToDisplay.map(p => {
+    // ÜRÜNLERİ SINIRLI GÖSTER
+    const listToShow = listToDisplay.slice(0, shownProductsCount);
+
+    grid.innerHTML = listToShow.map(p => {
         const inCart = cart.find(i => i.id === p.id)?.qty || 0;
         const avail = p.stock - inCart;
         const tagClass = (p.tag === "Ausverkauft" || avail <= 0) ? 'tag-dark' : 'tag-danger';
@@ -110,6 +116,11 @@ function renderProducts(listToDisplay) {
                 </div>
             </div>`;
     }).join('');
+
+    // Buton görünürlük kontrolü
+    if (showMoreProductsWrapper) {
+        showMoreProductsWrapper.style.display = listToDisplay.length > shownProductsCount ? "block" : "none";
+    }
 }
 
 window.filterProducts = function () {
@@ -117,6 +128,7 @@ window.filterProducts = function () {
     const filtered = products.filter(p =>
         p.name.toLowerCase().includes(term) || p.description.toLowerCase().includes(term)
     );
+    shownProductsCount = 9; // Arama yapılınca listeyi sıfırla
     renderProducts(filtered);
 }
 
@@ -195,6 +207,11 @@ document.addEventListener('click', function (e) {
     if (e.target && e.target.id === 'showMoreReviewsBtn') {
         shownReviewsCount += 6;
         initTestimonials();
+    }
+    // Ürünleri Daha Fazla Göster Buton Tetikleyicisi
+    if (e.target && e.target.id === 'showMoreProductsBtn') {
+        shownProductsCount += 9;
+        renderProducts(products);
     }
 });
 
@@ -376,7 +393,7 @@ window.handleCheckoutNavigation = function (e) {
     const currentCart = JSON.parse(localStorage.getItem('luxeCartArray')) || [];
     if (currentCart.length === 0) {
         if (e) e.preventDefault();
-        showLuxeAlert("Ihr Warenkorb ist leer. Bitte fügen Sie zuerst ein Produkt hinzu.", "warning");
+        showLuxeAlert("Ihr Warenkorb ist leer. Bitte fügen Sie zuerst ein produkt hinzu.", "warning");
         return false;
     }
     return true;
@@ -421,11 +438,9 @@ function initCookieConsent() {
 
     if (!banner || !btnAccept || !btnReject) return;
 
-    // LocalStorage kontrolü
     const consent = localStorage.getItem('luxeCookieConsent');
 
     if (!consent) {
-        // Kullanıcı daha önce seçim yapmamışsa 1.5 sn sonra göster
         setTimeout(() => {
             banner.style.display = 'block';
         }, 1500);
@@ -450,7 +465,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initTheme();
     initTestimonials();
     initReviewCounter();
-    initCookieConsent(); // 🛡️ Çerez korumasını devreye al
+    initCookieConsent();
 
     document.querySelectorAll('a[href*="checkout"], a[href*="payment"], a[href*="cart.html"]').forEach(link => {
         link.addEventListener('click', (e) => handleCheckoutNavigation(e));
