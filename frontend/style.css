@@ -30,7 +30,7 @@ body.dark-mode {
   --soft-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
 }
 
-/* GLOBAL YUMUŞAK GEÇİŞ AYARI (TÜM ANA BİLEŞENLER) */
+/* 🎨 GLOBAL YUMUŞAK GEÇİŞ AYARI (TÜM ANA BİLEŞENLER) */
 body,
 nav,
 section,
@@ -44,8 +44,10 @@ button,
 .luxe-payment-showcase,
 .payment-title,
 .brand-item i,
+.navbar-brand,
+.nav-link,
 .footer-link,
-.navbar-brand {
+.luxe-back-to-top {
   transition: var(--theme-transition) !important;
 }
 
@@ -55,6 +57,12 @@ body {
   background-color: var(--bg-primary);
   overflow-x: hidden;
   scroll-behavior: smooth;
+}
+
+/* 🔔 KRİTİK DÜZELTME: LOGO RESTORASYONU */
+.navbar-brand span,
+.preloader-logo span {
+  color: var(--gold) !important;
 }
 
 /* AOS MOBİL GÜVENLİK DUVARI */
@@ -101,9 +109,6 @@ body.dark-mode .bg-light {
   font-weight: 700;
   letter-spacing: 2px;
   color: white !important;
-}
-.navbar-brand span {
-  color: var(--gold);
 }
 .nav-link {
   color: rgba(255, 255, 255, 0.8) !important;
@@ -482,17 +487,17 @@ body.dark-mode .btn-luxe {
   background-color: var(--bg-secondary) !important;
 }
 
-/* 💳 KOMPAKT PREMİUM PAYMENT SHOWCASE */
+/* 💳 KOMPAKT & ORANTILI PAYMENT SHOWCASE */
 .luxe-payment-showcase {
   background-color: var(--bg-secondary);
-  padding: 20px 0; /* DARALTIMI YAPILDI */
+  padding: 20px 0; /* DARALTILDI */
 }
 .payment-title {
-  font-size: 0.7rem;
+  font-size: 0.65rem;
   font-weight: 700;
-  letter-spacing: 2px;
+  letter-spacing: 3px;
   color: var(--text-muted);
-  margin-bottom: 15px;
+  margin-bottom: 12px;
   opacity: 0.6;
   text-transform: uppercase;
 }
@@ -500,16 +505,17 @@ body.dark-mode .btn-luxe {
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 25px; /* BOŞLUKLAR RAFİNE EDİLDİ */
+  gap: 25px; /* BOŞLUKLAR ORANTILANDI */
   flex-wrap: wrap;
   opacity: 0.7;
 }
 .brand-item i {
-  font-size: 1.8rem; /* İKONLAR ZARİF BOYUTA ÇEKİLDİ */
+  font-size: 2rem; /* İKONLAR DAHA GÖRÜNÜR VE PREMİUM */
   cursor: pointer;
+  transition: var(--theme-transition);
 }
 .brand-item:hover i {
-  transform: translateY(-3px);
+  transform: translateY(-3px) scale(1.1);
   opacity: 1;
 }
 
@@ -528,7 +534,7 @@ body.dark-mode .btn-luxe {
 }
 .fa-cc-apple-pay {
   color: var(--text-main);
-} /* Gece/Gündüz uyumlu */
+}
 .fa-cc-google-pay {
   color: #4285f4;
 }
@@ -540,24 +546,31 @@ body.dark-mode .payment-brand-grid:hover {
   opacity: 0.9;
 }
 
-/* FOOTER */
+/* 🏛️ KOMPAKT FOOTER */
 .luxe-footer {
   background-color: var(--bg-secondary) !important;
   border-top: 1px solid var(--border-color);
-  padding: 50px 0 130px 0 !important;
+  padding: 30px 0 80px 0 !important; /* DİKEY FAZLALIKLAR TIRAŞLANDI */
+  text-align: center !important;
+}
+.luxe-footer .container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 .footer-link {
   color: var(--text-muted);
   font-weight: 500;
   text-decoration: none;
   position: relative;
-  padding-bottom: 2px;
+  font-size: 0.85rem;
 }
 .footer-link::after {
   content: "";
   position: absolute;
   width: 0;
-  height: 1.5px;
+  height: 1px;
   bottom: 0;
   left: 0;
   background-color: var(--gold);
@@ -570,7 +583,7 @@ body.dark-mode .payment-brand-grid:hover {
   width: 100%;
 }
 
-/* WHATSAPP */
+/* WHATSAPP & PRELOADER & TOAST (Aynen Korundu) */
 .luxe-whatsapp-float {
   position: fixed;
   bottom: 30px;
@@ -579,7 +592,6 @@ body.dark-mode .payment-brand-grid:hover {
   color: white !important;
   padding: 12px 25px;
   border-radius: 50px;
-  text-decoration: none;
   z-index: 999;
   border: 1px solid var(--gold);
   transition: 0.4s;
@@ -589,7 +601,48 @@ body.dark-mode .payment-brand-grid:hover {
   transform: translateY(-5px);
 }
 
-/* --- LUXE TOAST --- */
+/* ✨ YUKARI ÇIK BUTONU (SASALI TASARIM & BUG FIX) */
+.luxe-back-to-top {
+  position: fixed;
+  bottom: 95px; /* WhatsApp butonunun üzerinde */
+  right: 30px;
+  width: 45px;
+  height: 45px;
+  background-color: var(--midnight);
+  color: var(--gold);
+  border: 1px solid var(--gold);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  cursor: pointer;
+  z-index: 1000;
+  opacity: 0;
+  visibility: hidden;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+  outline: none !important;
+  -webkit-tap-highlight-color: transparent;
+}
+.luxe-back-to-top.show {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* MOBİLDE RENK TAKILI KALMASINI ÖNLEYEN KURAL (Senior Fix) */
+@media (hover: hover) {
+  .luxe-back-to-top:hover {
+    background-color: var(--gold);
+    color: white;
+    transform: scale(1.1) translateY(-5px);
+  }
+}
+.luxe-back-to-top:active {
+  transform: scale(0.9) !important;
+  background-color: var(--gold) !important;
+  color: white !important;
+}
+
 #luxe-toast-container {
   position: fixed;
   top: 30px;
@@ -648,7 +701,7 @@ body.dark-mode .payment-brand-grid:hover {
   font-weight: 500;
 }
 
-/* --- PRELOADER --- */
+/* ⏳ PRELOADER (TAM MERKEZ & LOGO FIX) */
 #preloader {
   position: fixed;
   top: 0;
@@ -661,11 +714,12 @@ body.dark-mode .payment-brand-grid:hover {
   justify-content: center;
   z-index: 999999;
   transition:
-    opacity 1s cubic-bezier(0.65, 0, 0.35, 1),
+    opacity 1s,
     visibility 1s;
 }
 .preloader-content {
   text-align: center;
+  width: 100%;
 }
 .preloader-logo {
   font-family: "Playfair Display", serif;
@@ -675,9 +729,7 @@ body.dark-mode .payment-brand-grid:hover {
   text-transform: uppercase;
   margin-bottom: 20px;
   animation: luxeFadePulse 2.5s ease-in-out infinite;
-}
-.preloader-logo span {
-  color: var(--gold);
+  display: block;
 }
 .preloader-bar {
   width: 150px;
@@ -702,6 +754,9 @@ body.dark-mode .payment-brand-grid:hover {
   font-size: 0.7rem;
   letter-spacing: 2px;
   text-transform: uppercase;
+  text-align: center;
+  display: block;
+  width: 100%;
 }
 @keyframes loadingSlide {
   0% {
@@ -727,7 +782,6 @@ body.dark-mode .payment-brand-grid:hover {
   visibility: hidden;
 }
 
-/* UTILS */
 .animate-fadeIn {
   animation: fadeIn 0.4s ease forwards;
 }
@@ -742,7 +796,6 @@ body.dark-mode .payment-brand-grid:hover {
   }
 }
 
-/* 🍪 🛡️ LUXE COOKIE BANNER STYLES (EKSİKSİZ) */
 .luxe-cookie-banner {
   position: fixed;
   bottom: 20px;

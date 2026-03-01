@@ -1,7 +1,7 @@
 /**
  * LUXE BERLIN - CORE JAVASCRIPT (ULTRA STABLE)
  * Tüm özellikler: Ürün Sınırı (9 Ürün), Sepet Onarımı, Miktar Koruması, 1 Yorum Sınırı, 
- * Karakter Sayacı, İsim Sınırı (50 Karakter) ve Küfür Filtresi Onarımı.
+ * Karakter Sayacı, İsim Sınırı (50 Karakter), Küfür Filtresi Onarımı ve Yukarı Çık Butonu.
  */
 
 // --- GLOBAL DEĞİŞKENLER ---
@@ -506,3 +506,24 @@ window.addEventListener("load", function () {
         }, 1200);
     }
 });
+
+// --- ✨ 9. YUKARI ÇIK BUTONU MANTIĞI (YENİ EKLEME) ---
+const backToTopBtn = document.getElementById('luxe-back-to-top');
+
+if (backToTopBtn) {
+    window.addEventListener('scroll', () => {
+        // Sayfa 400px aşağı inince butonu göster
+        if (window.scrollY > 400) {
+            backToTopBtn.classList.add('show');
+        } else {
+            backToTopBtn.classList.remove('show');
+        }
+    });
+
+    backToTopBtn.addEventListener('click', () => {
+        window.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+        });
+    });
+}
