@@ -1,6 +1,7 @@
 /**
- * LUXE BERLIN - ADVANCED TRACKING LOGIC (FULL & CANCEL-READY)
- * Hata onarımı, Sesli bildirim ve Mobil AOS fix dahil.
+ * KOÇYİĞİT GmbH - ADVANCED TRACKING LOGIC (FULL & CANCEL-READY)
+ * 🛡️ REBRANDING: LUXE BERLIN -> KOÇYİĞİT GmbH mühürlendi.
+ * 🛡️ SECURITY FIX: Sert kilit ve spinner eklendi. (Race Condition Protected)
  */
 
 const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
@@ -37,7 +38,6 @@ async function trackOrder() {
             resultArea.classList.add('d-none');
             dynamicArea.innerHTML = "";
 
-            // İptal Butonu Mantığı
             if (order.status === 'Pending' || order.status === 'Processing') {
                 cancelSection.classList.remove('d-none');
             } else {
@@ -55,7 +55,6 @@ async function trackOrder() {
                 <h4 class="fw-bold">Status: <span style="color:#c5a059;">${translateStatus(order.status)}</span></h4>
             `;
 
-            // Ürün Listesi
             if (order.items && order.items.length > 0) {
                 itemsList.innerHTML = order.items.map((item, index) => {
                     let imgPath = item.productId?.image || item.image;
@@ -87,6 +86,11 @@ async function trackOrder() {
 
             updateProgressSteps(order.status || 'Pending');
 
+            const footerNote = resultArea.querySelector('.mt-5.small.text-muted.italic');
+            if (footerNote) {
+                footerNote.innerHTML = `Vielen Dank für Ihr Vertrauen in KOÇYİĞİT GmbH! ✨`;
+            }
+
             setTimeout(() => {
                 resultArea.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
                 if (typeof AOS !== 'undefined') { AOS.refresh(); }
@@ -98,24 +102,18 @@ async function trackOrder() {
             cancelSection.classList.add('d-none');
         }
     } catch (err) {
-        console.error("Tracking Error:", err);
+        console.error("KOÇYİĞİT GmbH - Tracking Error:", err);
         alert("Ein Fehler ist aufgetreten.");
     }
 }
 
-/**
- * SESLİ VE ŞIK İPTAL FONKSİYONLARI
- */
 window.openCancelModal = function () {
     if (!currentLoadedOrderId) return;
-
-    // Ses Efekti Çal
     const sound = document.getElementById('notificationSound');
     if (sound) {
         sound.currentTime = 0;
-        sound.play().catch(e => console.log("Ses çalınamadı (Etkileşim gerekli)"));
+        sound.play().catch(e => console.log("Ses çalınamadı"));
     }
-
     const myModal = new bootstrap.Modal(document.getElementById('cancelConfirmModal'));
     myModal.show();
 }
@@ -123,22 +121,53 @@ window.openCancelModal = function () {
 window.executeCancellation = async function () {
     if (!currentLoadedOrderId) return;
 
+    // 🛡️ MASTER LOCK: Modal içindeki tüm butonları dondur ve gizle
+    const modal = document.getElementById('cancelConfirmModal');
+    // Görseldeki o kırmızı butonu yakalamak için en garanti seçiciyi kullanıyoruz
+    const confirmBtn = document.getElementById('confirmCancelBtn') || modal.querySelector('.btn-danger');
+    const secondaryBtns = modal.querySelectorAll('.btn-close, .btn-secondary');
+
+    if (confirmBtn.disabled) return; // Zaten işlem başladıysa dur
+
+    // 1. ADIM: Butonu kilitle ve spinner'ı başlat
+    confirmBtn.disabled = true;
+    confirmBtn.style.pointerEvents = 'none'; // Fare etkileşimini tamamen kes
+    confirmBtn.style.opacity = '0.7';
+    confirmBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Bitte warten...';
+
+    // 2. ADIM: Kapatma ve İptal butonlarını gizle (Kullanıcı pencereden çıkamasın)
+    secondaryBtns.forEach(btn => btn.style.visibility = 'hidden');
+
     try {
         const res = await fetch(`${API_URL}/orders/${currentLoadedOrderId}/cancel`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' }
         });
 
+        const data = await res.json();
+
         if (res.ok) {
+            // Başarılı durumda direkt yeniliyoruz
             alert("Ihre Bestellung wurde erfolgreich storniert.");
-            location.reload();
+            window.location.reload();
         } else {
-            const data = await res.json();
-            alert("Fehler: " + data.message);
+            // Hata durumunda butonları geri aç
+            alert("Fehler: " + (data.message || "Stornierung fehlgeschlagen."));
+            confirmBtn.disabled = false;
+            confirmBtn.style.pointerEvents = 'auto';
+            confirmBtn.style.opacity = '1';
+            confirmBtn.innerText = "Ja, Stornieren";
+            secondaryBtns.forEach(btn => btn.style.visibility = 'visible');
         }
     } catch (err) {
         console.error("Cancellation error:", err);
-        alert("Ein Fehler ist aufgetreten.");
+        alert("Ein technischer Fehler ist aufgetreten.");
+        // Kritik hatada her şeyi geri getir
+        confirmBtn.disabled = false;
+        confirmBtn.style.pointerEvents = 'auto';
+        confirmBtn.style.opacity = '1';
+        confirmBtn.innerText = "Ja, Stornieren";
+        secondaryBtns.forEach(btn => btn.style.visibility = 'visible');
     }
 }
 
@@ -205,8 +234,6 @@ window.addEventListener("load", function () {
                     AOS.init({ duration: 1000, once: true, offset: 10, disableMutationObserver: false });
                     AOS.refresh();
                 }
-                window.scrollBy(0, 1);
-                window.scrollBy(0, -1);
                 window.dispatchEvent(new Event('scroll'));
                 preloader.style.display = "none";
             }, 1000);

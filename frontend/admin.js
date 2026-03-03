@@ -1,5 +1,5 @@
 /**
- * LUXE BERLIN - MASTER ADMIN JAVASCRIPT (ULTIMATE ENTERPRISE VERSION)
+ * KOÇYİĞİT GmbH - MASTER ADMIN JAVASCRIPT (ULTIMATE ENTERPRISE VERSION)
  * ---------------------------------------------------------------
  * - HARDENED SECURITY: HttpOnly Cookie tabanlı oturum yönetimi.
  * - ANALYTICS V2: Çift eksenli (Umsatz & Volumen) Çizgi Grafik.
@@ -57,7 +57,7 @@ function showLuxeAlert(message, type = 'success') {
     toast.innerHTML = `
         <i class="fas ${icon}"></i>
         <div class="toast-content">
-            <div class="toast-title">Luxe Berlin Admin</div>
+            <div class="toast-title">KOÇYİĞİT GmbH Admin</div>
             <div class="toast-msg">${message}</div>
         </div>
     `;
@@ -291,7 +291,7 @@ window.exportOrdersToCSV = () => {
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
-    link.setAttribute("download", `Luxe_Berlin_Orders_${new Date().toLocaleDateString()}.csv`);
+    link.setAttribute("download", `Kocyigit_Gmbh_Orders_${new Date().toLocaleDateString()}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -382,7 +382,7 @@ document.getElementById('confirmStatusBtn')?.addEventListener('click', async () 
 });
 
 window.deleteOrder = async (id) => {
-    if (confirm("Möchten Sie diese Bestellung gerçekten löschen?")) {
+    if (confirm("Möchten Sie diese Bestellung wirklich löschen?")) {
         try {
             const res = await fetch(`${API_URL}/orders/${id}`, { method: 'DELETE', credentials: 'include' }).then(handleAuthError);
             if (res && res.ok) {
@@ -597,7 +597,7 @@ window.submitReply = async () => {
 };
 
 window.deleteReview = async (id) => {
-    if (confirm("Möchten Sie diese Rezension gerçekten löschen?")) {
+    if (confirm("Möchten Sie diese Rezension wirklich löschen?")) {
         await fetch(`${API_URL}/reviews/${id}`, { method: 'DELETE', credentials: 'include' }).then(handleAuthError);
         showLuxeAlert("Rezension gelöscht", "success");
         window.loadReviews();

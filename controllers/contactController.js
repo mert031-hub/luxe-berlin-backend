@@ -3,13 +3,17 @@ const { Resend } = require('resend');
 // Resend API anahtarını başlatıyoruz
 const resend = new Resend(process.env.RESEND_API_KEY);
 
+/**
+ * KOÇYİĞİT GmbH - Kontakt Formu Kontrolcüsü
+ * 🛡️ REBRANDING: LUXE -> KOÇYİĞİT GmbH mühürlendi.
+ */
 exports.sendContactMail = async (req, res) => {
     const { name, email, subject, message } = req.body;
 
     try {
         const { data, error } = await resend.emails.send({
-            // Domain onaylanana kadar sabit onboarding adresi
-            from: "LUXE Kontakt <onboarding@resend.dev>",
+            // 🛡️ REBRANDING: Gönderen ismi güncellendi
+            from: "KOÇYİĞİT Kontakt <onboarding@resend.dev>",
 
             // Mesajın gideceği adres (Senin kendi mailin)
             to: ["kocyigit.trade@gmail.com"],
@@ -17,11 +21,12 @@ exports.sendContactMail = async (req, res) => {
             // Kullanıcıya direkt cevap yazabilmen için replyTo ayarı
             reply_to: email,
 
-            subject: `Neue Kontaktanfrage: ${subject}`,
+            // 🛡️ REBRANDING: Mail başlığı kurumsal kimliğe mühürlendi
+            subject: `KOÇYİĞİT GmbH - Neue Kontaktanfrage: ${subject}`,
             html: `
                 <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: auto;">
                     <h2 style="color: #1c2541; border-bottom: 2px solid #c5a059; padding-bottom: 10px;">
-                        LUXE BERLIN - Neue Nachricht
+                        KOÇYİĞİT GmbH - Neue Nachricht
                     </h2>
                     <div style="background:#f9f9f9; padding:20px; border-radius:10px; border-left: 5px solid #c5a059;">
                         <p><strong>Absender Name:</strong> ${name}</p>
@@ -32,7 +37,7 @@ exports.sendContactMail = async (req, res) => {
                         <p style="white-space: pre-wrap;">${message}</p>
                     </div>
                     <p style="font-size: 0.8em; color: #777; margin-top: 20px; text-align: center;">
-                        Diese E-Mail wurde über das Luxe Berlin Kontaktformular gesendet.
+                        Diese E-Mail wurde über das KOÇYİĞİT GmbH Kontaktformular gesendet.
                     </p>
                 </div>
             `

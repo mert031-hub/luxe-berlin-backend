@@ -4,6 +4,7 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 
 /**
  * Sipariş durumuna göre mail gönderen servis.
+ * 🛡️ REBRANDING: KOÇYİĞİT GmbH mühürlendi.
  */
 async function sendStatusEmail(order, newStatus) {
     if (!order || !order.customer || !order.customer.email) {
@@ -16,9 +17,9 @@ async function sendStatusEmail(order, newStatus) {
     let statusLabel = "Bestell-Update";
     const status = newStatus ? newStatus.toLowerCase() : "";
 
-    // Durum Belirleme (Almanca)
+    // 🛡️ REBRANDING: KOÇYİĞİT GmbH
     if (status === "pending" || status === "eingegangen") {
-        subject = "Bestellbestätigung - LUXE BERLIN";
+        subject = `Bestellbestätigung - KOÇYİĞİT GmbH #${order.shortId}`;
         statusLabel = "Bestellbestätigung";
         message = "Wir haben Ihre Bestellung erhalten und bereiten sie mit höchster Sorgfalt vor.";
     }
@@ -35,10 +36,10 @@ async function sendStatusEmail(order, newStatus) {
     else if (status === "delivered" || status === "geliefert") {
         subject = "Ihre Bestellung wurde zugestellt";
         statusLabel = "Zugestellt";
-        message = "Vielen Dank für Ihr Vertrauen in LUXE BERLIN. Wir hoffen, dass Sie viel Freude mit Ihrem Kauf haben!";
+        message = "Vielen Dank für Ihr Vertrauen in KOÇYİĞİT GmbH. Wir hoffen, dass Sie viel Freude mit Ihrem Kauf haben!";
     }
     else if (status === "cancelled" || status === "storniert") {
-        subject = "Bestellung storniert - LUXE BERLIN";
+        subject = "Bestellung storniert - KOÇYİĞİT GmbH";
         statusLabel = "Storniert";
         message = "Ihre Bestellung wurde erfolgreich storniert. Falls bereits Zahlungen geleistet wurden, werden diese umgehend erstattet.";
     }
@@ -49,7 +50,6 @@ async function sendStatusEmail(order, newStatus) {
 
     // Ürün Tablosu (HTML)
     const itemsHTML = (order.items || []).map(item => {
-        // Popüle edilmiş üründen görseli al, yoksa placeholder kullan
         const productImg = (item.productId && item.productId.image)
             ? item.productId.image
             : 'https://kocyigit-trade.com/favicon.png';
@@ -71,8 +71,7 @@ async function sendStatusEmail(order, newStatus) {
 
     try {
         const data = await resend.emails.send({
-            // 🛡️ ÇOK KRİTİK: noreply@kocyigit-trade.com adresinin Resend Dashboard'da doğrulanmış olması gerekir.
-            from: "LUXE BERLIN <noreply@kocyigit-trade.com>",
+            from: "KOÇYİĞİT GmbH <noreply@kocyigit-trade.com>",
             to: [order.customer.email],
             subject: subject,
             html: `
@@ -97,7 +96,7 @@ async function sendStatusEmail(order, newStatus) {
             </head>
             <body>
                 <div class="container">
-                    <div class="header"><div class="logo">LUXE<span>BERLIN</span></div></div>
+                    <div class="header"><div class="logo">KOÇYİĞİT<span>GmbH</span></div></div>
                     <div class="content">
                         <div class="status-badge">${statusLabel}</div>
                         <h2 style="margin-top: 0; font-size: 22px;">Hallo ${order.customer.firstName},</h2>
@@ -125,14 +124,14 @@ async function sendStatusEmail(order, newStatus) {
                         <div style="margin-top: 30px; font-size: 11px; color: #cbd5e0; text-align: center;">Bestell-ID: #${order.shortId}</div>
                     </div>
                     <div class="footer">
-                        <p>&copy; 2026 LUXE BERLIN Boutique. Berlin, Deutschland.</p>
+                        <p>&copy; 2026 KOÇYİĞİT GmbH. Berlin, Deutschland.</p>
                     </div>
                 </div>
             </body>
             </html>
             `
         });
-        console.log("📧 Resend Yanıtı (Mail ID):", data.id);
+        console.log("📧 Resend Yanıtı:", data?.id);
     } catch (err) {
         console.error("❌ Mail servis hatası:", err.message);
     }

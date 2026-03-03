@@ -1,8 +1,10 @@
 /**
- * LUXE BERLIN - CHECKOUT LOGIC (ULTRA STABLE & STRIPE READY)
+ * KOÇYİĞİT GmbH - CHECKOUT LOGIC (ULTRA STABLE & STRIPE READY)
+ * 🛡️ REBRANDING: LUXE BERLIN -> KOÇYİĞİT GmbH mühürlendi.
  */
 
 let products = [];
+// 🛡️ TEKNİK ANAHTAR: 'luxeCartArray' ismi sepetin sıfırlanmaması için korunmuştur.
 let cart = JSON.parse(localStorage.getItem('luxeCartArray')) || [];
 
 const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
@@ -21,7 +23,7 @@ async function fetchProductsAndLoad() {
             img: p.image?.startsWith('http') ? p.image : `${UPLOADS_URL}/${p.image}`
         }));
         loadCheckout();
-    } catch (err) { console.error("Ürün yükleme hatası:", err); }
+    } catch (err) { console.error("KOÇYİĞİT GmbH - Ürün yükleme hatası:", err); }
 }
 
 function loadCheckout() {
@@ -112,7 +114,7 @@ document.getElementById('checkoutForm')?.addEventListener('submit', async (e) =>
     const phone = document.getElementById('orderPhone').value.trim();
     const address = document.getElementById('orderAddress').value.trim();
 
-    // 🛡️ Validasyonlar Korundu
+    // 🛡️ Validasyonlar
     const nameRegex = /^[A-Za-zÀ-ž\s]{2,}$/;
     if (!nameRegex.test(firstName) || !nameRegex.test(lastName)) {
         return alert("Bitte geben Sie einen gültigen Namen ein.");
@@ -132,7 +134,6 @@ document.getElementById('checkoutForm')?.addEventListener('submit', async (e) =>
     if (btn) { btn.disabled = true; btn.innerText = "AUTHENTIFIZIERUNG..."; }
 
     try {
-        // Backend Stripe Session isteği
         const response = await fetch(`${API_URL}/payment/create-checkout-session`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -145,10 +146,10 @@ document.getElementById('checkoutForm')?.addEventListener('submit', async (e) =>
         const session = await response.json();
 
         if (session.url) {
-            // Sepeti temizlemiyoruz, başarılı ödemeden sonra success.html temizleyecek.
             window.location.href = session.url;
         } else {
-            alert("Fehler: " + (session.message || "Stripe Sitzung konnte nicht erstellt werden."));
+            // 🛡️ REBRANDING: Hata mesajı mühürlendi
+            alert("Fehler: " + (session.message || "KOÇYİĞİT GmbH: Stripe Sitzung konnte nicht erstellt werden."));
             if (btn) { btn.disabled = false; btn.innerText = "ZAHLUNGSPFLICHTIG BESTELLEN"; }
         }
     } catch (err) {

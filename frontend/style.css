@@ -30,7 +30,7 @@ body.dark-mode {
   --soft-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
 }
 
-/* 🎨 GLOBAL YUMUŞAK GEÇİŞ AYARI (TÜM ANA BİLEŞENLER) */
+/* 🎨 GLOBAL YUMUŞAK GEÇİŞ AYARI */
 body,
 nav,
 section,
@@ -59,7 +59,7 @@ body {
   scroll-behavior: smooth;
 }
 
-/* 🔔 KRİTİK DÜZELTME: LOGO RESTORASYONU */
+/* 🔔 LOGO RENK MÜHRÜ */
 .navbar-brand span,
 .preloader-logo span {
   color: var(--gold) !important;
@@ -107,8 +107,9 @@ body.dark-mode .bg-light {
 .navbar-brand {
   font-family: "Playfair Display", serif;
   font-weight: 700;
-  letter-spacing: 2px;
+  letter-spacing: 1px;
   color: white !important;
+  font-size: clamp(1.1rem, 4vw, 1.5rem); /* Mobilde navbar logosunu da korur */
 }
 .nav-link {
   color: rgba(255, 255, 255, 0.8) !important;
@@ -219,7 +220,6 @@ body.dark-mode .bg-light {
   opacity: 1;
   transform: translate(-50%, -50%);
 }
-
 .product-tag {
   position: absolute;
   top: 15px;
@@ -487,10 +487,10 @@ body.dark-mode .btn-luxe {
   background-color: var(--bg-secondary) !important;
 }
 
-/* 💳 KOMPAKT & ORANTILI PAYMENT SHOWCASE */
+/* 💳 PAYMENT SHOWCASE */
 .luxe-payment-showcase {
   background-color: var(--bg-secondary);
-  padding: 20px 0; /* DARALTILDI */
+  padding: 20px 0;
 }
 .payment-title {
   font-size: 0.65rem;
@@ -505,12 +505,12 @@ body.dark-mode .btn-luxe {
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 25px; /* BOŞLUKLAR ORANTILANDI */
+  gap: 25px;
   flex-wrap: wrap;
   opacity: 0.7;
 }
 .brand-item i {
-  font-size: 2rem; /* İKONLAR DAHA GÖRÜNÜR VE PREMİUM */
+  font-size: 2rem;
   cursor: pointer;
   transition: var(--theme-transition);
 }
@@ -518,8 +518,6 @@ body.dark-mode .btn-luxe {
   transform: translateY(-3px) scale(1.1);
   opacity: 1;
 }
-
-/* Marka Renkleri */
 .fa-cc-stripe {
   color: #635bff;
 }
@@ -538,7 +536,6 @@ body.dark-mode .btn-luxe {
 .fa-cc-google-pay {
   color: #4285f4;
 }
-
 body.dark-mode .payment-brand-grid {
   opacity: 0.6;
 }
@@ -550,7 +547,7 @@ body.dark-mode .payment-brand-grid:hover {
 .luxe-footer {
   background-color: var(--bg-secondary) !important;
   border-top: 1px solid var(--border-color);
-  padding: 30px 0 80px 0 !important; /* DİKEY FAZLALIKLAR TIRAŞLANDI */
+  padding: 30px 0 80px 0 !important;
   text-align: center !important;
 }
 .luxe-footer .container {
@@ -583,7 +580,7 @@ body.dark-mode .payment-brand-grid:hover {
   width: 100%;
 }
 
-/* WHATSAPP & PRELOADER & TOAST (Aynen Korundu) */
+/* WHATSAPP */
 .luxe-whatsapp-float {
   position: fixed;
   bottom: 30px;
@@ -601,10 +598,10 @@ body.dark-mode .payment-brand-grid:hover {
   transform: translateY(-5px);
 }
 
-/* ✨ YUKARI ÇIK BUTONU (SASALI TASARIM & BUG FIX) */
+/* ✨ YUKARI ÇIK BUTONU */
 .luxe-back-to-top {
   position: fixed;
-  bottom: 95px; /* WhatsApp butonunun üzerinde */
+  bottom: 95px;
   right: 30px;
   width: 45px;
   height: 45px;
@@ -628,8 +625,6 @@ body.dark-mode .payment-brand-grid:hover {
   opacity: 1;
   visibility: visible;
 }
-
-/* MOBİLDE RENK TAKILI KALMASINI ÖNLEYEN KURAL (Senior Fix) */
 @media (hover: hover) {
   .luxe-back-to-top:hover {
     background-color: var(--gold);
@@ -643,6 +638,7 @@ body.dark-mode .payment-brand-grid:hover {
   color: white !important;
 }
 
+/* TOAST */
 #luxe-toast-container {
   position: fixed;
   top: 30px;
@@ -701,13 +697,12 @@ body.dark-mode .payment-brand-grid:hover {
   font-weight: 500;
 }
 
-/* ⏳ PRELOADER (TAM MERKEZ & LOGO FIX) */
+/* ⏳ PRELOADER (SENIOR RESPONSIVE FIX) */
 #preloader {
   position: fixed;
-  top: 0;
-  left: 0;
+  inset: 0;
   width: 100%;
-  height: 100%;
+  height: 100dvh; /* Mobilde adres çubuğu hatasını önler */
   background-color: #0b0e17;
   display: flex;
   align-items: center;
@@ -717,47 +712,57 @@ body.dark-mode .payment-brand-grid:hover {
     opacity 1s,
     visibility 1s;
 }
+
 .preloader-content {
   text-align: center;
-  width: 100%;
+  width: 90%;
+  max-width: 500px;
+  margin: 0 auto;
 }
+
 .preloader-logo {
   font-family: "Playfair Display", serif;
-  font-size: 3rem;
+  /* 🛡️ RESPONSIVE MÜHÜR: Mobilde küçülür, asla ikiye bölünmez */
+  font-size: clamp(1.2rem, 5.5vw, 2.8rem);
   color: #ffffff;
-  letter-spacing: 8px;
+  letter-spacing: clamp(2px, 1.5vw, 6px);
   text-transform: uppercase;
-  margin-bottom: 20px;
+  margin-bottom: 25px;
+  white-space: nowrap; /* Tek satır garantisi */
+  display: inline-block;
   animation: luxeFadePulse 2.5s ease-in-out infinite;
-  display: block;
 }
+
 .preloader-bar {
-  width: 150px;
+  width: clamp(80px, 20vw, 150px);
   height: 1px;
   background: rgba(197, 160, 89, 0.1);
   margin: 0 auto 15px;
   position: relative;
   overflow: hidden;
 }
+
 .preloader-bar::after {
   content: "";
   display: block;
-  width: 60px;
+  width: 40px;
   height: 100%;
   background: var(--gold);
   position: absolute;
-  left: -60px;
+  left: -40px;
   animation: loadingSlide 2s infinite ease-in-out;
 }
+
 .preloader-text {
   color: rgba(255, 255, 255, 0.4);
-  font-size: 0.7rem;
+  font-size: clamp(0.55rem, 2vw, 0.7rem);
   letter-spacing: 2px;
   text-transform: uppercase;
   text-align: center;
   display: block;
   width: 100%;
 }
+
 @keyframes loadingSlide {
   0% {
     left: -60px;
@@ -782,6 +787,7 @@ body.dark-mode .payment-brand-grid:hover {
   visibility: hidden;
 }
 
+/* GENEL EFEKTLER */
 .animate-fadeIn {
   animation: fadeIn 0.4s ease forwards;
 }
@@ -796,6 +802,7 @@ body.dark-mode .payment-brand-grid:hover {
   }
 }
 
+/* COOKIE BANNER */
 .luxe-cookie-banner {
   position: fixed;
   bottom: 20px;

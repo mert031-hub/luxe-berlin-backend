@@ -34,7 +34,7 @@ function showLuxeAlert(message, type = 'success') {
     toast.innerHTML = `
         <i class="fas ${icon}"></i>
         <div class="toast-content">
-            <div class="toast-title">Luxe Berlin</div>
+            <div class="toast-title">KOÇYİĞİT GmbH</div>
             <div class="toast-msg">${message}</div>
         </div>
     `;
@@ -170,7 +170,7 @@ async function initTestimonials() {
                 <div class="stars mb-2">${"⭐".repeat(t.stars)}</div>
                 <p class="testimonial-text">"${t.text}"</p>
                 ${t.adminReply ? `<div class="admin-reply-box mt-3 p-3 rounded-3" style="background: rgba(197, 160, 89, 0.05); border-left: 3px solid var(--gold);">
-                    <small class="fw-bold text-uppercase d-block mb-1" style="color: var(--gold); font-size: 0.7rem;">Luxe Berlin Team</small>
+                    <small class="fw-bold text-uppercase d-block mb-1" style="color: var(--gold); font-size: 0.7rem;">KOÇYİĞİT Team</small>
                     <p class="small mb-0 text-muted italic">${t.adminReply}</p>
                 </div>` : ''}
                 <div class="d-flex justify-content-between align-items-end mt-auto pt-3">
