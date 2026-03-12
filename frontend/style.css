@@ -30,7 +30,7 @@ body.dark-mode {
   --soft-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
 }
 
-/* 🎨 GLOBAL YUMUŞAK GEÇİŞ AYARI */
+/* 🎨 GLOBAL YUMUŞAK GEÇİŞ AYARI (TÜM ANA BİLEŞENLER) */
 body,
 nav,
 section,
@@ -109,7 +109,7 @@ body.dark-mode .bg-light {
   font-weight: 700;
   letter-spacing: 1px;
   color: white !important;
-  font-size: clamp(1.1rem, 4vw, 1.5rem); /* Mobilde navbar logosunu da korur */
+  font-size: clamp(1.1rem, 4vw, 1.5rem);
 }
 .nav-link {
   color: rgba(255, 255, 255, 0.8) !important;
@@ -543,11 +543,12 @@ body.dark-mode .payment-brand-grid:hover {
   opacity: 0.9;
 }
 
-/* 🏛️ KOMPAKT FOOTER */
+/* 🏛️ KOMPAKT FOOTER (ENGELLEYİCİ) - FIX: SEPET TARAFINDAN KAPANMAYI ÖNLER */
 .luxe-footer {
   background-color: var(--bg-secondary) !important;
   border-top: 1px solid var(--border-color);
-  padding: 30px 0 80px 0 !important;
+  /* 🛡️ SENIOR SAFE AREA: Alt kısma sepetin yüksekliği kadar dolgu mühürlendi */
+  padding: 30px 0 110px 0 !important;
   text-align: center !important;
 }
 .luxe-footer .container {
@@ -580,16 +581,17 @@ body.dark-mode .payment-brand-grid:hover {
   width: 100%;
 }
 
-/* WHATSAPP */
+/* WHATSAPP (LIFTED) - FIX: SEPETİN ÜSTÜNE ÇIKARTILDI */
 .luxe-whatsapp-float {
   position: fixed;
-  bottom: 30px;
+  /* 🛡️ SENIOR LIFT: Buton, sepet aktif olduğunda üzerine binmemesi için yükseltildi */
+  bottom: 115px;
   right: 30px;
   background-color: var(--midnight);
   color: white !important;
   padding: 12px 25px;
   border-radius: 50px;
-  z-index: 999;
+  z-index: 1060; /* Sepetin (1050) hemen üst katmanı */
   border: 1px solid var(--gold);
   transition: 0.4s;
 }
@@ -598,10 +600,11 @@ body.dark-mode .payment-brand-grid:hover {
   transform: translateY(-5px);
 }
 
-/* ✨ YUKARI ÇIK BUTONU */
+/* ✨ YUKARI ÇIK BUTONU - FIX: WHATSAPP'IN ÜSTÜNE HİZALANDI */
 .luxe-back-to-top {
   position: fixed;
-  bottom: 95px;
+  /* 🛡️ SENIOR STACK: WhatsApp butonunun 65px yukarısına mühürlendi */
+  bottom: 180px;
   right: 30px;
   width: 45px;
   height: 45px;
@@ -619,7 +622,6 @@ body.dark-mode .payment-brand-grid:hover {
   visibility: hidden;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
   outline: none !important;
-  -webkit-tap-highlight-color: transparent;
 }
 .luxe-back-to-top.show {
   opacity: 1;
@@ -712,27 +714,22 @@ body.dark-mode .payment-brand-grid:hover {
     opacity 1s,
     visibility 1s;
 }
-
 .preloader-content {
   text-align: center;
   width: 90%;
   max-width: 500px;
-  margin: 0 auto;
 }
-
 .preloader-logo {
   font-family: "Playfair Display", serif;
-  /* 🛡️ RESPONSIVE MÜHÜR: Mobilde küçülür, asla ikiye bölünmez */
   font-size: clamp(1.2rem, 5.5vw, 2.8rem);
   color: #ffffff;
   letter-spacing: clamp(2px, 1.5vw, 6px);
   text-transform: uppercase;
   margin-bottom: 25px;
-  white-space: nowrap; /* Tek satır garantisi */
+  white-space: nowrap;
   display: inline-block;
   animation: luxeFadePulse 2.5s ease-in-out infinite;
 }
-
 .preloader-bar {
   width: clamp(80px, 20vw, 150px);
   height: 1px;
@@ -741,7 +738,6 @@ body.dark-mode .payment-brand-grid:hover {
   position: relative;
   overflow: hidden;
 }
-
 .preloader-bar::after {
   content: "";
   display: block;
@@ -752,7 +748,6 @@ body.dark-mode .payment-brand-grid:hover {
   left: -40px;
   animation: loadingSlide 2s infinite ease-in-out;
 }
-
 .preloader-text {
   color: rgba(255, 255, 255, 0.4);
   font-size: clamp(0.55rem, 2vw, 0.7rem);
@@ -762,7 +757,6 @@ body.dark-mode .payment-brand-grid:hover {
   display: block;
   width: 100%;
 }
-
 @keyframes loadingSlide {
   0% {
     left: -60px;

@@ -4,47 +4,70 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Widerrufsbelehrung | KOÇYİĞİT GmbH</title>
+    <title>Widerrufsbelehrung | Koçyiğit Betrieb&Handel</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
+    <style>
+        :root {
+            --gold: #c5a059;
+            --navy: #1c2541;
+        }
+
+        body {
+            font-family: 'Montserrat', sans-serif;
+            color: var(--navy);
+        }
+
+        .playfair {
+            font-family: 'Playfair Display', serif;
+        }
+
+        .legal-box {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+        }
+    </style>
 </head>
 
 <body class="bg-light">
     <div class="container py-5">
-        <div class="bg-white shadow-sm rounded-4 p-4 p-md-5 mx-auto" style="max-width: 850px;">
+        <div class="legal-box p-4 p-md-5 mx-auto" style="max-width: 850px;">
             <h1 class="playfair mb-5 border-bottom pb-3">Widerrufsbelehrung</h1>
 
-            <p>Sie haben das Recht, binnen vierzehn Tagen ohne Angabe von Gründen diesen Vertrag zu widerrufen.</p>
+            <section class="mb-4">
+                <h5 class="fw-bold">Widerrufsrecht</h5>
+                <p class="small text-muted">Sie haben das Recht, binnen vierzehn Tagen ohne Angabe von Gründen diesen
+                    Vertrag zu widerrufen. Die Widerrufsfrist beträgt vierzehn Tage ab dem Tag, an dem Sie oder ein von
+                    Ihnen benannter Dritter, der nicht der Beförderer ist, die Waren in Besitz genommen haben bzw. hat.
+                </p>
+            </section>
 
-            <h4 class="mt-4">Widerrufsrecht</h4>
-            <p>Die Widerrufsfrist beträgt vierzehn Tage ab dem Tag, an dem Sie oder ein von Ihnen benannter Dritter die
-                Waren in Besitz genommen haben.</p>
+            <section class="mb-4">
+                <h5 class="fw-bold">Folgen des Widerrufs</h5>
+                <p class="small text-muted">Wenn Sie diesen Vertrag widerrufen, haben wir Ihnen alle Zahlungen, die wir
+                    von Ihnen erhalten haben, einschließlich der Lieferkosten (mit Ausnahme der zusätzlichen Kosten, die
+                    sich daraus ergeben, dass Sie eine andere Art der Lieferung als die von uns angebotene, günstigste
+                    Standardlieferung gewählt haben), unverzüglich zurückzuzahlen.</p>
+                <p class="small <strong>fw-bold</strong>" style="color: #d9534f;">Sie tragen die unmittelbaren Kosten
+                    der Rücksendung der Waren.</p>
+            </section>
 
-            <h4 class="mt-4">Folgen des Widerrufs</h4>
-            <p>Wenn Sie diesen Vertrag widerrufen, haben wir Ihnen alle Zahlungen, die wir von Ihnen erhalten haben
-                (inkl. Lieferkosten), unverzüglich und spätestens binnen vierzehn Tagen ab dem Tag zurückzuzahlen, an
-                dem die Mitteilung über Ihren Widerruf bei uns eingegangen ist.</p>
-
-            <h4 class="mt-4">Muster-Widerrufsformular</h4>
-            <div class="p-3 border rounded bg-light small">
-                <p>(Wenn Sie den Vertrag widerrufen wollen, dann füllen Sie bitte dieses Formular aus und senden Sie es
-                    zurück.)</p>
-                <p>An: <strong>KOÇYİĞİT GmbH</strong>, Kurfürstendamm 21, 10719 Berlin, E-Mail:
-                    support@kocyigit-trade.com</p>
-
-                <p>Hiermit widerrufe(n) ich/wir (*) den von mir/uns (*) abgeschlossenen Vertrag über den Kauf der
-                    folgenden Waren (*):</p>
-                <p>Bestellt am (*)/erhalten am (*):</p>
-                <p>Name des/der Verbraucher(s):</p>
-                <p>Anschrift des/der Verbraucher(s):</p>
-                <p>Unterschrift (nur bei Mitteilung auf Papier):</p>
-                <p>Datum:</p>
-                <p>(*) Unzutreffendes streichen.</p>
-            </div>
+            <section class="mb-4">
+                <h5 class="fw-bold">Ausschluss des Widerrufsrechts</h5>
+                <p class="small text-muted">Das Widerrufsrecht besteht nicht bei Verträgen zur Lieferung von Waren, die
+                    nicht vorgefertigt sind und für deren Herstellung eine individuelle Auswahl oder Bestimmung durch
+                    den Verbraucher maßgeblich ist oder die eindeutig auf die persönlichen Bedürfnisse des Verbrauchers
+                    zugeschnitten sind.</p>
+            </section>
 
             <div class="mt-5 pt-4 border-top">
                 <a href="index.html" class="btn btn-dark rounded-pill px-4">Zurück zum Shop</a>
             </div>
+
+            <footer class="mt-4 text-center text-muted small">
+                Koçyiğit Betrieb&Handel | Stand: März 2026
+            </footer>
         </div>
     </div>
 </body>
