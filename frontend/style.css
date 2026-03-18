@@ -59,7 +59,16 @@ body {
   scroll-behavior: smooth;
 }
 
-/* 🔔 LOGO RENK MÜHRÜ */
+/* 🔔 LOGO RENK VE HİZALAMA MÜHRÜ - FIX: MOBİL KAYMAYI ÖNLER */
+.navbar-brand,
+.preloader-logo {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px;
+  white-space: nowrap !important; /* Kelimelerin bölünmesini engeller */
+}
+
 .navbar-brand span,
 .preloader-logo span {
   color: var(--gold) !important;
@@ -109,7 +118,7 @@ body.dark-mode .bg-light {
   font-weight: 700;
   letter-spacing: 1px;
   color: white !important;
-  font-size: clamp(1.1rem, 4vw, 1.5rem);
+  font-size: clamp(1rem, 3.5vw, 1.5rem);
 }
 .nav-link {
   color: rgba(255, 255, 255, 0.8) !important;
@@ -124,7 +133,7 @@ body.dark-mode .bg-light {
 
 /* HERO SECTION */
 .hero-section {
-  height: 40vh;
+  height: 45vh;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -183,9 +192,9 @@ body.dark-mode .bg-light {
   z-index: 5;
 }
 
-/* ÜRÜN KARTLARI */
+/* ÜRÜN KARTLARI - FIX: TAŞMA VE HİZALAMA DÜZENLENDİ */
 .product-card {
-  border: none;
+  border: 1px solid var(--border-color);
   border-radius: 12px;
   cursor: pointer;
   background: var(--card-bg);
@@ -193,6 +202,8 @@ body.dark-mode .bg-light {
   height: 100%;
   position: relative;
   box-shadow: var(--soft-shadow);
+  display: flex;
+  flex-direction: column;
 }
 .product-card:hover {
   transform: translateY(-12px);
@@ -235,20 +246,31 @@ body.dark-mode .bg-light {
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
   letter-spacing: 0.5px;
 }
+
+/* GÖRSEL KUTUSU - FIX: TÜM RESİMLERİ SIKIŞTIRMADAN SIĞDIRIR */
 .product-img-box {
-  height: 350px;
+  height: 320px;
   overflow: hidden;
-  background: var(--bg-primary);
+  background: #fdfdfd;
   position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px; /* Görselin kenarlara yapışmasını engeller */
+}
+body.dark-mode .product-img-box {
+  background: #111;
 }
 .product-img-box img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  object-fit: contain; /* Taşmayı önleyen kritik ayar */
   transition: transform 0.8s cubic-bezier(0.165, 0.84, 0.44, 1);
 }
 .product-card:hover .product-img-box img {
-  transform: scale(1.1);
+  transform: scale(1.08);
 }
 .price {
   color: var(--gold);
@@ -314,6 +336,32 @@ body.dark-mode .bg-light {
   background-color: var(--card-bg);
   color: var(--text-main);
 }
+
+/* --- MODAL ÇIKIŞ BUTONU (X) REVIZE --- */
+#luxeModal .btn-close {
+  background: var(--midnight)
+    url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23c5a059'%3e%3cpath d='M.293.293a1 1 0 0 1 1.414 0L8 6.586 14.293.293a1 1 0 1 1 1.414 1.414L9.414 8l6.293 6.293a1 1 0 0 1-1.414 1.414L8 9.414l-6.293 6.293a1 1 0 0 1-1.414-1.414L6.586 8 .293 1.707a1 1 0 0 1 0-1.414z'/%3e%3c/svg%3e")
+    center/50% no-repeat !important;
+  opacity: 1;
+  border: 2px solid var(--gold);
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  top: 20px;
+  right: 20px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+  z-index: 1060;
+  transition:
+    transform 0.3s ease,
+    background-color 0.3s ease;
+}
+
+#luxeModal .btn-close:hover {
+  transform: rotate(90deg) scale(1.1);
+  background-color: var(--gold-hover);
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23ffffff'%3e%3cpath d='M.293.293a1 1 0 0 1 1.414 0L8 6.586 14.293.293a1 1 0 1 1 1.414 1.414L9.414 8l6.293 6.293a1 1 0 0 1-1.414 1.414L8 9.414l-6.293 6.293a1 1 0 0 1-1.414-1.414L6.586 8 .293 1.707a1 1 0 0 1 0-1.414z'/%3e%3c/svg%3e") !important;
+}
+
 .modal-split-body {
   display: flex;
   flex-direction: column;
@@ -351,7 +399,7 @@ body.dark-mode .modal-img-side {
   justify-content: center;
 }
 
-/* MİKTAR */
+/* MİKTAR KONTROL */
 .qty-control-luxe {
   display: flex;
   align-items: center;
@@ -543,11 +591,10 @@ body.dark-mode .payment-brand-grid:hover {
   opacity: 0.9;
 }
 
-/* 🏛️ KOMPAKT FOOTER (ENGELLEYİCİ) - FIX: SEPET TARAFINDAN KAPANMAYI ÖNLER */
+/* 🏛️ KOMPAKT FOOTER (FIX: SEPET ENGELİ KALDIRILDI) */
 .luxe-footer {
   background-color: var(--bg-secondary) !important;
   border-top: 1px solid var(--border-color);
-  /* 🛡️ SENIOR SAFE AREA: Alt kısma sepetin yüksekliği kadar dolgu mühürlendi */
   padding: 30px 0 110px 0 !important;
   text-align: center !important;
 }
@@ -581,17 +628,16 @@ body.dark-mode .payment-brand-grid:hover {
   width: 100%;
 }
 
-/* WHATSAPP (LIFTED) - FIX: SEPETİN ÜSTÜNE ÇIKARTILDI */
+/* WHATSAPP & BACK TO TOP (FIX: KATMANLI YAPI) */
 .luxe-whatsapp-float {
   position: fixed;
-  /* 🛡️ SENIOR LIFT: Buton, sepet aktif olduğunda üzerine binmemesi için yükseltildi */
   bottom: 115px;
   right: 30px;
   background-color: var(--midnight);
   color: white !important;
   padding: 12px 25px;
   border-radius: 50px;
-  z-index: 1060; /* Sepetin (1050) hemen üst katmanı */
+  z-index: 1040;
   border: 1px solid var(--gold);
   transition: 0.4s;
 }
@@ -599,11 +645,8 @@ body.dark-mode .payment-brand-grid:hover {
   background-color: var(--gold);
   transform: translateY(-5px);
 }
-
-/* ✨ YUKARI ÇIK BUTONU - FIX: WHATSAPP'IN ÜSTÜNE HİZALANDI */
 .luxe-back-to-top {
   position: fixed;
-  /* 🛡️ SENIOR STACK: WhatsApp butonunun 65px yukarısına mühürlendi */
   bottom: 180px;
   right: 30px;
   width: 45px;
@@ -640,7 +683,7 @@ body.dark-mode .payment-brand-grid:hover {
   color: white !important;
 }
 
-/* TOAST */
+/* TOAST BİLDİRİMLERİ */
 #luxe-toast-container {
   position: fixed;
   top: 30px;
@@ -704,7 +747,7 @@ body.dark-mode .payment-brand-grid:hover {
   position: fixed;
   inset: 0;
   width: 100%;
-  height: 100dvh; /* Mobilde adres çubuğu hatasını önler */
+  height: 100dvh;
   background-color: #0b0e17;
   display: flex;
   align-items: center;
@@ -717,19 +760,20 @@ body.dark-mode .payment-brand-grid:hover {
 .preloader-content {
   text-align: center;
   width: 90%;
-  max-width: 500px;
+  max-width: 800px;
+  margin: 0 auto;
 }
+
 .preloader-logo {
   font-family: "Playfair Display", serif;
-  font-size: clamp(1.2rem, 5.5vw, 2.8rem);
+  font-size: clamp(1.2rem, 5vw, 2.8rem);
   color: #ffffff;
-  letter-spacing: clamp(2px, 1.5vw, 6px);
+  letter-spacing: clamp(1px, 1vw, 4px);
   text-transform: uppercase;
   margin-bottom: 25px;
-  white-space: nowrap;
-  display: inline-block;
   animation: luxeFadePulse 2.5s ease-in-out infinite;
 }
+
 .preloader-bar {
   width: clamp(80px, 20vw, 150px);
   height: 1px;
