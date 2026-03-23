@@ -1,5 +1,5 @@
 /**
- * LUXE BERLIN - MASTER ADMIN STYLES (FINAL VERSION)
+ * KOÇYİĞİT GmbH - MASTER ADMIN STYLES (FINAL VERSION)
  * Orijinal Düzen, Görsel Onarımlar ve Mobil AOS Fix
  * GÜNCELLEME: Luxe Toast, Durum Renkleri ve Operasyonel Badge'ler mühürlendi.
  */
@@ -20,11 +20,20 @@
 }
 
 /* --- GLOBAL TEMELLER --- */
+html,
+body {
+  overflow-x: hidden !important;
+  width: 100% !important;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
 body {
   background-color: #f0f2f5;
   font-family: "Montserrat", sans-serif;
   color: var(--navy);
-  overflow-x: hidden;
+  position: relative;
 }
 
 /* MOBİL AOS GÜVENLİK DUVARI */
@@ -43,7 +52,7 @@ body {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 .navbar-brand {
-  font-size: 1.25rem;
+  font-size: clamp(1rem, 4vw, 1.25rem); /* Mobil uyumlu font */
   font-weight: 700;
   letter-spacing: 1px;
 }
@@ -56,7 +65,7 @@ body {
   top: 0;
   left: 0;
   width: 100%;
-  height: 100%;
+  height: 100dvh; /* Mobil tarayıcı fix */
   background-color: #0b0e17;
   display: flex;
   align-items: center;
@@ -65,14 +74,17 @@ body {
   transition:
     opacity 1s cubic-bezier(0.65, 0, 0.35, 1),
     visibility 1s;
+  overflow: hidden;
 }
 .preloader-logo {
   font-family: "Playfair Display", serif;
-  font-size: 3rem;
+  font-size: clamp(1.2rem, 6vw, 2.8rem); /* Yazı sığma garantisi */
   color: #ffffff;
-  letter-spacing: 8px;
+  letter-spacing: clamp(2px, 1vw, 8px);
   text-transform: uppercase;
   margin-bottom: 20px;
+  text-align: center;
+  width: 90%;
   animation: luxeFadePulse 2.5s ease-in-out infinite;
 }
 .preloader-logo span {
@@ -132,6 +144,7 @@ body {
     box-shadow 0.3s ease;
   position: relative;
   overflow: hidden;
+  margin-bottom: 1rem;
 }
 .stat-card::after {
   content: "";
@@ -170,12 +183,13 @@ body {
 .table-scroll-container {
   max-height: 450px;
   overflow-y: auto;
-  overflow-x: auto;
+  overflow-x: auto; /* Mobil kaydırma aktif */
   border-radius: 12px;
   border: 1px solid var(--border-color);
   background: white;
   -webkit-overflow-scrolling: touch;
   margin-bottom: 1rem;
+  width: 100%;
 }
 .table thead th {
   position: sticky;
@@ -188,11 +202,13 @@ body {
   font-size: 0.7rem;
   letter-spacing: 0.8px;
   text-transform: uppercase;
+  white-space: nowrap;
 }
 .table tbody td {
   padding: 18px 12px;
   border-bottom: 1px solid var(--border-color);
   font-size: 0.85rem;
+  white-space: nowrap; /* Taşıp alt satıra inmesini engeller */
 }
 .customer-name,
 .product-name {
@@ -208,7 +224,7 @@ body {
   padding: 6px 15px;
   border: 1px solid #dee2e6;
   background-color: white;
-  width: 170px;
+  width: 160px;
   cursor: pointer;
   transition: all 0.2s ease;
 }
@@ -260,8 +276,8 @@ body {
 /* Yorum Metni Onarımı */
 .review-text {
   white-space: normal !important;
-  min-width: 250px;
-  max-width: 450px;
+  min-width: 200px;
+  max-width: 350px;
   word-break: break-word;
   line-height: 1.6;
   color: #555;
@@ -318,6 +334,8 @@ body {
   border-radius: 24px;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
   animation: luxeSlideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  max-width: 95vw;
+  margin: 0 auto;
 }
 
 @keyframes luxeSlideUp {
@@ -389,25 +407,33 @@ body {
 /* --- LUXE TOAST BİLDİRİM SİSTEMİ --- */
 #luxe-toast-container {
   position: fixed;
-  top: 30px;
-  right: 30px;
+  top: 20px;
+  right: 10px;
+  left: 10px; /* Mobilde ortalı */
   z-index: 10000;
   display: flex;
   flex-direction: column;
-  gap: 15px;
+  gap: 10px;
+}
+
+@media (min-width: 768px) {
+  #luxe-toast-container {
+    left: auto;
+    right: 30px;
+    width: 350px;
+  }
 }
 
 .luxe-toast {
   background: #ffffff;
   color: var(--navy);
-  padding: 18px 25px;
+  padding: 15px 20px;
   border-radius: 12px;
   border-left: 5px solid var(--gold);
   box-shadow: 0 15px 35px rgba(0, 0, 0, 0.12);
   display: flex;
   align-items: center;
-  gap: 18px;
-  min-width: 320px;
+  gap: 15px;
   animation: toastSlideIn 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
   transition: all 0.4s ease;
 }
@@ -416,7 +442,7 @@ body {
   border-left-color: #e63946;
 }
 .luxe-toast i {
-  font-size: 24px;
+  font-size: 20px;
   color: var(--gold);
 }
 .luxe-toast.error i {
@@ -429,13 +455,13 @@ body {
 }
 .toast-title {
   font-weight: 800;
-  font-size: 13px;
+  font-size: 12px;
   text-transform: uppercase;
-  letter-spacing: 1.5px;
-  margin-bottom: 3px;
+  letter-spacing: 1px;
+  margin-bottom: 2px;
 }
 .toast-msg {
-  font-size: 14px;
+  font-size: 13px;
   color: #64748b;
   font-weight: 500;
 }
@@ -459,8 +485,8 @@ body {
 
 /* --- KAYDIRMA ÇUBUĞU --- */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 ::-webkit-scrollbar-track {
   background: #f1f1f1;

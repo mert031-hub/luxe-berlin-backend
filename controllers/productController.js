@@ -1,15 +1,19 @@
 const Product = require('../models/Product');
 
 /**
- * LUXE BERLIN - PRODUCT CONTROLLER (MASTER VERSION)
- * Tüm fonksiyonlar eksiksiz korunmuş, export hataları giderilmiştir.
- * Alman Standartları: Hata mesajları Almanca ve kullanıcı dostudur.
+ * LUXE BERLIN - PRODUCT CONTROLLER (V12 MASTER)
+ * REVIZE: Arşivleme sistemi onarıldı ve getAllProducts esnekleştirildi.
  */
 
 // 1. TÜM ÜRÜNLERİ GETİR
 exports.getAllProducts = async (req, res) => {
     try {
-        const products = await Product.find().sort({ createdAt: -1 });
+        // REVIZE: Eğer sorguda ?includeDeleted=true varsa tümünü, yoksa sadece aktifleri getir
+        const includeDeleted = req.query.includeDeleted === 'true';
+        const filter = includeDeleted ? {} : { isDeleted: false };
+
+        // Sıralamayı orderIndex'e göre yapıyoruz
+        const products = await Product.find(filter).sort({ orderIndex: 1 });
         res.status(200).json(products);
     } catch (err) {
         console.error("GetAllProducts Error:", err);
@@ -17,7 +21,29 @@ exports.getAllProducts = async (req, res) => {
     }
 };
 
-// 2. TEK ÜRÜN GETİR
+// 2. SIRALAMAYI GÜNCELLE (Sürükle-Bırak Sonrası)
+exports.updateOrder = async (req, res) => {
+    try {
+        const { newOrder } = req.body;
+
+        if (!newOrder || !Array.isArray(newOrder)) {
+            return res.status(400).json({ success: false, message: "Ungültige Daten" });
+        }
+
+        const updatePromises = newOrder.map(item =>
+            Product.findByIdAndUpdate(item.id, { orderIndex: item.index })
+        );
+
+        await Promise.all(updatePromises);
+
+        res.status(200).json({ success: true, message: "Reihenfolge erfolgreich aktualisiert" });
+    } catch (err) {
+        console.error("UpdateOrder Error:", err);
+        res.status(500).json({ success: false, message: "Fehler beim Speichern der Reihenfolge" });
+    }
+};
+
+// 3. TEK ÜRÜN GETİR
 exports.getProductById = async (req, res) => {
     try {
         const product = await Product.findById(req.params.id);
@@ -30,24 +56,26 @@ exports.getProductById = async (req, res) => {
     }
 };
 
-// 3. YENİ ÜRÜN OLUŞTUR (Cloudinary Destekli)
+// 4. YENİ ÜRÜN OLUŞTUR
 exports.createProduct = async (req, res) => {
     try {
         const { name, price, stock, description } = req.body;
-
-        // Cloudinary'den dönen URL'i alıyoruz
         const imageUrl = req.file ? req.file.path : null;
 
         if (!name || !price) {
             return res.status(400).json({ success: false, message: "Name und Preis sind erforderlich" });
         }
 
+        const lastProduct = await Product.findOne().sort({ orderIndex: -1 });
+        const nextIndex = lastProduct ? lastProduct.orderIndex + 1 : 0;
+
         const newProduct = new Product({
             name,
             price,
             stock: stock || 0,
             description,
-            image: imageUrl
+            image: imageUrl,
+            orderIndex: nextIndex
         });
 
         await newProduct.save();
@@ -58,7 +86,7 @@ exports.createProduct = async (req, res) => {
     }
 };
 
-// 4. ÜRÜN GÜNCELLE
+// 5. ÜRÜN GÜNCELLE
 exports.updateProduct = async (req, res) => {
     try {
         const { name, price, stock, description } = req.body;
@@ -80,9 +108,10 @@ exports.updateProduct = async (req, res) => {
     }
 };
 
-// 5. ÜRÜN ARŞİVLE (Soft Delete - DSGVO Konform)
+// 6. ÜRÜN ARŞİVLE (Soft Delete)
 exports.deleteProduct = async (req, res) => {
     try {
+        // REVIZE: Ürünü tamamen silmiyoruz, sadece isDeleted mühürü vuruyoruz
         const product = await Product.findByIdAndUpdate(req.params.id, { isDeleted: true }, { new: true });
         if (!product) {
             return res.status(404).json({ success: false, message: "Produkt nicht gefunden" });
@@ -93,9 +122,10 @@ exports.deleteProduct = async (req, res) => {
     }
 };
 
-// 6. ÜRÜN GERİ GETİR (Restore)
+// 7. ÜRÜN GERİ GETİR (Restore)
 exports.restoreProduct = async (req, res) => {
     try {
+        // REVIZE: isDeleted mühürünü kaldırıyoruz
         const product = await Product.findByIdAndUpdate(req.params.id, { isDeleted: false }, { new: true });
         if (!product) {
             return res.status(404).json({ success: false, message: "Produkt nicht gefunden" });

@@ -6,40 +6,40 @@ const multer = require('multer');
 const { storage } = require('../cloudinaryConfig');
 
 /**
- * LUXE BERLIN - PRODUCT ROUTES (V9 MASTER)
- * HATA ÇÖZÜMÜ: Multer Cloudinary storage motoru mühürlendi.
- * GÜVENLİK: Admin yetkisi olmayan işlemler engellenmiştir.
+ * LUXE BERLIN - PRODUCT ROUTES (V11 MASTER)
+ * KRİTİK DÜZELTME: Sıralama rotası en üste taşındı (404 Hatası Çözümü).
  */
 
 const uploadCloud = multer({
     storage: storage,
-    limits: { fileSize: 4 * 1024 * 1024 } // 4MB sınırı burada da korunuyor
+    limits: { fileSize: 4 * 1024 * 1024 }
 });
 
-// --- 🔓 GENEL ROTALAR (Ön Yüz İçin) ---
+// --- 🔓 GENEL ROTALAR ---
 router.get('/', productController.getAllProducts);
+
+// --- 🔐 YETKİLİ ROTALAR (SIRALAMA ÖNEMLİ!) ---
+
+// 1. ÖNCE STATİK ROTAYI TANIMLA (Çok Kritik!)
+router.patch('/reorder/update-order', auth, productController.updateOrder);
+
+// 2. SONRA DİNAMİK ID ROTASINI TANIMLA
 router.get('/:id', productController.getProductById);
 
-// --- 🔐 YETKİLİ ROTALAR (Sadece Admin) ---
-
-// Ürün Ekleme
+// Ürün İşlemleri
 router.post('/',
     auth,
     uploadCloud.single('image'),
     productController.createProduct
 );
 
-// Ürün Güncelleme
 router.put('/:id',
     auth,
     uploadCloud.single('image'),
     productController.updateProduct
 );
 
-// Ürün Arşivleme
 router.delete('/:id', auth, productController.deleteProduct);
-
-// Arşivden Geri Getirme
 router.put('/restore/:id', auth, productController.restoreProduct);
 
 module.exports = router;

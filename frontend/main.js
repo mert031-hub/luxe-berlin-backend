@@ -1,7 +1,8 @@
 /**
- * LUXE BERLIN - CORE JAVASCRIPT (ULTRA STABLE)
+ * LUXE BERLIN - CORE JAVASCRIPT (ULTRA STABLE V13)
  * Tüm özellikler: Ürün Sınırı (9 Ürün), Sepet Onarımı, Miktar Koruması, 1 Yorum Sınırı, 
  * Karakter Sayacı, İsim Sınırı (50 Karakter), Küfür Filtresi Onarımı ve Yukarı Çık Butonu.
+ * REVIZE: Veritabanı tabanlı kalıcı sıralama (orderIndex) entegre edildi.
  */
 
 // --- GLOBAL DEĞİŞKENLER ---
@@ -34,7 +35,7 @@ function showLuxeAlert(message, type = 'success') {
     toast.innerHTML = `
         <i class="fas ${icon}"></i>
         <div class="toast-content">
-            <div class="toast-title">KOÇYİĞİT GmbH</div>
+            <div class="toast-title">KOÇYİĞİT Betrieb&Handel</div>
             <div class="toast-msg">${message}</div>
         </div>
     `;
@@ -72,14 +73,19 @@ async function fetchProducts() {
         const response = await fetch(`${API_URL}/products`);
         const data = await response.json();
 
-        products = data.filter(p => p.isDeleted !== true).map(p => ({
+        // REVIZE: Gelen veriyi orderIndex'e göre sıralıyoruz (Küçükten büyüğe)
+        // Eğer orderIndex yoksa (eski ürünler), onları listenin sonuna atıyoruz.
+        const sortedData = data.sort((a, b) => (a.orderIndex ?? 999) - (b.orderIndex ?? 999));
+
+        products = sortedData.filter(p => p.isDeleted !== true).map(p => ({
             id: p._id,
             name: p.name,
             price: p.price,
             stock: p.stock || 0,
-            tag: p.tag || (p.stock <= 0 ? "Ausverkauft" : "Neu"),
+            tag: p.tag || (p.stock <= 0 ? "Ausverkaft" : "Neu"),
             img: p.image ? (p.image.startsWith('http') ? p.image : `${UPLOADS_URL}/${p.image}`) : 'https://via.placeholder.com/400',
-            description: p.description || ""
+            description: p.description || "",
+            orderIndex: p.orderIndex // Sıralama bilgisini saklıyoruz
         }));
 
         renderProducts(products);
@@ -102,7 +108,7 @@ function renderProducts(listToDisplay) {
     grid.innerHTML = listToShow.map(p => {
         const inCart = cart.find(i => i.id === p.id)?.qty || 0;
         const avail = p.stock - inCart;
-        const tagClass = (p.tag === "Ausverkauft" || avail <= 0) ? 'tag-dark' : 'tag-danger';
+        const tagClass = (p.tag === "Ausverkaft" || avail <= 0) ? 'tag-dark' : 'tag-danger';
 
         return `
             <div class="col-12 col-md-6 col-lg-4">
@@ -507,12 +513,11 @@ window.addEventListener("load", function () {
     }
 });
 
-// --- ✨ 9. YUKARI ÇIK BUTONU MANTIĞI (YENİ EKLEME) ---
+// --- ✨ 9. YUKARI ÇIK BUTONU MANTIĞI ---
 const backToTopBtn = document.getElementById('luxe-back-to-top');
 
 if (backToTopBtn) {
     window.addEventListener('scroll', () => {
-        // Sayfa 400px aşağı inince butonu göster
         if (window.scrollY > 400) {
             backToTopBtn.classList.add('show');
         } else {

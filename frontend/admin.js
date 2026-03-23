@@ -1,5 +1,5 @@
 /**
- * KOÇYİĞİT GmbH - MASTER ADMIN JAVASCRIPT (ULTIMATE ENTERPRISE VERSION)
+ * KOÇYİĞİT GmbH - MASTER ADMIN JAVASCRIPT (V12 ULTIMATE REORDER)
  * ---------------------------------------------------------------
  * - HARDENED SECURITY: HttpOnly Cookie tabanlı oturum yönetimi.
  * - ANALYTICS V2: Çift eksenli (Umsatz & Volumen) Çizgi Grafik.
@@ -7,7 +7,7 @@
  * - INVENTORY RADAR: Kritik Stok Uyarı Sistemi.
  * - SALES ENGINE: Top-Seller ürün analizi ve AOV hesaplama.
  * - DATA EXPORT: CSV formatında sipariş raporlama.
- * - FIX: Order Details modalına Telefon Numarası entegre edildi.
+ * - REORDER ENGINE: SortableJS ile kalıcı veritabanı sıralaması.
  */
 
 // --- GLOBAL DEĞİŞKENLER ---
@@ -57,7 +57,7 @@ function showLuxeAlert(message, type = 'success') {
     toast.innerHTML = `
         <i class="fas ${icon}"></i>
         <div class="toast-content">
-            <div class="toast-title">KOÇYİĞİT GmbH Admin</div>
+            <div class="toast-title">KOÇYİĞİT Betrieb&Handel Admin</div>
             <div class="toast-msg">${message}</div>
         </div>
     `;
@@ -134,7 +134,7 @@ async function loadDashboard() {
     window.logActivity("Dashboard erfolgreich geladen", currentUser, "Success");
 }
 
-// --- 🛡️ 1. ANALİTİK MOTORU: ÇİFT EKSENLİ ÇİZGİ GRAFİK ---
+// --- 🛡️ 1. ANALİTİK MOTORU ---
 function renderSalesChart(orders, mode = 'monthly', backendChartData = null) {
     const canvas = document.getElementById('salesChart');
     if (!canvas) return;
@@ -220,7 +220,7 @@ function renderSalesChart(orders, mode = 'monthly', backendChartData = null) {
     });
 }
 
-// --- 🛡️ 2. OPERASYONEL PANEL: DOUGHNUT GRAFİĞİ ---
+// --- 🛡️ 2. OPERASYONEL PANEL ---
 function renderStatusChart(orders) {
     const canvas = document.getElementById('statusChart');
     if (!canvas) return;
@@ -394,7 +394,7 @@ window.deleteOrder = async (id) => {
     }
 };
 
-// 🛡️ KRİTİK: SİPARİŞ DETAY MODALI (TELEFON NUMARASI EKLENDİ)
+// 🛡️ KRİTİK: SİPARİŞ DETAY MODALI
 window.viewDetails = async (id) => {
     const o = allOrdersData.find(item => item._id === id);
     if (!o) return;
@@ -435,7 +435,7 @@ window.viewDetails = async (id) => {
     }
 };
 
-// --- 🛡️ 5. ÜRÜN YÖNETİMİ ---
+// --- 🛡️ 5. ÜRÜN YÖNETİMİ (REVIZE: Sürükleme Tutamağı ve Kalıcı Sıralama) ---
 window.loadProducts = async () => {
     try {
         const res = await fetch(`${API_URL}/products`, { credentials: 'include' }).then(handleAuthError);
@@ -445,35 +445,120 @@ window.loadProducts = async () => {
         const list = document.getElementById('admin-product-list');
         if (!list) return;
         list.innerHTML = "";
+
         products.filter(p => p.isDeleted !== true).forEach(p => {
             let imgSrc = p.image && p.image.startsWith('http') ? p.image : 'https://placehold.co/150';
             list.innerHTML += `
-                <tr class="product-row">
+                <tr class="product-row" data-id="${p._id}">
+                    <td><div class="drag-handle"><i class="fas fa-grip-vertical"></i></div></td>
                     <td><div class="product-img-box-small"><img src="${imgSrc}"></div></td>
                     <td><strong class="product-name">${p.name}</strong></td>
                     <td>${euro.format(p.price)}</td>
                     <td><span class="badge ${p.stock <= 5 ? 'bg-danger' : 'bg-light text-dark'}">${p.stock}</span></td>
-                    <td class="text-end"><button class="btn btn-sm btn-outline-primary border-0 me-2" onclick="editProduct('${p._id}')">✎</button>
-                        <button class="btn btn-sm btn-outline-danger border-0" onclick="deleteProduct('${p._id}')">🗑️</button></td>
+                    <td class="text-end">
+                        <button class="btn btn-sm btn-outline-primary border-0 me-2" onclick="editProduct('${p._id}')">✎</button>
+                        <button class="btn btn-sm btn-outline-danger border-0" onclick="deleteProduct('${p._id}')">🗑️</button>
+                    </td>
                 </tr>`;
         });
         updateInventoryAlerts(products);
+        initSortable();
     } catch (err) { console.error(err); }
+    window.loadArchivedProducts();
+
 };
 
+// --- 🛡️ SORTABLE ENGINE (KALICI DÜZENLEME) ---
+// admin.js içindeki initSortable fonksiyonunu bu versiyonla tamamen değiştir:
+function initSortable() {
+    const el = document.getElementById('admin-product-list');
+    if (!el) return;
+
+    Sortable.create(el, {
+        animation: 150,
+        handle: '.drag-handle',
+        ghostClass: 'sortable-ghost',
+        onEnd: async function () {
+            const rows = document.querySelectorAll('#admin-product-list tr');
+            const newOrder = Array.from(rows).map((row, index) => ({
+                id: row.getAttribute('data-id'),
+                index: index
+            }));
+
+            // URL Onarım Sistemi (Mutlak Yol)
+            const base = API_URL.endsWith('/') ? API_URL.slice(0, -1) : API_URL;
+            const finalEndpoint = `${base}/products/reorder/update-order`;
+
+            try {
+                const response = await fetch(finalEndpoint, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ newOrder }),
+                    credentials: 'include'
+                });
+
+                const contentType = response.headers.get("content-type");
+
+                if (contentType && contentType.includes("application/json")) {
+                    const result = await response.json();
+                    if (response.ok && result.success) {
+                        showLuxeAlert("Reihenfolge dauerhaft gespeichert!", "success");
+                        // Mağaza verisini de yerel olarak güncelle (Sayfa yenilemeden index'e yansıması için)
+                        if (typeof allProductsData !== 'undefined') {
+                            newOrder.forEach(item => {
+                                const p = allProductsData.find(x => x._id === item.id);
+                                if (p) p.orderIndex = item.index;
+                            });
+                        }
+                    } else {
+                        throw new Error(result.message || "Speichern fehlgeschlagen");
+                    }
+                } else {
+                    throw new Error("Kapı bulunamadı (404). Lütfen Backend rotasını kontrol edin.");
+                }
+            } catch (err) {
+                console.error("Sıralama Kayıt Hatası:", err);
+                showLuxeAlert("Hata: " + err.message, "error");
+                setTimeout(() => location.reload(), 3000);
+            }
+        }
+    });
+}
 window.loadArchivedProducts = async () => {
     try {
-        const res = await fetch(`${API_URL}/products`, { credentials: 'include' }).then(handleAuthError);
+        // KRİTİK: includeDeleted=true ekledik ki silinenler de gelsin
+        const res = await fetch(`${API_URL}/products?includeDeleted=true`, { credentials: 'include' }).then(handleAuthError);
         if (!res) return;
-        const archived = (await res.json()).filter(p => p.isDeleted === true);
+
+        const allProducts = await res.json();
+        // Sadece silinmişleri ayıkla
+        const archived = allProducts.filter(p => p.isDeleted === true);
+
         const archivedList = document.getElementById('admin-archived-list');
         if (!archivedList) return;
-        archivedList.innerHTML = archived.length ? "" : "<tr><td class='text-muted small text-center p-3'>Keine Archiv vorhanden.</td></tr>";
+
+        if (archived.length === 0) {
+            archivedList.innerHTML = "<tr><td class='text-muted small text-center p-3'>Keine Archiv vorhanden.</td></tr>";
+            return;
+        }
+
+        archivedList.innerHTML = "";
         archived.forEach(p => {
             let imgSrc = p.image && p.image.startsWith('http') ? p.image : 'https://placehold.co/150';
-            archivedList.innerHTML += `<tr><td><img src="${imgSrc}" width="30" class="grayscale rounded shadow-sm"></td><td class="small text-muted ps-3">${p.name}</td><td class="text-end"><button class="btn btn-sm btn-outline-success border-0 py-0" onclick="restoreProduct('${p._id}')">♻️</button></td></tr>`;
+            archivedList.innerHTML += `
+                <tr>
+                    <td><img src="${imgSrc}" width="30" height="30" style="object-fit: cover;" class="grayscale rounded shadow-sm"></td>
+                    <td class="small text-muted ps-3">${p.name}</td>
+                    <td class="text-end">
+                        <button class="btn btn-sm btn-outline-success border-0 py-0" title="Wiederherstellen" onclick="restoreProduct('${p._id}')">♻️</button>
+                    </td>
+                </tr>`;
         });
-    } catch (err) { console.error(err); }
+    } catch (err) {
+        console.error("Arşiv Yükleme Hatası:", err);
+    }
 };
 
 window.restoreProduct = async (id) => {

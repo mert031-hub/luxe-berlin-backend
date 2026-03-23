@@ -1,5 +1,5 @@
 /**
- * LUXE BERLIN - MASTER TRACKING STYLES
+ * KOÇYİĞİT GmbH - MASTER TRACKING STYLES
  * Yapı bozulmadan hizalama ve renk onarımları yapılmıştır.
  */
 
@@ -10,16 +10,28 @@
   --gold-shadow: rgba(197, 160, 89, 0.4);
 }
 
+/* MOBIL FIX: YATAY KAYMAYI ÖNLER */
+html,
+body {
+  overflow-x: hidden !important;
+  width: 100% !important;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
 body {
   font-family: "Montserrat", sans-serif;
   background-color: var(--platinum);
   color: var(--navy);
   -webkit-font-smoothing: antialiased;
+  position: relative;
 }
 
 .navbar-brand {
   font-family: "Playfair Display", serif;
   letter-spacing: 2px;
+  font-size: clamp(1rem, 4vw, 1.25rem); /* Mobil uyumlu font */
 }
 .navbar-brand span {
   color: var(--gold);
@@ -39,6 +51,7 @@ body {
   border: 1px solid #eee !important;
   background: white !important;
   display: flex !important;
+  max-width: 100%;
 }
 
 .tracking-search-box input#orderIdInput {
@@ -116,7 +129,7 @@ body {
   margin: 0 auto 20px;
 }
 
-/* --- PROGRESS TRACKER (GÖRSEL HİZALAMA ONARIMI) --- */
+/* --- PROGRESS TRACKER --- */
 .track-container {
   margin: 60px 0;
   display: flex;
@@ -141,7 +154,7 @@ body {
   box-shadow: 0 0 15px var(--gold-shadow);
 }
 
-/* MASAÜSTÜ HİZALAMA: İkonların (65px) tam ortasından geçmesi için 32.5px yapıldı */
+/* MASAÜSTÜ HİZALAMA */
 @media (min-width: 768px) {
   .track-container {
     flex-direction: row;
@@ -171,7 +184,7 @@ body {
   }
 }
 
-/* MOBİL HİZALAMA: İkonların merkezine tam dikey oturtuldu */
+/* MOBİL HİZALAMA */
 @media (max-width: 767px) {
   .track-container::before {
     top: 10px;
@@ -193,6 +206,9 @@ body {
   .step-text {
     margin-left: 20px;
     margin-top: 0;
+  }
+  .track-card {
+    padding: 30px 15px;
   }
 }
 
@@ -318,13 +334,13 @@ body {
   }
 }
 
-/* --- PRELOADER (1000039755.jpg FIX) --- */
+/* --- PRELOADER (SENIOR RESPONSIVE FIX) --- */
 #preloader {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
-  height: 100%;
+  height: 100dvh; /* Mobil bar fix */
   background-color: #0b0e17;
   display: flex;
   align-items: center;
@@ -333,42 +349,34 @@ body {
   transition:
     opacity 1s cubic-bezier(0.65, 0, 0.35, 1),
     visibility 1s;
+  overflow: hidden;
 }
 
 .preloader-content {
   text-align: center;
-  width: 100%;
+  width: 90%;
+  max-width: 500px;
 }
 
 .preloader-logo {
   font-family: "Playfair Display", serif;
-  font-size: 3rem;
+  font-size: clamp(1.1rem, 5.5vw, 2.5rem); /* Metin sığma garantisi */
   color: #ffffff;
-  letter-spacing: 8px;
+  letter-spacing: clamp(1px, 1vw, 8px);
   text-transform: uppercase;
   margin-bottom: 20px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   animation: luxeFadePulse 2.5s ease-in-out infinite;
+  max-width: 100%;
 }
 .preloader-logo span {
   color: var(--gold);
 }
 
-@media (max-width: 576px) {
-  .track-card {
-    padding: 30px 20px;
-  }
-  .preloader-logo {
-    font-size: 1.8rem !important;
-    letter-spacing: 4px !important;
-    padding: 0 10px;
-  }
-  .preloader-bar {
-    width: 100px !important;
-  }
-}
-
 .preloader-bar {
-  width: 150px;
+  width: clamp(100px, 20vw, 150px);
   height: 1px;
   background: rgba(197, 160, 89, 0.1);
   margin: 0 auto 15px;
@@ -387,7 +395,7 @@ body {
 }
 .preloader-text {
   color: rgba(255, 255, 255, 0.4);
-  font-size: 0.7rem;
+  font-size: clamp(0.55rem, 2vw, 0.7rem);
   letter-spacing: 2px;
   text-transform: uppercase;
 }

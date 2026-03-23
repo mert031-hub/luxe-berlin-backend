@@ -1,10 +1,10 @@
 /**
- * KOÇYİĞİT GmbH - CHECKOUT LOGIC (ULTRA STABLE & STRIPE READY)
+ * KOÇYİĞİT GmbH - CHECKOUT LOGIC (ULTRA STABLE & STRIPE LIVE)
  * 🛡️ REBRANDING: LUXE BERLIN -> KOÇYİĞİT GmbH mühürlendi.
+ * 🛡️ LIVE READY: Stripe Live Publishable Key entegre edildi.
  */
 
 let products = [];
-// 🛡️ TEKNİK ANAHTAR: 'luxeCartArray' ismi sepetin sıfırlanmaması için korunmuştur.
 let cart = JSON.parse(localStorage.getItem('luxeCartArray')) || [];
 
 const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
@@ -23,7 +23,7 @@ async function fetchProductsAndLoad() {
             img: p.image?.startsWith('http') ? p.image : `${UPLOADS_URL}/${p.image}`
         }));
         loadCheckout();
-    } catch (err) { console.error("KOÇYİĞİT GmbH - Ürün yükleme hatası:", err); }
+    } catch (err) { console.error("KOÇYİĞİT Betrieb&Handel - Ürün yükleme hatası:", err); }
 }
 
 function loadCheckout() {
@@ -104,7 +104,7 @@ window.removeFromCart = (id) => {
     loadCheckout();
 };
 
-// 🛡️ REVIZE: STRIPE CHECKOUT INTEGRATION
+// 🛡️ REVIZE: STRIPE CHECKOUT INTEGRATION (LIVE MODE)
 document.getElementById('checkoutForm')?.addEventListener('submit', async (e) => {
     e.preventDefault();
 
@@ -146,10 +146,10 @@ document.getElementById('checkoutForm')?.addEventListener('submit', async (e) =>
         const session = await response.json();
 
         if (session.url) {
+            // Sepeti temizlemeden yönlendir (Webhook siparişi oluşturacak, başarı sayfasında temizlenecek)
             window.location.href = session.url;
         } else {
-            // 🛡️ REBRANDING: Hata mesajı mühürlendi
-            alert("Fehler: " + (session.message || "KOÇYİĞİT GmbH: Stripe Sitzung konnte nicht erstellt werden."));
+            alert("Fehler: " + (session.message || "KOÇYİĞİT Betrieb&Handel: Stripe Sitzung konnte nicht erstellt werden."));
             if (btn) { btn.disabled = false; btn.innerText = "ZAHLUNGSPFLICHTIG BESTELLEN"; }
         }
     } catch (err) {

@@ -1,12 +1,11 @@
 /**
- * LUXE BERLIN - SUCCESS PAGE LOGIC (STRIPE INTEGRATED)
+ * KOÇYİĞİT GmbH - SUCCESS PAGE LOGIC (STRIPE LIVE READY)
  * FIX: Sipariş özetine ürün görselleri eklendi.
- * NEW: Stripe session doğrulama ve otomatik sepet temizleme eklendi.
+ * NEW: Stripe session doğrulama ve otomatik sepet temizleme mühürlendi.
  */
 
 const euro = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' });
 
-// API URL Senkronu
 const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
     ? 'http://localhost:5000/api'
     : '/api';
@@ -17,7 +16,7 @@ async function loadOrderSuccess() {
     const urlParams = new URLSearchParams(window.location.search);
     const fullOrderId = urlParams.get('orderId');
     const shortDisplayId = urlParams.get('displayId');
-    const stripeSessionId = urlParams.get('session_id'); // 🛡️ Stripe'tan gelen session
+    const stripeSessionId = urlParams.get('session_id');
 
     // Eğer hiç parametre yoksa anasayfaya at
     if (!fullOrderId && !shortDisplayId && !stripeSessionId) {
@@ -25,29 +24,30 @@ async function loadOrderSuccess() {
         return;
     }
 
-    // 🛡️ Mühür: Ödeme başarılı sayfasına ulaşıldıysa sepeti temizle
+    // 🛡️ GÜVENLİK: Ödeme başarılı sayfasına ulaşıldıysa sepeti temizle
     localStorage.removeItem('luxeCartArray');
 
     const orderIdElement = document.getElementById('orderIdText');
 
-    // Senaryo 1: Stripe üzerinden gelindiyse (Webhook siparişi oluşturmuş olmalı)
     if (stripeSessionId) {
         try {
-            // Backend'de session_id ile siparişi bulan yeni bir endpoint çağırıyoruz
+            // Siparişi Stripe Session ID üzerinden bulup getiriyoruz
             const res = await fetch(`${API_URL}/orders/by-session/${stripeSessionId}`);
             const order = await res.json();
 
-            if (res.ok) {
+            if (res.ok && order) {
                 renderOrderDetails(order);
-                if (orderIdElement) orderIdElement.innerText = order.shortId || "LB-SUCCESS";
+                if (orderIdElement) orderIdElement.innerText = order.shortId || "KOÇYİĞİT-SUCCESS";
                 const trackBtn = document.getElementById('trackBtn');
                 if (trackBtn) trackBtn.href = `track.html?id=${order.shortId || order._id}`;
+            } else {
+                console.warn("Sipariş henüz oluşturulmamış olabilir (Webhook gecikmesi).");
+                if (orderIdElement) orderIdElement.innerText = "Processing...";
             }
         } catch (err) {
             console.error("Stripe sipariş verisi yüklenemedi:", err);
         }
     }
-    // Senaryo 2: Doğrudan orderId ile gelindiyse (Eski mantık korundu)
     else if (fullOrderId) {
         if (orderIdElement) orderIdElement.innerText = shortDisplayId || "LB-XXXXXX";
         const trackBtn = document.getElementById('trackBtn');
@@ -63,12 +63,11 @@ async function loadOrderSuccess() {
     }
 }
 
-// 🛡️ Render fonksiyonu kod tekrarını önlemek için ayrıştırıldı
 function renderOrderDetails(order) {
     const list = document.getElementById('summary-list');
     if (list && order.items) {
         list.innerHTML = order.items.map(item => {
-            const imgPath = item.productId?.image || 'https://via.placeholder.com/50';
+            const imgPath = item.productId?.image || item.image || 'https://via.placeholder.com/50';
             const finalImg = imgPath.startsWith('http') ? imgPath : `${UPLOADS_URL}/${imgPath}`;
 
             return `

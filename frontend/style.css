@@ -51,12 +51,22 @@ button,
   transition: var(--theme-transition) !important;
 }
 
+/* MOBIL FIX: YATAY KAYMAYI ÖNLER */
+html,
+body {
+  overflow-x: hidden !important;
+  width: 100% !important;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
 body {
   font-family: "Montserrat", sans-serif;
   color: var(--text-main);
   background-color: var(--bg-primary);
-  overflow-x: hidden;
   scroll-behavior: smooth;
+  position: relative;
 }
 
 /* 🔔 LOGO RENK VE HİZALAMA MÜHRÜ - FIX: MOBİL KAYMAYI ÖNLER */
@@ -118,7 +128,7 @@ body.dark-mode .bg-light {
   font-weight: 700;
   letter-spacing: 1px;
   color: white !important;
-  font-size: clamp(1rem, 3.5vw, 1.5rem);
+  font-size: clamp(0.9rem, 3.2vw, 1.5rem); /* Mobil için optimize edildi */
 }
 .nav-link {
   color: rgba(255, 255, 255, 0.8) !important;
@@ -256,7 +266,7 @@ body.dark-mode .bg-light {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 20px; /* Görselin kenarlara yapışmasını engeller */
+  padding: 20px;
 }
 body.dark-mode .product-img-box {
   background: #111;
@@ -266,7 +276,7 @@ body.dark-mode .product-img-box {
   max-height: 100%;
   width: auto;
   height: auto;
-  object-fit: contain; /* Taşmayı önleyen kritik ayar */
+  object-fit: contain;
   transition: transform 0.8s cubic-bezier(0.165, 0.84, 0.44, 1);
 }
 .product-card:hover .product-img-box img {
@@ -539,6 +549,7 @@ body.dark-mode .btn-luxe {
 .luxe-payment-showcase {
   background-color: var(--bg-secondary);
   padding: 20px 0;
+  width: 100%; /* FIX: MOBİL KAYMAYI ÖNLER */
 }
 .payment-title {
   font-size: 0.65rem;
@@ -597,6 +608,7 @@ body.dark-mode .payment-brand-grid:hover {
   border-top: 1px solid var(--border-color);
   padding: 30px 0 110px 0 !important;
   text-align: center !important;
+  width: 100%;
 }
 .luxe-footer .container {
   display: flex;
@@ -742,40 +754,51 @@ body.dark-mode .payment-brand-grid:hover {
   font-weight: 500;
 }
 
-/* ⏳ PRELOADER (SENIOR RESPONSIVE FIX) */
+/* ⏳ PRELOADER (SENIOR RESPONSIVE FIX - GÜNCELLENDİ) */
 #preloader {
   position: fixed;
-  inset: 0;
+  top: 0;
+  left: 0;
   width: 100%;
-  height: 100dvh;
+  height: 100dvh; /* Dinamik yükseklik: Mobil tarayıcı barlarına tam uyum */
   background-color: #0b0e17;
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 999999;
+  z-index: 9999999;
   transition:
-    opacity 1s,
-    visibility 1s;
+    opacity 0.8s,
+    visibility 0.8s;
+  overflow: hidden;
 }
+
 .preloader-content {
   text-align: center;
   width: 90%;
-  max-width: 800px;
+  max-width: 500px; /* Hizalamayı garantiler */
   margin: 0 auto;
 }
 
 .preloader-logo {
   font-family: "Playfair Display", serif;
-  font-size: clamp(1.2rem, 5vw, 2.8rem);
+  font-size: clamp(
+    1.1rem,
+    5.5vw,
+    2.5rem
+  ); /* FIX: MOBILDE TAM SIGMASI İÇİN AYARLANDI */
   color: #ffffff;
-  letter-spacing: clamp(1px, 1vw, 4px);
+  letter-spacing: clamp(1px, 0.8vw, 4px);
   text-transform: uppercase;
   margin-bottom: 25px;
-  animation: luxeFadePulse 2.5s ease-in-out infinite;
+  display: flex;
+  flex-wrap: wrap; /* Gerekirse alt satıra geçer */
+  justify-content: center;
+  animation: luxeFadePulse 2s ease-in-out infinite;
+  max-width: 100%; /* Taşmayı önler */
 }
 
 .preloader-bar {
-  width: clamp(80px, 20vw, 150px);
+  width: clamp(100px, 25vw, 150px);
   height: 1px;
   background: rgba(197, 160, 89, 0.1);
   margin: 0 auto 15px;
@@ -790,7 +813,7 @@ body.dark-mode .payment-brand-grid:hover {
   background: var(--gold);
   position: absolute;
   left: -40px;
-  animation: loadingSlide 2s infinite ease-in-out;
+  animation: loadingSlide 1.5s infinite ease-in-out;
 }
 .preloader-text {
   color: rgba(255, 255, 255, 0.4);
@@ -844,8 +867,8 @@ body.dark-mode .payment-brand-grid:hover {
 .luxe-cookie-banner {
   position: fixed;
   bottom: 20px;
-  left: 20px;
-  right: 20px;
+  left: 10px; /* Mobil için kenar boşlukları daraltıldı */
+  right: 10px;
   background: var(--midnight);
   color: white;
   padding: 25px;

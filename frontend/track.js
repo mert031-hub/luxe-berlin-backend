@@ -88,7 +88,7 @@ async function trackOrder() {
 
             const footerNote = resultArea.querySelector('.mt-5.small.text-muted.italic');
             if (footerNote) {
-                footerNote.innerHTML = `Vielen Dank für Ihr Vertrauen in KOÇYİĞİT GmbH! ✨`;
+                footerNote.innerHTML = `Vielen Dank für Ihr Vertrauen in KOÇYİĞİT Betrieb&Handel! ✨`;
             }
 
             setTimeout(() => {
@@ -102,7 +102,7 @@ async function trackOrder() {
             cancelSection.classList.add('d-none');
         }
     } catch (err) {
-        console.error("KOÇYİĞİT GmbH - Tracking Error:", err);
+        console.error("KOÇYİĞİT Betrieb&Handel - Tracking Error:", err);
         alert("Ein Fehler ist aufgetreten.");
     }
 }
