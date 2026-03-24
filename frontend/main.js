@@ -1,8 +1,8 @@
 /**
- * KOÇYİĞİT GmbH - CORE JAVASCRIPT (ULTRA STABLE V14 - MÜHÜRLÜ)
+ * KOÇYİĞİT GmbH - CORE JAVASCRIPT (ULTRA STABLE V15 - PAGINATED REVIEWS)
  * Tüm özellikler: Ürün Sınırı (9 Ürün), Sepet Onarımı, Miktar Koruması, 1 Yorum Sınırı, 
- * Karakter Sayacı, İsim Sınırı (50 Karakter), Küfür Filtresi ve Üstü Çizili Fiyat Sistemi.
- * REVIZE: Veritabanı tabanlı kalıcı sıralama (orderIndex) ve SALE etiketi entegre edildi.
+ * Karakter Sayacı, İsim Sınırı (50 Karakter), Küfür Filtresi ve Kademeli Yorum Gösterimi.
+ * REVIZE: Yorumlar artık 9'ar 9'ar yüklenecek şekilde mühürlendi.
  */
 
 // --- GLOBAL DEĞİŞKENLER ---
@@ -13,14 +13,13 @@ let selectedProduct = null, currentQty = 1;
 
 // ÜRÜN VE YORUM GÖSTERİM SINIRLARI
 let shownProductsCount = 9;
-let shownReviewsCount = 6;
+let shownReviewsCount = 9; // 🛡️ REVIZE: Başlangıçta 9 yorum gösterilecek
 let testimonials = [];
 
 const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
     ? 'http://localhost:5000/api'
     : '/api';
 
-// 🛡️ REVIZE: 404 Resim hatalarını önlemek için klasör yolunu mühürledik
 const UPLOADS_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
     ? 'http://localhost:5000/uploads'
     : '/uploads';
@@ -83,7 +82,7 @@ async function fetchProducts() {
             id: p._id,
             name: p.name,
             price: p.price,
-            oldPrice: p.oldPrice || null, // 🛡️ SALE SYSTEM: Veritabanından eski fiyatı çekiyoruz
+            oldPrice: p.oldPrice || null,
             stock: p.stock || 0,
             tag: p.tag || (p.stock <= 0 ? "Ausverkaft" : "Neu"),
             img: p.image ? (p.image.startsWith('http') ? p.image : `${UPLOADS_URL}/${p.image}`) : 'https://via.placeholder.com/400',
@@ -111,13 +110,12 @@ function renderProducts(listToDisplay) {
         const avail = p.stock - inCart;
         const tagClass = (p.tag === "Ausverkaft" || avail <= 0) ? 'tag-dark' : 'tag-danger';
 
-        // 🛡️ SALE SYSTEM: Eğer oldPrice varsa arayüzde göster
         const priceHtml = p.oldPrice
             ? `<div class="price-container">
                  <span class="old-price">${euro.format(p.oldPrice)}</span>
                  <span class="price text-gold">${euro.format(p.price)}</span>
                </div>`
-            : `<span class="price">${euro.format(p.price)}</span>`;
+            : `<div class="price-container"><span class="price">${euro.format(p.price)}</span></div>`;
 
         const saleTag = p.oldPrice ? `<span class="sale-tag">SALE</span>` : '';
 
@@ -149,7 +147,7 @@ window.filterProducts = function () {
     renderProducts(filtered);
 }
 
-// --- 4. YORUM YÖNETİMİ ---
+// --- 4. YORUM YÖNETİMİ (REVIZE) ---
 function censorText(text) {
     if (!text) return "";
     const regex = new RegExp(badWords.join("|"), "gi");
@@ -180,7 +178,9 @@ async function initTestimonials() {
         }
     }
 
+    // 🛡️ REVIZE: Yorumları shownReviewsCount kadarıyla sınırla
     const reviewsToDisplay = testimonials.slice(0, shownReviewsCount);
+
     container.innerHTML = reviewsToDisplay.map(t => `
         <div class="col-md-4">
             <div class="testimonial-card">
@@ -197,7 +197,10 @@ async function initTestimonials() {
             </div>
         </div>`).join('');
 
-    if (showMoreWrapper) showMoreWrapper.style.display = testimonials.length > shownReviewsCount ? "block" : "none";
+    // 🛡️ REVIZE: Daha fazla yorum varsa butonu göster
+    if (showMoreWrapper) {
+        showMoreWrapper.style.display = testimonials.length > shownReviewsCount ? "block" : "none";
+    }
 }
 
 function initReviewCounter() {
@@ -221,8 +224,9 @@ function initReviewCounter() {
 }
 
 document.addEventListener('click', function (e) {
+    // 🛡️ REVIZE: Yorumları 9'ar 9'ar arttır
     if (e.target && e.target.id === 'showMoreReviewsBtn') {
-        shownReviewsCount += 6;
+        shownReviewsCount += 9;
         initTestimonials();
     }
     if (e.target && e.target.id === 'showMoreProductsBtn') {
@@ -289,7 +293,6 @@ window.setupModal = function (id) {
     document.getElementById('mImg').src = selectedProduct.img;
     document.getElementById('mTitle').innerText = selectedProduct.name;
 
-    // 🛡️ REVIZE: Modal içindeki fiyat alanı oldPrice mühürlemesi
     const oldPriceEl = document.getElementById('mOldPriceDisplay');
     if (oldPriceEl) {
         if (selectedProduct.oldPrice) {

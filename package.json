@@ -28,7 +28,7 @@
     "pg": "^8.11.3",
     "resend": "^3.1.0",
     "sharp": "^0.32.6",
-    "stripe": "^14.5.0"
+    "stripe": "^20.4.1"
   },
   "devDependencies": {
     "jest": "^30.2.0",

@@ -1,7 +1,8 @@
 /**
- * KOÇYİĞİT GmbH - MASTER ADMIN JAVASCRIPT (V13 ULTIMATE - MÜHÜRLÜ)
+ * KOÇYİĞİT GmbH - MASTER ADMIN JAVASCRIPT (V14 ULTIMATE - MÜHÜRLÜ)
  * ---------------------------------------------------------------
  * - HARDENED SECURITY: HttpOnly Cookie tabanlı oturum yönetimi.
+ * - ARCHIVE SYSTEM: Soft-Delete & Restore (Geri Getirme) entegre edildi.
  * - ANALYTICS V2: Çift eksenli (Umsatz & Volumen) Çizgi Grafik.
  * - OPERATIONAL INTEL: Sipariş Durum Pastası (Doughnut Chart).
  * - INVENTORY RADAR: Kritik Stok Uyarı Sistemi.
@@ -41,7 +42,6 @@ const API_URL = window.location.hostname === 'localhost' || window.location.host
 
 const API = API_URL;
 
-// 🛡️ REVIZE: 404 Resim hatalarını önlemek için uploads yolu mühürlendi
 const UPLOADS_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
     ? 'http://localhost:5000/uploads'
     : '/uploads';
@@ -94,7 +94,7 @@ function startAuthWatcher() {
     }, 60000);
 }
 
-// --- 🛡️ KALICI LOG SİSTEMİ: VERİTABANINDAN LOGLARI YÜKLE ---
+// --- 🛡️ KALICI LOG SİSTEMİ ---
 window.loadLogs = async () => {
     try {
         const res = await fetch(`${API_URL}/logs`, { credentials: 'include' }).then(handleAuthError);
@@ -308,28 +308,34 @@ window.changeChartMode = (mode) => {
     renderSalesChart(allOrdersData, mode);
 };
 
-// --- 🛡️ 4. SİPARİŞ YÖNETİMİ ---
+// --- 🛡️ 4. SİPARİŞ YÖNETİMİ (REVIZE: ARCHIVE & RESTORE) ---
 window.loadOrders = async () => {
     try {
         const res = await fetch(`${API_URL}/orders`, { credentials: 'include' }).then(handleAuthError);
         if (!res) return;
         const orders = await res.json();
         allOrdersData = orders;
+
         const list = document.getElementById('admin-order-list');
+        const archivedList = document.getElementById('admin-archived-order-list');
+
         if (!list) return;
         list.innerHTML = "";
+        if (archivedList) archivedList.innerHTML = "";
+
         orders.forEach(o => {
             const rawMethod = o.paymentMethod ? o.paymentMethod.toUpperCase() : "K.A.";
             const payIcon = rawMethod.includes('KARTE') ? '💳' : (rawMethod.includes('PAYPAL') ? '🅿️' : '❓');
-            list.innerHTML += `
-                <tr class="order-row">
+
+            const rowHTML = `
+                <tr class="order-row ${o.isArchived ? 'opacity-50 grayscale' : ''}">
                     <td class="small text-muted">${new Date(o.date).toLocaleDateString('de-DE')}</td>
                     <td><strong class="customer-name">${o.customer.firstName} ${o.customer.lastName}</strong></td>
                     <td><button class="btn btn-sm btn-link p-0 fw-bold shadow-none" onclick="viewDetails('${o._id}')">Details</button></td>
                     <td><span class="badge bg-light text-dark border">${payIcon} ${rawMethod}</span></td>
                     <td class="fw-bold">${euro.format(o.totalAmount)}</td>
                     <td>
-                        <select class="form-select form-select-sm rounded-pill status-select" data-current="${o.status}" onchange="openStatusConfirmModal('${o._id}', this)">
+                        <select class="form-select form-select-sm rounded-pill status-select" data-current="${o.status}" onchange="openStatusConfirmModal('${o._id}', this)" ${o.isArchived ? 'disabled' : ''}>
                             <option value="Pending" ${o.status === 'Pending' ? 'selected' : ''}>⏳ Ausstehend</option>
                             <option value="Processing" ${o.status === 'Processing' ? 'selected' : ''}>⚙️ Bearbeitung</option>
                             <option value="Shipped" ${o.status === 'Shipped' ? 'selected' : ''}>🚚 Versandt</option>
@@ -337,16 +343,29 @@ window.loadOrders = async () => {
                             <option value="Cancelled" ${o.status === 'Cancelled' ? 'selected' : ''}>❌ Storniert</option>
                         </select>
                     </td>
-                    <td class="text-end pe-4"><button class="btn-delete" onclick="deleteOrder('${o._id}')">✕</button></td>
+                    <td class="text-end pe-4">
+                        ${o.isArchived
+                    ? `<button class="btn btn-sm btn-outline-success border-0" onclick="restoreOrder('${o._id}')" title="Wiederherstellen"><i class="fas fa-undo"></i></button>`
+                    : `<button class="btn-delete" onclick="deleteOrder('${o._id}')" title="Archivieren">✕</button>`
+                }
+                    </td>
                 </tr>`;
+
+            if (o.isArchived) {
+                if (archivedList) archivedList.innerHTML += rowHTML;
+            } else {
+                list.innerHTML += rowHTML;
+            }
         });
+
         calculateStats(orders);
         renderSalesChart(orders, currentChartMode);
         renderStatusChart(orders);
         calculateTopSellers(orders);
+
         const todayStr = new Date().toLocaleDateString();
         const todayCountEl = document.getElementById('today-order-count');
-        if (todayCountEl) todayCountEl.innerText = orders.filter(o => new Date(o.date).toLocaleDateString() === todayStr).length;
+        if (todayCountEl) todayCountEl.innerText = orders.filter(o => new Date(o.date).toLocaleDateString() === todayStr && !o.isArchived).length;
     } catch (err) { console.error("Sipariş Yükleme Hatası:", err); }
 };
 
@@ -372,8 +391,8 @@ document.getElementById('confirmStatusBtn')?.addEventListener('click', async () 
     const { id, status, selectEl } = pendingUpdate;
     if (!id) return;
     try {
-        const res = await fetch(`${API_URL}/orders/${id}`, {
-            method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        const res = await fetch(`${API_URL}/orders/${id}/status`, {
+            method: 'PATCH', headers: { 'Content-Type': 'application/json' },
             credentials: 'include', body: JSON.stringify({ status })
         }).then(handleAuthError);
         if (res && res.ok) {
@@ -388,16 +407,27 @@ document.getElementById('confirmStatusBtn')?.addEventListener('click', async () 
 });
 
 window.deleteOrder = async (id) => {
-    if (confirm("Möchten Sie diese Bestellung wirklich löschen?")) {
+    if (confirm("Möchten Sie diese Bestellung wirklich ins Archiv verschieben?")) {
         try {
             const res = await fetch(`${API_URL}/orders/${id}`, { method: 'DELETE', credentials: 'include' }).then(handleAuthError);
             if (res && res.ok) {
-                showLuxeAlert("Bestellung gelöscht", "success");
-                window.logActivity(`Bestellung #LB-${id.slice(-6).toUpperCase()} gelöscht`, currentUser, "Deleted");
+                showLuxeAlert("Bestellung archiviert", "success");
+                window.logActivity(`Bestellung archiviert`, currentUser, "Deleted");
                 await window.loadOrders();
             }
         } catch (err) { console.error(err); }
     }
+};
+
+window.restoreOrder = async (id) => {
+    try {
+        const res = await fetch(`${API_URL}/orders/${id}/restore`, { method: 'POST', credentials: 'include' }).then(handleAuthError);
+        if (res && res.ok) {
+            showLuxeAlert("Bestellung wiederhergestellt", "success");
+            window.logActivity(`Bestellung wiederhergestellt`, currentUser, "Success");
+            await window.loadOrders();
+        }
+    } catch (err) { console.error(err); }
 };
 
 window.viewDetails = async (id) => {
@@ -452,19 +482,13 @@ window.loadProducts = async () => {
         list.innerHTML = "";
 
         products.filter(p => p.isDeleted !== true).forEach(p => {
-            // 🛡️ REVIZE: 404 hatalarını önlemek için resim URL'sini encode ediyoruz
             let imgSrc;
             if (p.image) {
-                if (p.image.startsWith('http')) {
-                    imgSrc = p.image;
-                } else {
-                    imgSrc = `${UPLOADS_URL}/${encodeURIComponent(p.image)}`;
-                }
+                imgSrc = p.image.startsWith('http') ? p.image : `${UPLOADS_URL}/${encodeURIComponent(p.image)}`;
             } else {
                 imgSrc = 'https://placehold.co/150?text=No+Image';
             }
 
-            // 🛡️ REVIZE: İndirimli fiyat gösterimi
             let priceDisplay = p.oldPrice
                 ? `<div class="text-decoration-line-through text-muted small">${euro.format(p.oldPrice)}</div><div class="fw-bold text-gold">${euro.format(p.price)}</div>`
                 : `<div class="fw-bold">${euro.format(p.price)}</div>`;
@@ -583,11 +607,8 @@ document.getElementById('productForm')?.addEventListener('submit', async (e) => 
     const formData = new FormData();
     formData.append('name', document.getElementById('pName').value);
     formData.append('price', document.getElementById('pPrice').value);
-
-    // 🛡️ REVIZE: oldPrice verisi ekleniyor
     const oldPriceVal = document.getElementById('pOldPrice')?.value || "";
     formData.append('oldPrice', oldPriceVal);
-
     formData.append('stock', document.getElementById('pStock').value);
     formData.append('description', document.getElementById('pDesc').value);
     if (fileInput && fileInput.files[0]) formData.append('image', fileInput.files[0]);
@@ -614,11 +635,8 @@ window.editProduct = async (id) => {
     document.getElementById('pId').value = p._id;
     document.getElementById('pName').value = p.name;
     document.getElementById('pPrice').value = p.price;
-
-    // 🛡️ REVIZE: Düzenleme modunda oldPrice'ı kutucuğa çekiyoruz
     const oldPriceInput = document.getElementById('pOldPrice');
     if (oldPriceInput) oldPriceInput.value = p.oldPrice || "";
-
     document.getElementById('pStock').value = p.stock;
     document.getElementById('pDesc').value = p.description || "";
 
@@ -643,7 +661,7 @@ window.resetProductForm = () => {
 };
 
 function calculateStats(orders) {
-    const valid = orders.filter(o => o.status !== 'Cancelled');
+    const valid = orders.filter(o => o.status !== 'Cancelled' && !o.isArchived);
     const totalRev = valid.reduce((s, o) => s + o.totalAmount, 0);
     const aov = valid.length > 0 ? totalRev / valid.length : 0;
 
@@ -708,7 +726,7 @@ window.submitReply = async () => {
 };
 
 window.deleteReview = async (id) => {
-    if (confirm("Möchten Sie diese Rezension wirklich löschen?")) {
+    if (confirm("Möchten Sie diese Rezension gerçekten löschen?")) {
         await fetch(`${API_URL}/reviews/${id}`, { method: 'DELETE', credentials: 'include' }).then(handleAuthError);
         showLuxeAlert("Rezension gelöscht", "success");
         window.loadReviews();

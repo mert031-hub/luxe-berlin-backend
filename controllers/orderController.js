@@ -8,13 +8,11 @@ const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
  * Para iadesi ve stok iadesini tek noktadan yönetir.
  */
 async function processFullRefundAndStock(order) {
-    // 🛡️ ÇİFT İADE KORUMASI: Zaten iade edilmişse dur.
     if (order.paymentStatus === 'Refunded') {
         console.log(`⚠️ Sipariş zaten iade edilmiş: ${order.shortId}`);
         return;
     }
 
-    // 1. STRIPE İADESİ
     if (order.stripeSessionId && order.paymentStatus === 'Paid') {
         try {
             const session = await stripe.checkout.sessions.retrieve(order.stripeSessionId);
@@ -23,18 +21,14 @@ async function processFullRefundAndStock(order) {
                     payment_intent: session.payment_intent,
                     reason: 'requested_by_customer'
                 });
-                // Bellekteki nesneyi güncelle (Save çağrıldığında DB'ye yazılacak)
                 order.paymentStatus = 'Refunded';
                 console.log(`💰 Stripe İadesi Başarılı: ${order.shortId}`);
             }
         } catch (stripeErr) {
             console.error("❌ Stripe Refund Hatası:", stripeErr.message);
-            // Kritik: Ödeme hatası alsa bile stok iadesine devam edilebilir veya 
-            // operasyonel tercihe göre burada durulabilir.
         }
     }
 
-    // 2. STOKLARI GERİ YÜKLE
     for (const item of order.items) {
         if (item.productId) {
             await Product.findByIdAndUpdate(item.productId, { $inc: { stock: item.qty } });
@@ -49,7 +43,6 @@ exports.createOrder = async (req, res) => {
     try {
         const { customer, items, totalAmount, paymentMethod } = req.body;
 
-        // Stok Kontrolü
         for (const item of items) {
             const product = await Product.findById(item.productId);
             if (!product) return res.status(404).json({ message: "Produkt nicht gefunden." });
@@ -70,7 +63,6 @@ exports.createOrder = async (req, res) => {
 
         await newOrder.save();
 
-        // Stok Düşürme
         for (const item of items) {
             await Product.findByIdAndUpdate(item.productId, { $inc: { stock: -item.qty } });
         }
@@ -85,7 +77,7 @@ exports.createOrder = async (req, res) => {
 };
 
 /**
- * 2️⃣ STRIPE SESSION ID İLE SİPARİŞ GETİR (SENIOR BYPASS)
+ * 2️⃣ STRIPE SESSION ID İLE SİPARİŞ GETİR
  */
 exports.getOrderBySession = async (req, res) => {
     try {
@@ -93,7 +85,6 @@ exports.getOrderBySession = async (req, res) => {
         let order = await Order.findOne({ stripeSessionId: sessionId }).populate('items.productId');
         if (order) return res.json(order);
 
-        console.warn("⚠️ Webhook gecikti, Stripe üzerinden anlık oluşturuluyor...");
         const session = await stripe.checkout.sessions.retrieve(sessionId);
 
         if (session && session.payment_status === 'paid') {
@@ -133,11 +124,17 @@ exports.getOrderBySession = async (req, res) => {
 };
 
 /**
- * 3️⃣ TÜM SİPARİŞLERİ GETİR
+ * 3️⃣ TÜM SİPARİŞLERİ GETİR (ARŞİV DAHİL SON 3 AY)
  */
 exports.getAllOrders = async (req, res) => {
     try {
-        const orders = await Order.find().sort({ date: -1 }).populate('items.productId');
+        const threeMonthsAgo = new Date();
+        threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+
+        // Arşivlenmiş veya aktif farketmeksizin son 3 ayın tamamını çekiyoruz
+        const orders = await Order.find({
+            date: { $gte: threeMonthsAgo }
+        }).sort({ date: -1 }).populate('items.productId');
         res.json(orders);
     } catch (err) { res.status(500).json({ message: err.message }); }
 };
@@ -160,24 +157,22 @@ exports.getOrderById = async (req, res) => {
 };
 
 /**
- * 5️⃣ DURUM GÜNCELLEME (Admin Panel Fix)
+ * 5️⃣ DURUM GÜNCELLEME
  */
 exports.updateOrderStatus = async (req, res) => {
     try {
         const { status } = req.body;
-
-        // 🛡️ ATOMİK KONTROL: findOneAndUpdate ile yarış durumunu engelle
         const order = await Order.findOneAndUpdate(
             { _id: req.params.id, status: { $ne: "Cancelled" } },
             { $set: { status: status } },
-            { new: true } // Güncel halini alalım (çünkü aşağıda save() edeceğiz)
+            { new: true }
         ).populate('items.productId');
 
         if (!order) return res.status(400).json({ message: "Sipariş zaten iptal edilmiş veya bulunamadı." });
 
         if (status === "Cancelled") {
             await processFullRefundAndStock(order);
-            await order.save(); // Refunded statusünü ve durumu kalıcı yap
+            await order.save();
         }
 
         sendStatusEmail(order, status).catch(err => console.error("❌ Mail hatası:", err.message));
@@ -188,11 +183,10 @@ exports.updateOrderStatus = async (req, res) => {
 };
 
 /**
- * 6️⃣ SİPARİŞ İPTAL (Kullanıcı Tarafı - ATOMİK FIX)
+ * 6️⃣ SİPARİŞ İPTAL (Kullanıcı Tarafı)
  */
 exports.cancelOrder = async (req, res) => {
     try {
-        // 🛡️ ATOMİK KİLİT: Tek hamlede bul ve durumunu değiştir
         const order = await Order.findOneAndUpdate(
             {
                 _id: req.params.id,
@@ -202,32 +196,43 @@ exports.cancelOrder = async (req, res) => {
             { new: true }
         ).populate('items.productId');
 
-        if (!order) {
-            return res.status(400).json({ message: "Stornierung nicht möglich veya bereits storniert." });
-        }
+        if (!order) return res.status(400).json({ message: "Stornierung nicht möglich." });
 
-        // İade ve Stok Süreci
         await processFullRefundAndStock(order);
-        await order.save(); // paymentStatus: 'Refunded' bilgisini yaz
+        await order.save();
 
         sendStatusEmail(order, "Cancelled").catch(err => console.error("❌ İptal maili hatası:", err));
         res.json({ message: "Bestellung erfolgreich storniert.", success: true, order });
     } catch (err) {
-        console.error("❌ Cancel Error:", err.message);
         res.status(500).json({ message: "Serverfehler", error: err.message });
     }
 };
 
 /**
- * 7️⃣ SİPARİŞ SİLME / ARŞİVLEME
+ * 7️⃣ SİPARİŞİ LİSTEDEN KALDIR (SOFT DELETE / ARCHIVE)
+ * 🛡️ REVIZE: Siparişi silmez, sadece arşivler.
  */
 exports.deleteOrder = async (req, res) => {
     try {
-        await Order.findByIdAndDelete(req.params.id);
-        res.json({ message: "Sipariş silindi" });
+        const order = await Order.findByIdAndUpdate(req.params.id, { isArchived: true }, { new: true });
+        if (!order) return res.status(404).json({ message: "Bestellung nicht gefunden." });
+        res.json({ success: true, message: "Sipariş aktif listeden kaldırıldı." });
     } catch (err) { res.status(500).json({ message: "Hata" }); }
 };
 
+/**
+ * 8️⃣ SİPARİŞİ ARŞİVDEN GERİ GETİR (RESTORE)
+ * 🛡️ MÜHÜR: Yanlışlıkla silinen siparişi aktif listeye döndürür.
+ */
+exports.restoreOrder = async (req, res) => {
+    try {
+        const order = await Order.findByIdAndUpdate(req.params.id, { isArchived: false }, { new: true });
+        if (!order) return res.status(404).json({ message: "Bestellung nicht gefunden." });
+        res.json({ success: true, message: "Sipariş başarıyla geri getirildi!" });
+    } catch (err) { res.status(500).json({ message: err.message }); }
+};
+
+// Eski archiveOrder metodunu uyumluluk için koruyoruz
 exports.archiveOrder = async (req, res) => {
     try {
         await Order.findByIdAndUpdate(req.params.id, { isArchived: true });

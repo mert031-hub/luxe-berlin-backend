@@ -9,7 +9,6 @@ const OrderSchema = new mongoose.Schema({
     shortId: { type: String, unique: true, required: true },
 
     // 🛡️ Stripe tarafındaki oturum ID'si (Success sayfası sorguları için)
-    // Uyarıyı önlemek için buradaki "index: true" kaldırıldı, en altta manuel olarak eklendi.
     stripeSessionId: { type: String },
 
     customer: {
@@ -41,21 +40,17 @@ const OrderSchema = new mongoose.Schema({
     status: { type: String, default: 'Pending' },
 
     date: { type: Date, default: Date.now },
+
+    // 🛡️ MÜHÜR: Silinen siparişlerin kurtarılması için arşiv mantığı
     isArchived: { type: Boolean, default: false }
 });
 
 // --- 🚀 BACKEND OPTİMİZASYONU (İNDEKSLER) ---
 
-// Müşteri e-postası ile hızlı sorgulama (Müşteri geçmişi analitiği için)
 OrderSchema.index({ "customer.email": 1 });
-
-// Sipariş durumu filtrelemeleri (Admin Panel hızı için)
 OrderSchema.index({ status: 1 });
-
-// En yeni siparişleri en üstte getirmek için hızlı sıralama
 OrderSchema.index({ date: -1 });
-
-// 🛡️ KRİTİK: Success sayfasındaki 'by-session' sorgusunun milisaniyeler içinde bitmesi için.
 OrderSchema.index({ stripeSessionId: 1 });
+OrderSchema.index({ isArchived: 1 }); // Arşiv sorguları için hızlandırma
 
 module.exports = mongoose.model('Order', OrderSchema);

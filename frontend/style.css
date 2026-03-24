@@ -245,7 +245,7 @@ body.dark-mode .bg-light {
   position: absolute;
   top: 15px;
   left: 15px;
-  z-index: 10;
+  z-index: 9;
   padding: 6px 14px;
   font-size: 0.65rem;
   font-weight: 700;
@@ -257,20 +257,21 @@ body.dark-mode .bg-light {
   letter-spacing: 0.5px;
 }
 
-/* 🛡️ SALE BADGE: İndirimli ürünlerde sağ üstte çıkar */
+/* 🛡️ SALE TAG REVIZE - DAHA TOK BİR KIRMIZI */
 .sale-tag {
   position: absolute;
   top: 15px;
   right: 15px;
-  background: #e74c3c;
+  background: #d63031;
   color: white;
-  padding: 4px 12px;
+  padding: 5px 12px;
   border-radius: 4px;
-  font-size: 0.65rem;
+  font-size: 0.6rem;
   font-weight: 800;
   z-index: 10;
-  box-shadow: 0 4px 10px rgba(231, 76, 60, 0.3);
-  letter-spacing: 0.5px;
+  box-shadow: 0 4px 15px rgba(214, 48, 49, 0.3);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
 }
 
 /* GÖRSEL KUTUSU */
@@ -305,13 +306,27 @@ body.dark-mode .product-img-box {
   font-size: 1.25rem;
 }
 
-/* 🛡️ SALE PRICE DESIGN: Üstü çizili eski fiyat stili */
+/* 🛡️ SALE PRICE DESIGN: Üstü çizili eski fiyat stili - ESTETİK DOKUNUŞ */
+.price-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  margin-top: 5px;
+}
+
 .old-price {
   text-decoration: line-through;
-  color: var(--text-muted);
-  font-size: 0.9rem;
-  opacity: 0.6;
-  margin-bottom: -2px;
+  color: #a0a0a0 !important;
+  font-size: 0.85rem;
+  font-weight: 400;
+  opacity: 0.7;
+  margin-bottom: -3px;
+}
+
+.price.text-gold {
+  font-size: 1.35rem;
 }
 
 /* TESTIMONIALS */
@@ -395,7 +410,6 @@ body.dark-mode .product-img-box {
 #luxeModal .btn-close:hover {
   transform: rotate(90deg) scale(1.1);
   background-color: var(--gold-hover);
-  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23ffffff'%3e%3cpath d='M.293.293a1 1 0 0 1 1.414 0L8 6.586 14.293.293a1 1 0 1 1 1.414 1.414L9.414 8l6.293 6.293a1 1 0 0 1-1.414 1.414L8 9.414l-6.293 6.293a1 1 0 0 1-1.414-1.414L6.586 8 .293 1.707a1 1 0 0 1 0-1.414z'/%3e%3c/svg%3e") !important;
 }
 
 .modal-split-body {
@@ -952,6 +966,10 @@ body.dark-mode .payment-brand-grid:hover {
     font-size: 1rem !important;
   }
 
+  .price.text-gold {
+    font-size: 1.15rem !important;
+  }
+
   .product-card::after {
     font-size: 0.5rem !important;
     padding: 6px 12px !important;
@@ -959,8 +977,8 @@ body.dark-mode .payment-brand-grid:hover {
 
   /* 🛡️ SALE SYSTEM MOBILE ADJUSTMENTS */
   .sale-tag {
-    padding: 2px 6px !important;
-    font-size: 0.55rem !important;
+    padding: 3px 8px !important;
+    font-size: 0.5rem !important;
     top: 10px !important;
     right: 10px !important;
   }

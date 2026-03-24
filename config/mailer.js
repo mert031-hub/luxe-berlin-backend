@@ -2,6 +2,9 @@ const { Resend } = require("resend");
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
+// 🛡️ KOÇYİĞİT GmbH - PATRON BİLDİRİM AYARI
+const ADMIN_EMAIL = 'kocyigit.trade@gmail.com';
+
 /**
  * Sipariş durumuna göre mail gönderen servis.
  * 🛡️ REBRANDING: KOÇYİĞİT GmbH mühürlendi.
@@ -17,7 +20,7 @@ async function sendStatusEmail(order, newStatus) {
     let statusLabel = "Bestell-Update";
     const status = newStatus ? newStatus.toLowerCase() : "";
 
-    // 🛡️ REBRANDING: KOÇYİĞİT GmbH
+    // Durum Belirleme
     if (status === "pending" || status === "eingegangen") {
         subject = `Bestellbestätigung - KOÇYİĞİT GmbH #${order.shortId}`;
         statusLabel = "Bestellbestätigung";
@@ -70,7 +73,8 @@ async function sendStatusEmail(order, newStatus) {
     }).join('');
 
     try {
-        const data = await resend.emails.send({
+        // --- 1. MÜŞTERİYE GİDEN LÜKS MAİL ---
+        await resend.emails.send({
             from: "KOÇYİĞİT GmbH <noreply@kocyigit-trade.com>",
             to: [order.customer.email],
             subject: subject,
@@ -101,7 +105,6 @@ async function sendStatusEmail(order, newStatus) {
                         <div class="status-badge">${statusLabel}</div>
                         <h2 style="margin-top: 0; font-size: 22px;">Hallo ${order.customer.firstName},</h2>
                         <div class="message-box">${message}</div>
-                        
                         <div style="margin-bottom: 10px; font-size: 12px; color: #a0aec0; font-weight: 700;">BESTELLÜBERSICHT</div>
                         <table class="order-table">
                             ${itemsHTML}
@@ -112,15 +115,12 @@ async function sendStatusEmail(order, newStatus) {
                                 </td>
                             </tr>
                         </table>
-
                         <div class="address-box">
                             <span style="font-size: 12px; color: #a0aec0; font-weight: 700;">LIEFERADRESSE</span>
                             <div style="font-weight: 600; font-size: 15px; margin-top: 5px;">${order.customer.firstName} ${order.customer.lastName}</div>
                             <div style="font-size: 14px; color: #4a5568;">${order.customer.address}</div>
                         </div>
-
                         <a href="https://kocyigit-trade.com/track.html?id=${order.shortId}" class="btn">BESTELLUNG VERFOLGEN</a>
-                        
                         <div style="margin-top: 30px; font-size: 11px; color: #cbd5e0; text-align: center;">Bestell-ID: #${order.shortId}</div>
                     </div>
                     <div class="footer">
@@ -131,7 +131,39 @@ async function sendStatusEmail(order, newStatus) {
             </html>
             `
         });
-        console.log("📧 Resend Yanıtı:", data?.id);
+
+        // --- 2. PATRONA GİDEN BİLDİRİM MAİLİ (SADECE YENİ SİPARİŞLERDE) ---
+        if (status === "pending" || status === "eingegangen") {
+            await resend.emails.send({
+                from: "SİSTEM BİLDİRİMİ <noreply@kocyigit-trade.com>",
+                to: [ADMIN_EMAIL],
+                subject: `⚠️ NEUE BESTELLUNG ERHALTEN! #${order.shortId}`,
+                html: `
+                <div style="background-color: #f8f8f8; padding: 25px; border: 2px solid #c5a059; font-family: sans-serif;">
+                    <h2 style="color: #1c2541; margin-top: 0;">Patron, Yeni Siparişin Var!</h2>
+                    <p>Az önce bir satış mühürlendi. İşte detaylar:</p>
+                    <hr style="border: 0; border-top: 1px solid #ddd;">
+                    <p><strong>Müşteri:</strong> ${order.customer.firstName} ${order.customer.lastName}</p>
+                    <p><strong>Email:</strong> ${order.customer.email}</p>
+                    <p><strong>Telefon:</strong> ${order.customer.phone || 'Belirtilmedi'}</p>
+                    <p><strong>Adres:</strong> ${order.customer.address}</p>
+                    <hr style="border: 0; border-top: 1px solid #ddd;">
+                    <h4 style="margin-bottom: 10px;">Ürünler:</h4>
+                    <table style="width: 100%; font-size: 14px;">
+                        ${itemsHTML}
+                    </table>
+                    <h3 style="color: #198754; text-align: right; margin-top: 20px;">
+                        Toplam Kazanç: ${new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(order.totalAmount)}
+                    </h3>
+                    <div style="text-align: center; margin-top: 20px;">
+                        <a href="https://kocyigit-trade.com/admin.html" style="background: #1c2541; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Admin Paneline Git</a>
+                    </div>
+                </div>
+                `
+            });
+            console.log(`🚀 Patron bildirimi gönderildi: ${order.shortId}`);
+        }
+
     } catch (err) {
         console.error("❌ Mail servis hatası:", err.message);
     }
