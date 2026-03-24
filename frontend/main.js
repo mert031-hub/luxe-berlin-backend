@@ -1,8 +1,8 @@
 /**
- * LUXE BERLIN - CORE JAVASCRIPT (ULTRA STABLE V13)
+ * KOÇYİĞİT GmbH - CORE JAVASCRIPT (ULTRA STABLE V14 - MÜHÜRLÜ)
  * Tüm özellikler: Ürün Sınırı (9 Ürün), Sepet Onarımı, Miktar Koruması, 1 Yorum Sınırı, 
- * Karakter Sayacı, İsim Sınırı (50 Karakter), Küfür Filtresi Onarımı ve Yukarı Çık Butonu.
- * REVIZE: Veritabanı tabanlı kalıcı sıralama (orderIndex) entegre edildi.
+ * Karakter Sayacı, İsim Sınırı (50 Karakter), Küfür Filtresi ve Üstü Çizili Fiyat Sistemi.
+ * REVIZE: Veritabanı tabanlı kalıcı sıralama (orderIndex) ve SALE etiketi entegre edildi.
  */
 
 // --- GLOBAL DEĞİŞKENLER ---
@@ -12,14 +12,18 @@ const euro = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR'
 let selectedProduct = null, currentQty = 1;
 
 // ÜRÜN VE YORUM GÖSTERİM SINIRLARI
-let shownProductsCount = 9; // Başlangıçta 9 ürün gösterilecek
+let shownProductsCount = 9;
 let shownReviewsCount = 6;
 let testimonials = [];
 
 const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
     ? 'http://localhost:5000/api'
     : '/api';
-const UPLOADS_URL = '';
+
+// 🛡️ REVIZE: 404 Resim hatalarını önlemek için klasör yolunu mühürledik
+const UPLOADS_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    ? 'http://localhost:5000/uploads'
+    : '/uploads';
 
 const badWords = ["küfür1", "küfür2", "argo1", "argo2", "idiot", "badword", "scheiße"];
 
@@ -29,7 +33,7 @@ function showLuxeAlert(message, type = 'success') {
     if (!container) return;
 
     const toast = document.createElement('div');
-    toast.className = 'luxe-toast';
+    toast.className = `luxe-toast ${type}`;
     const icon = type === 'success' ? 'fa-check-circle' : 'fa-exclamation-triangle';
 
     toast.innerHTML = `
@@ -73,19 +77,18 @@ async function fetchProducts() {
         const response = await fetch(`${API_URL}/products`);
         const data = await response.json();
 
-        // REVIZE: Gelen veriyi orderIndex'e göre sıralıyoruz (Küçükten büyüğe)
-        // Eğer orderIndex yoksa (eski ürünler), onları listenin sonuna atıyoruz.
         const sortedData = data.sort((a, b) => (a.orderIndex ?? 999) - (b.orderIndex ?? 999));
 
         products = sortedData.filter(p => p.isDeleted !== true).map(p => ({
             id: p._id,
             name: p.name,
             price: p.price,
+            oldPrice: p.oldPrice || null, // 🛡️ SALE SYSTEM: Veritabanından eski fiyatı çekiyoruz
             stock: p.stock || 0,
             tag: p.tag || (p.stock <= 0 ? "Ausverkaft" : "Neu"),
             img: p.image ? (p.image.startsWith('http') ? p.image : `${UPLOADS_URL}/${p.image}`) : 'https://via.placeholder.com/400',
             description: p.description || "",
-            orderIndex: p.orderIndex // Sıralama bilgisini saklıyoruz
+            orderIndex: p.orderIndex
         }));
 
         renderProducts(products);
@@ -101,8 +104,6 @@ function renderProducts(listToDisplay) {
     if (!grid) return;
 
     cart = JSON.parse(localStorage.getItem('luxeCartArray')) || [];
-
-    // ÜRÜNLERİ SINIRLI GÖSTER
     const listToShow = listToDisplay.slice(0, shownProductsCount);
 
     grid.innerHTML = listToShow.map(p => {
@@ -110,20 +111,30 @@ function renderProducts(listToDisplay) {
         const avail = p.stock - inCart;
         const tagClass = (p.tag === "Ausverkaft" || avail <= 0) ? 'tag-dark' : 'tag-danger';
 
+        // 🛡️ SALE SYSTEM: Eğer oldPrice varsa arayüzde göster
+        const priceHtml = p.oldPrice
+            ? `<div class="price-container">
+                 <span class="old-price">${euro.format(p.oldPrice)}</span>
+                 <span class="price text-gold">${euro.format(p.price)}</span>
+               </div>`
+            : `<span class="price">${euro.format(p.price)}</span>`;
+
+        const saleTag = p.oldPrice ? `<span class="sale-tag">SALE</span>` : '';
+
         return `
             <div class="col-12 col-md-6 col-lg-4">
                 <div class="product-card shadow-sm" data-bs-toggle="modal" data-bs-target="#luxeModal" onclick="setupModal('${p.id}')">
+                    ${saleTag}
                     ${p.tag ? `<span class="product-tag ${tagClass}">${p.tag}</span>` : ''}
                     <div class="product-img-box"><img src="${p.img}" alt="${p.name}" loading="lazy"></div>
                     <div class="product-info p-4 text-center">
                         <h3 class="h5 mb-2" style="font-family:'Playfair Display';">${p.name}</h3>
-                        <span class="price">${euro.format(p.price)}</span>
+                        ${priceHtml}
                     </div>
                 </div>
             </div>`;
     }).join('');
 
-    // Buton görünürlük kontrolü
     if (showMoreProductsWrapper) {
         showMoreProductsWrapper.style.display = listToDisplay.length > shownProductsCount ? "block" : "none";
     }
@@ -134,7 +145,7 @@ window.filterProducts = function () {
     const filtered = products.filter(p =>
         p.name.toLowerCase().includes(term) || p.description.toLowerCase().includes(term)
     );
-    shownProductsCount = 9; // Arama yapılınca listeyi sıfırla
+    shownProductsCount = 9;
     renderProducts(filtered);
 }
 
@@ -214,7 +225,6 @@ document.addEventListener('click', function (e) {
         shownReviewsCount += 6;
         initTestimonials();
     }
-    // Ürünleri Daha Fazla Göster Buton Tetikleyicisi
     if (e.target && e.target.id === 'showMoreProductsBtn') {
         shownProductsCount += 9;
         renderProducts(products);
@@ -278,6 +288,17 @@ window.setupModal = function (id) {
     const qtyInput = document.getElementById('qtyInput');
     document.getElementById('mImg').src = selectedProduct.img;
     document.getElementById('mTitle').innerText = selectedProduct.name;
+
+    // 🛡️ REVIZE: Modal içindeki fiyat alanı oldPrice mühürlemesi
+    const oldPriceEl = document.getElementById('mOldPriceDisplay');
+    if (oldPriceEl) {
+        if (selectedProduct.oldPrice) {
+            oldPriceEl.innerText = euro.format(selectedProduct.oldPrice);
+            oldPriceEl.style.display = "block";
+        } else {
+            oldPriceEl.style.display = "none";
+        }
+    }
 
     if (qtyInput) {
         qtyInput.onfocus = function () { this.select(); };

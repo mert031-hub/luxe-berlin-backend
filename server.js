@@ -1,7 +1,7 @@
 /**
- * LUXE BERLIN - OFFICIAL BACKEND SERVER (ULTRA STABLE & FAST)
+ * KOÇYİĞİT GmbH - OFFICIAL BACKEND SERVER (ULTRA STABLE V13)
  * OPTİMİZASYON: Gzip/Brotli Sıkıştırma, Static Caching ve DNS Önceliği.
- * GÜVENLİK: Global Exception Handlers ve Stripe Webhook İmza Doğrulaması.
+ * 🛡️ REVIZE: Apple Pay (.well-known) Desteği ve Resim Erişimi Mühürlendi.
  */
 
 require('dotenv').config();
@@ -32,18 +32,16 @@ dns.setDefaultResultOrder('ipv4first');
 const app = express();
 
 // --- ⚡ HIZ VE PERFORMANS ---
-
-// 1. Gzip Sıkıştırma: Veri boyutunu düşürür.
 app.use(compression());
 
-// 2. Static Caching: Statik dosyalar için 1 günlük tarayıcı önbelleği.
+// 🛡️ REVIZE: Statik dosya ayarları (Apple Pay ve Resimler için)
 const staticOptions = {
     maxAge: '1d',
-    etag: true
+    etag: true,
+    dotfiles: 'allow' // 🍎 Apple Pay (.well-known) için kritik izin!
 };
 
-// --- STRIPE WEBHOOK (DİKKAT: JSON'dan ÖNCE OLMALI) ---
-// Stripe imza doğrulaması için gövdenin (body) ham/raw formatta olması gerekir.
+// --- STRIPE WEBHOOK (JSON'dan ÖNCE OLMALI) ---
 app.post('/api/payment/webhook', express.raw({ type: 'application/json' }), paymentController.stripeWebhook);
 
 // --- STANDART MIDDLEWARE ---
@@ -54,21 +52,10 @@ app.set('trust proxy', 1);
 // --- VERİTABANI ---
 connectDB();
 
-// 🛡️ DSGVO/GDPR ZAMANLAYICI (Her gece 03:00'te temizlik yapar)
+// 🛡️ DSGVO/GDPR ZAMANLAYICI
 cron.schedule('0 3 * * *', () => {
     console.log("🕒 GDPR-Bereinigung wird gestartet...");
     runGdprCleanup();
-});
-
-// --- REQUEST LOGGING ---
-app.use((req, res, next) => {
-    const ignoreExtensions = ['.css', '.js', '.png', '.jpg', '.jpeg', '.svg', '.json', '.ico', '.map'];
-    const isStaticFile = ignoreExtensions.some(ext => req.url.toLowerCase().endsWith(ext));
-
-    if (!isStaticFile) {
-        console.log(`[${new Date().toISOString()}] ${req.method} ${req.originalUrl}`);
-    }
-    next();
 });
 
 // --- CORS AYARLARI ---
@@ -78,13 +65,20 @@ app.use(cors({
         'https://www.kocyigit-trade.com',
         'http://localhost:5173',
         'http://localhost:5000',
-        'http://127.0.0.1:5500'
+        'http://127.0.0.1:5500',
+        'http://localhost:5500'
     ],
     credentials: true
 }));
 
-// --- STATIC ASSETS ---
-app.use('/uploads', express.static(path.join(__dirname, 'uploads'), staticOptions));
+// --- 🖼️ STATIC ASSETS (REVIZE EDİLDİ) ---
+// 1. Resim klasörünü dışarı aç
+app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
+    maxAge: '0', // Resimlerde güncelleme anında görünsün diye cache'i sıfırladık
+    etag: true
+}));
+
+// 2. Frontend dosyalarını dışarı aç (.well-known izni dahil)
 app.use(express.static(path.join(__dirname, 'frontend'), staticOptions));
 
 // --- ROUTES ---
@@ -109,11 +103,12 @@ app.get('/api-status', (req, res) => {
 
 // --- 404 HANDLER ---
 app.use((req, res) => {
-    res.status(404);
-    if (req.accepts('html')) {
-        return res.sendFile(path.join(__dirname, 'frontend', '404.html'));
+    // Eğer istek /api ile başlıyorsa ve bulunamadıysa JSON dön
+    if (req.url.startsWith('/api')) {
+        return res.status(404).json({ success: false, message: "API-Endpunkt nicht gefunden." });
     }
-    res.json({ success: false, message: "Ressource nicht gefunden." });
+    // Değilse 404 sayfasını gönder
+    res.status(404).sendFile(path.join(__dirname, 'frontend', '404.html'));
 });
 
 // --- GLOBAL ERROR HANDLER ---
@@ -132,7 +127,7 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
     console.log("--------------------------------------------------");
-    console.log(`🚀 LUXE BERLIN SERVER AKTIV AUF PORT: ${PORT}`);
-    console.log(`⚡ Performance: Kompression & Caching aktiv`);
+    console.log(`🚀 KOÇYİĞİT SERVER AKTIV AUF PORT: ${PORT}`);
+    console.log(`⚡ Statik dosyalar ve Apple Pay erişimi mühürlendi.`);
     console.log("--------------------------------------------------");
 });

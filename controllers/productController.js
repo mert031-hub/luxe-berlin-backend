@@ -1,14 +1,15 @@
 const Product = require('../models/Product');
+const path = require('path');
 
 /**
- * LUXE BERLIN - PRODUCT CONTROLLER (V12 MASTER)
- * REVIZE: Arşivleme sistemi onarıldı ve getAllProducts esnekleştirildi.
+ * KOÇYİĞİT GmbH - PRODUCT CONTROLLER (V13 MASTER - MÜHÜRLÜ)
+ * 🛡️ REVIZE: oldPrice desteği eklendi.
+ * 🛡️ FIX: 404 Resim hataları ve Path sorunları giderildi.
  */
 
 // 1. TÜM ÜRÜNLERİ GETİR
 exports.getAllProducts = async (req, res) => {
     try {
-        // REVIZE: Eğer sorguda ?includeDeleted=true varsa tümünü, yoksa sadece aktifleri getir
         const includeDeleted = req.query.includeDeleted === 'true';
         const filter = includeDeleted ? {} : { isDeleted: false };
 
@@ -59,8 +60,10 @@ exports.getProductById = async (req, res) => {
 // 4. YENİ ÜRÜN OLUŞTUR
 exports.createProduct = async (req, res) => {
     try {
-        const { name, price, stock, description } = req.body;
-        const imageUrl = req.file ? req.file.path : null;
+        const { name, price, oldPrice, stock, description } = req.body;
+
+        // 🛡️ FIX: Sadece dosya adını kaydediyoruz (404 hatasını önlemek için)
+        const imageUrl = req.file ? path.basename(req.file.path) : null;
 
         if (!name || !price) {
             return res.status(400).json({ success: false, message: "Name und Preis sind erforderlich" });
@@ -72,6 +75,7 @@ exports.createProduct = async (req, res) => {
         const newProduct = new Product({
             name,
             price,
+            oldPrice: oldPrice || null, // 🛡️ YENİ: İndirimli fiyat desteği
             stock: stock || 0,
             description,
             image: imageUrl,
@@ -89,11 +93,20 @@ exports.createProduct = async (req, res) => {
 // 5. ÜRÜN GÜNCELLE
 exports.updateProduct = async (req, res) => {
     try {
-        const { name, price, stock, description } = req.body;
-        const updateData = { name, price, stock, description };
+        const { name, price, oldPrice, stock, description } = req.body;
 
+        // Mevcut verileri hazırla
+        const updateData = {
+            name,
+            price,
+            oldPrice: oldPrice || null, // 🛡️ YENİ: İndirimli fiyat güncelleniyor
+            stock,
+            description
+        };
+
+        // 🛡️ FIX: Resim güncellenirse sadece dosya adını al
         if (req.file) {
-            updateData.image = req.file.path;
+            updateData.image = path.basename(req.file.path);
         }
 
         const product = await Product.findByIdAndUpdate(req.params.id, updateData, { new: true });
@@ -104,6 +117,7 @@ exports.updateProduct = async (req, res) => {
 
         res.status(200).json({ success: true, product });
     } catch (err) {
+        console.error("UpdateProduct Error:", err);
         res.status(500).json({ success: false, message: "Fehler beim Aktualisieren: " + err.message });
     }
 };
@@ -111,7 +125,6 @@ exports.updateProduct = async (req, res) => {
 // 6. ÜRÜN ARŞİVLE (Soft Delete)
 exports.deleteProduct = async (req, res) => {
     try {
-        // REVIZE: Ürünü tamamen silmiyoruz, sadece isDeleted mühürü vuruyoruz
         const product = await Product.findByIdAndUpdate(req.params.id, { isDeleted: true }, { new: true });
         if (!product) {
             return res.status(404).json({ success: false, message: "Produkt nicht gefunden" });
@@ -125,7 +138,6 @@ exports.deleteProduct = async (req, res) => {
 // 7. ÜRÜN GERİ GETİR (Restore)
 exports.restoreProduct = async (req, res) => {
     try {
-        // REVIZE: isDeleted mühürünü kaldırıyoruz
         const product = await Product.findByIdAndUpdate(req.params.id, { isDeleted: false }, { new: true });
         if (!product) {
             return res.status(404).json({ success: false, message: "Produkt nicht gefunden" });

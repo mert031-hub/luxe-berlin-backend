@@ -202,7 +202,7 @@ body.dark-mode .bg-light {
   z-index: 5;
 }
 
-/* ÜRÜN KARTLARI - FIX: TAŞMA VE HİZALAMA DÜZENLENDİ */
+/* ÜRÜN KARTLARI */
 .product-card {
   border: 1px solid var(--border-color);
   border-radius: 12px;
@@ -257,7 +257,23 @@ body.dark-mode .bg-light {
   letter-spacing: 0.5px;
 }
 
-/* GÖRSEL KUTUSU - FIX: TÜM RESİMLERİ SIKIŞTIRMADAN SIĞDIRIR */
+/* 🛡️ SALE BADGE: İndirimli ürünlerde sağ üstte çıkar */
+.sale-tag {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: #e74c3c;
+  color: white;
+  padding: 4px 12px;
+  border-radius: 4px;
+  font-size: 0.65rem;
+  font-weight: 800;
+  z-index: 10;
+  box-shadow: 0 4px 10px rgba(231, 76, 60, 0.3);
+  letter-spacing: 0.5px;
+}
+
+/* GÖRSEL KUTUSU */
 .product-img-box {
   height: 320px;
   overflow: hidden;
@@ -282,10 +298,20 @@ body.dark-mode .product-img-box {
 .product-card:hover .product-img-box img {
   transform: scale(1.08);
 }
+
 .price {
   color: var(--gold);
   font-weight: 700;
   font-size: 1.25rem;
+}
+
+/* 🛡️ SALE PRICE DESIGN: Üstü çizili eski fiyat stili */
+.old-price {
+  text-decoration: line-through;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  opacity: 0.6;
+  margin-bottom: -2px;
 }
 
 /* TESTIMONIALS */
@@ -347,7 +373,7 @@ body.dark-mode .product-img-box {
   color: var(--text-main);
 }
 
-/* --- MODAL ÇIKIŞ BUTONU (X) REVIZE --- */
+/* --- MODAL ÇIKIŞ BUTONU (X) --- */
 #luxeModal .btn-close {
   background: var(--midnight)
     url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23c5a059'%3e%3cpath d='M.293.293a1 1 0 0 1 1.414 0L8 6.586 14.293.293a1 1 0 1 1 1.414 1.414L9.414 8l6.293 6.293a1 1 0 0 1-1.414 1.414L8 9.414l-6.293 6.293a1 1 0 0 1-1.414-1.414L6.586 8 .293 1.707a1 1 0 0 1 0-1.414z'/%3e%3c/svg%3e")
@@ -602,7 +628,7 @@ body.dark-mode .payment-brand-grid:hover {
   opacity: 0.9;
 }
 
-/* 🏛️ KOMPAKT FOOTER (FIX: SEPET ENGELİ KALDIRILDI) */
+/* 🏛️ KOMPAKT FOOTER */
 .luxe-footer {
   background-color: var(--bg-secondary) !important;
   border-top: 1px solid var(--border-color);
@@ -640,7 +666,7 @@ body.dark-mode .payment-brand-grid:hover {
   width: 100%;
 }
 
-/* WHATSAPP & BACK TO TOP (FIX: KATMANLI YAPI) */
+/* WHATSAPP & BACK TO TOP */
 .luxe-whatsapp-float {
   position: fixed;
   bottom: 115px;
@@ -754,7 +780,7 @@ body.dark-mode .payment-brand-grid:hover {
   font-weight: 500;
 }
 
-/* ⏳ PRELOADER (SENIOR RESPONSIVE FIX - GÜNCELLENDİ) */
+/* ⏳ PRELOADER (SENIOR RESPONSIVE FIX) */
 #preloader {
   position: fixed;
   top: 0;
@@ -775,7 +801,7 @@ body.dark-mode .payment-brand-grid:hover {
 .preloader-content {
   text-align: center;
   width: 90%;
-  max-width: 500px; /* Hizalamayı garantiler */
+  max-width: 500px;
   margin: 0 auto;
 }
 
@@ -793,7 +819,7 @@ body.dark-mode .payment-brand-grid:hover {
   display: flex;
   flex-wrap: wrap; /* Gerekirse alt satıra geçer */
   justify-content: center;
-  animation: luxeFadePulse 2s ease-in-out infinite;
+  animation: luxeFadePulse 2.5s ease-in-out infinite;
   max-width: 100%; /* Taşmayı önler */
 }
 
@@ -808,11 +834,11 @@ body.dark-mode .payment-brand-grid:hover {
 .preloader-bar::after {
   content: "";
   display: block;
-  width: 40px;
+  width: 60px;
   height: 100%;
   background: var(--gold);
   position: absolute;
-  left: -40px;
+  left: -60px;
   animation: loadingSlide 1.5s infinite ease-in-out;
 }
 .preloader-text {
@@ -894,9 +920,9 @@ body.dark-mode .payment-brand-grid:hover {
   line-height: 1.5;
 }
 
-/* 📱 MOBILE PRODUCT GRID FIX (image_6944c2.jpg ÇÖZÜMÜ) */
+/* 📱 MOBILE PRODUCT GRID FIX */
 @media (max-width: 576px) {
-  /* Ürün kartlarını yan yana 2 tane yapar (Daha profesyonel görünüm) */
+  /* Ürün kartlarını yan yana 2 tane yapar */
   .row-cols-1 {
     display: flex !important;
     flex-wrap: wrap !important;
@@ -929,5 +955,16 @@ body.dark-mode .payment-brand-grid:hover {
   .product-card::after {
     font-size: 0.5rem !important;
     padding: 6px 12px !important;
+  }
+
+  /* 🛡️ SALE SYSTEM MOBILE ADJUSTMENTS */
+  .sale-tag {
+    padding: 2px 6px !important;
+    font-size: 0.55rem !important;
+    top: 10px !important;
+    right: 10px !important;
+  }
+  .old-price {
+    font-size: 0.75rem !important;
   }
 }

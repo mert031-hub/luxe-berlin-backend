@@ -1,13 +1,13 @@
 /**
- * KOÇYİĞİT GmbH - MASTER ADMIN JAVASCRIPT (V12 ULTIMATE REORDER)
+ * KOÇYİĞİT GmbH - MASTER ADMIN JAVASCRIPT (V13 ULTIMATE - MÜHÜRLÜ)
  * ---------------------------------------------------------------
  * - HARDENED SECURITY: HttpOnly Cookie tabanlı oturum yönetimi.
  * - ANALYTICS V2: Çift eksenli (Umsatz & Volumen) Çizgi Grafik.
  * - OPERATIONAL INTEL: Sipariş Durum Pastası (Doughnut Chart).
  * - INVENTORY RADAR: Kritik Stok Uyarı Sistemi.
  * - SALES ENGINE: Top-Seller ürün analizi ve AOV hesaplama.
- * - DATA EXPORT: CSV formatında sipariş raporlama.
  * - REORDER ENGINE: SortableJS ile kalıcı veritabanı sıralaması.
+ * - SALE SYSTEM: Streichpreis (Eski Fiyat) & Resim Fix entegre edildi.
  */
 
 // --- GLOBAL DEĞİŞKENLER ---
@@ -40,7 +40,12 @@ const API_URL = window.location.hostname === 'localhost' || window.location.host
     : 'https://kocyigit-trade.com/api';
 
 const API = API_URL;
-const UPLOADS_URL = '';
+
+// 🛡️ REVIZE: 404 Resim hatalarını önlemek için uploads yolu mühürlendi
+const UPLOADS_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    ? 'http://localhost:5000/uploads'
+    : '/uploads';
+
 const euro = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' });
 
 // --- 💡 LUXE TOAST BİLDİRİM SİSTEMİ ---
@@ -340,7 +345,8 @@ window.loadOrders = async () => {
         renderStatusChart(orders);
         calculateTopSellers(orders);
         const todayStr = new Date().toLocaleDateString();
-        document.getElementById('today-order-count').innerText = orders.filter(o => new Date(o.date).toLocaleDateString() === todayStr).length;
+        const todayCountEl = document.getElementById('today-order-count');
+        if (todayCountEl) todayCountEl.innerText = orders.filter(o => new Date(o.date).toLocaleDateString() === todayStr).length;
     } catch (err) { console.error("Sipariş Yükleme Hatası:", err); }
 };
 
@@ -394,7 +400,6 @@ window.deleteOrder = async (id) => {
     }
 };
 
-// 🛡️ KRİTİK: SİPARİŞ DETAY MODALI
 window.viewDetails = async (id) => {
     const o = allOrdersData.find(item => item._id === id);
     if (!o) return;
@@ -435,7 +440,7 @@ window.viewDetails = async (id) => {
     }
 };
 
-// --- 🛡️ 5. ÜRÜN YÖNETİMİ (REVIZE: Sürükleme Tutamağı ve Kalıcı Sıralama) ---
+// --- 🛡️ 5. ÜRÜN YÖNETİMİ ---
 window.loadProducts = async () => {
     try {
         const res = await fetch(`${API_URL}/products`, { credentials: 'include' }).then(handleAuthError);
@@ -447,13 +452,33 @@ window.loadProducts = async () => {
         list.innerHTML = "";
 
         products.filter(p => p.isDeleted !== true).forEach(p => {
-            let imgSrc = p.image && p.image.startsWith('http') ? p.image : 'https://placehold.co/150';
+            // 🛡️ REVIZE: 404 hatalarını önlemek için resim URL'sini encode ediyoruz
+            let imgSrc;
+            if (p.image) {
+                if (p.image.startsWith('http')) {
+                    imgSrc = p.image;
+                } else {
+                    imgSrc = `${UPLOADS_URL}/${encodeURIComponent(p.image)}`;
+                }
+            } else {
+                imgSrc = 'https://placehold.co/150?text=No+Image';
+            }
+
+            // 🛡️ REVIZE: İndirimli fiyat gösterimi
+            let priceDisplay = p.oldPrice
+                ? `<div class="text-decoration-line-through text-muted small">${euro.format(p.oldPrice)}</div><div class="fw-bold text-gold">${euro.format(p.price)}</div>`
+                : `<div class="fw-bold">${euro.format(p.price)}</div>`;
+
             list.innerHTML += `
                 <tr class="product-row" data-id="${p._id}">
                     <td><div class="drag-handle"><i class="fas fa-grip-vertical"></i></div></td>
-                    <td><div class="product-img-box-small"><img src="${imgSrc}"></div></td>
+                    <td>
+                        <div class="product-img-box-small">
+                            <img src="${imgSrc}" onerror="this.src='https://placehold.co/150?text=404+Error'">
+                        </div>
+                    </td>
                     <td><strong class="product-name">${p.name}</strong></td>
-                    <td>${euro.format(p.price)}</td>
+                    <td>${priceDisplay}</td>
                     <td><span class="badge ${p.stock <= 5 ? 'bg-danger' : 'bg-light text-dark'}">${p.stock}</span></td>
                     <td class="text-end">
                         <button class="btn btn-sm btn-outline-primary border-0 me-2" onclick="editProduct('${p._id}')">✎</button>
@@ -465,11 +490,8 @@ window.loadProducts = async () => {
         initSortable();
     } catch (err) { console.error(err); }
     window.loadArchivedProducts();
-
 };
 
-// --- 🛡️ SORTABLE ENGINE (KALICI DÜZENLEME) ---
-// admin.js içindeki initSortable fonksiyonunu bu versiyonla tamamen değiştir:
 function initSortable() {
     const el = document.getElementById('admin-product-list');
     if (!el) return;
@@ -485,57 +507,33 @@ function initSortable() {
                 index: index
             }));
 
-            // URL Onarım Sistemi (Mutlak Yol)
             const base = API_URL.endsWith('/') ? API_URL.slice(0, -1) : API_URL;
             const finalEndpoint = `${base}/products/reorder/update-order`;
 
             try {
                 const response = await fetch(finalEndpoint, {
                     method: 'PATCH',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ newOrder }),
                     credentials: 'include'
                 });
-
-                const contentType = response.headers.get("content-type");
-
-                if (contentType && contentType.includes("application/json")) {
-                    const result = await response.json();
-                    if (response.ok && result.success) {
-                        showLuxeAlert("Reihenfolge dauerhaft gespeichert!", "success");
-                        // Mağaza verisini de yerel olarak güncelle (Sayfa yenilemeden index'e yansıması için)
-                        if (typeof allProductsData !== 'undefined') {
-                            newOrder.forEach(item => {
-                                const p = allProductsData.find(x => x._id === item.id);
-                                if (p) p.orderIndex = item.index;
-                            });
-                        }
-                    } else {
-                        throw new Error(result.message || "Speichern fehlgeschlagen");
-                    }
-                } else {
-                    throw new Error("Kapı bulunamadı (404). Lütfen Backend rotasını kontrol edin.");
+                if (response.ok) {
+                    showLuxeAlert("Reihenfolge dauerhaft gespeichert!", "success");
                 }
             } catch (err) {
                 console.error("Sıralama Kayıt Hatası:", err);
-                showLuxeAlert("Hata: " + err.message, "error");
-                setTimeout(() => location.reload(), 3000);
+                showLuxeAlert("Fehler beim Speichern der Reihenfolge", "error");
             }
         }
     });
 }
+
 window.loadArchivedProducts = async () => {
     try {
-        // KRİTİK: includeDeleted=true ekledik ki silinenler de gelsin
         const res = await fetch(`${API_URL}/products?includeDeleted=true`, { credentials: 'include' }).then(handleAuthError);
         if (!res) return;
-
         const allProducts = await res.json();
-        // Sadece silinmişleri ayıkla
         const archived = allProducts.filter(p => p.isDeleted === true);
-
         const archivedList = document.getElementById('admin-archived-list');
         if (!archivedList) return;
 
@@ -556,9 +554,7 @@ window.loadArchivedProducts = async () => {
                     </td>
                 </tr>`;
         });
-    } catch (err) {
-        console.error("Arşiv Yükleme Hatası:", err);
-    }
+    } catch (err) { console.error("Arşiv Yükleme Hatası:", err); }
 };
 
 window.restoreProduct = async (id) => {
@@ -581,20 +577,29 @@ document.getElementById('productForm')?.addEventListener('submit', async (e) => 
     const originalBtnText = submitBtn.innerHTML;
     const id = document.getElementById('pId').value;
     const fileInput = document.getElementById('pImageFile');
+
     if (fileInput.files[0] && fileInput.files[0].size > 4 * 1024 * 1024) { showLuxeAlert("Datei zu groß!", "error"); return; }
+
     const formData = new FormData();
     formData.append('name', document.getElementById('pName').value);
     formData.append('price', document.getElementById('pPrice').value);
+
+    // 🛡️ REVIZE: oldPrice verisi ekleniyor
+    const oldPriceVal = document.getElementById('pOldPrice')?.value || "";
+    formData.append('oldPrice', oldPriceVal);
+
     formData.append('stock', document.getElementById('pStock').value);
     formData.append('description', document.getElementById('pDesc').value);
     if (fileInput && fileInput.files[0]) formData.append('image', fileInput.files[0]);
+
     try {
         submitBtn.disabled = true;
         submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Wird hochgeladen...';
         const res = await fetch(id ? `${API_URL}/products/${id}` : `${API_URL}/products`, { method: id ? 'PUT' : 'POST', body: formData, credentials: 'include' });
         if (!res.ok) { throw new Error("Serverfehler"); }
         showLuxeAlert(id ? "Aktualisiert!" : "Produkt erstellt!", "success");
-        window.resetProductForm(); await loadDashboard();
+        window.resetProductForm();
+        await loadDashboard();
     } catch (err) { showLuxeAlert("Fehler: " + err.message, "error"); }
     finally { submitBtn.disabled = false; submitBtn.innerHTML = originalBtnText; }
 });
@@ -605,13 +610,23 @@ window.editProduct = async (id) => {
     const products = await res.json();
     const p = products.find(i => i._id === id);
     if (!p) return;
+
     document.getElementById('pId').value = p._id;
     document.getElementById('pName').value = p.name;
     document.getElementById('pPrice').value = p.price;
+
+    // 🛡️ REVIZE: Düzenleme modunda oldPrice'ı kutucuğa çekiyoruz
+    const oldPriceInput = document.getElementById('pOldPrice');
+    if (oldPriceInput) oldPriceInput.value = p.oldPrice || "";
+
     document.getElementById('pStock').value = p.stock;
     document.getElementById('pDesc').value = p.description || "";
+
     const preview = document.getElementById('imagePreview');
-    if (preview && p.image) { preview.classList.remove('d-none'); document.getElementById('previewImg').src = p.image; }
+    if (preview && p.image) {
+        preview.classList.remove('d-none');
+        document.getElementById('previewImg').src = p.image.startsWith('http') ? p.image : `${UPLOADS_URL}/${p.image}`;
+    }
     document.getElementById('productFormTitle').innerText = "Produkt bearbeiten";
     document.getElementById('productSubmitBtn').innerText = "Aktualisieren";
     document.getElementById('cancelEditBtn').classList.remove('d-none');
@@ -631,10 +646,16 @@ function calculateStats(orders) {
     const valid = orders.filter(o => o.status !== 'Cancelled');
     const totalRev = valid.reduce((s, o) => s + o.totalAmount, 0);
     const aov = valid.length > 0 ? totalRev / valid.length : 0;
-    document.getElementById('stat-count').innerText = valid.length;
-    document.getElementById('stat-revenue').innerText = euro.format(totalRev);
-    document.getElementById('stat-customers').innerText = new Set(valid.map(o => o.customer.email)).size;
-    document.getElementById('stat-aov').innerText = euro.format(aov);
+
+    const countEl = document.getElementById('stat-count');
+    const revEl = document.getElementById('stat-revenue');
+    const custEl = document.getElementById('stat-customers');
+    const aovEl = document.getElementById('stat-aov');
+
+    if (countEl) countEl.innerText = valid.length;
+    if (revEl) revEl.innerText = euro.format(totalRev);
+    if (custEl) custEl.innerText = new Set(valid.map(o => o.customer.email)).size;
+    if (aovEl) aovEl.innerText = euro.format(aov);
 }
 
 // --- 🛡️ 6. YORUM YÖNETİMİ ---
@@ -654,17 +675,22 @@ window.loadReviews = async () => {
                     <td>${"⭐".repeat(r.rating || r.stars)}</td>
                     <td class="review-text small" style="max-width: 250px;">${r.text}</td>
                     <td>${r.adminReply ? `<span class="admin-reply-badge">✓</span>` : `<span class="badge bg-light text-muted border">Keine Antwort</span>`}</td>
-                    <td class="text-end"><button class="btn btn-sm btn-outline-gold me-2" onclick="openReplyModal('${r._id}', '${r.adminReply || ''}')">💬</button>
-                        <button class="btn btn-sm btn-outline-danger" onclick="deleteReview('${r._id}')">🗑️</button></td>
+                    <td class="text-end">
+                        <button class="btn btn-sm btn-outline-gold me-2" onclick="openReplyModal('${r._id}', '${r.adminReply || ''}')">💬</button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="deleteReview('${r._id}')">🗑️</button>
+                    </td>
                 </tr>`;
         });
     } catch (err) { console.error(err); }
 };
 
 window.openReplyModal = (id, existingReply) => {
-    document.getElementById('replyReviewId').value = id;
-    document.getElementById('adminReplyText').value = existingReply !== 'undefined' ? existingReply : "";
-    new bootstrap.Modal(document.getElementById('replyModal')).show();
+    const idField = document.getElementById('replyReviewId');
+    const textField = document.getElementById('adminReplyText');
+    if (idField) idField.value = id;
+    if (textField) textField.value = (existingReply !== 'undefined' && existingReply !== 'null') ? existingReply : "";
+    const modalEl = document.getElementById('replyModal');
+    if (modalEl) new bootstrap.Modal(modalEl).show();
 };
 
 window.submitReply = async () => {
@@ -759,7 +785,7 @@ window.logout = async () => {
     finally { window.location.href = 'login.html'; }
 };
 
-// --- 🛡️ 9. BAŞLATICI (INITIALIZER) ---
+// --- 🛡️ 9. BAŞLATICI ---
 document.addEventListener('DOMContentLoaded', async () => {
     await checkInitialAuth();
     loadDashboard();
