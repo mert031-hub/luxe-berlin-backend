@@ -893,3 +893,41 @@ body.dark-mode .payment-brand-grid:hover {
 .luxe-cookie-banner p {
   line-height: 1.5;
 }
+
+/* 📱 MOBILE PRODUCT GRID FIX (image_6944c2.jpg ÇÖZÜMÜ) */
+@media (max-width: 576px) {
+  /* Ürün kartlarını yan yana 2 tane yapar (Daha profesyonel görünüm) */
+  .row-cols-1 {
+    display: flex !important;
+    flex-wrap: wrap !important;
+  }
+  .row-cols-1 > * {
+    flex: 0 0 50% !important;
+    max-width: 50% !important;
+    padding: 8px !important;
+  }
+
+  /* Ürün görsellerini kart boyutuna göre küçültür */
+  .product-img-box {
+    height: 160px !important; /* Kart küçüldüğü için resmi de küçülttük */
+    padding: 10px !important;
+  }
+
+  /* Yazı boyutlarını küçülterek sığmasını sağlar */
+  .product-card .h5,
+  .product-card h5 {
+    font-size: 0.85rem !important;
+    margin-bottom: 5px !important;
+    height: 38px; /* İsimlerin hizalı durması için */
+    overflow: hidden;
+  }
+
+  .price {
+    font-size: 1rem !important;
+  }
+
+  .product-card::after {
+    font-size: 0.5rem !important;
+    padding: 6px 12px !important;
+  }
+}

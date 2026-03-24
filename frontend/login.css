@@ -27,7 +27,7 @@ body {
 
 .login-container {
   width: 100%;
-  max-width: 420px;
+  max-width: 450px; /* Biraz daha genişlettik logoyu rahatlatmak için */
   padding: 20px;
 }
 
@@ -42,16 +42,23 @@ body {
   color: var(--white);
 }
 
+/* 🛡️ LOGO FIX: image_d404e4.png'DEKİ TAŞMAYI ÖNLER */
 .brand-logo {
   font-family: "Playfair Display", serif;
-  font-size: clamp(1.5rem, 5vw, 2rem); /* Mobilde sığma garantisi */
-  letter-spacing: 3px;
+  font-size: clamp(1.2rem, 5.5vw, 1.8rem); /* Logoyu dinamik yaptık, taşmaz */
+  letter-spacing: 2px;
   margin-bottom: 40px;
   text-transform: uppercase;
+  font-weight: 700;
+  display: block;
+  width: 100%;
+  line-height: 1.2;
 }
 
+/* Logodaki Betrieb&Handel kısmını Gold yapar */
 .brand-logo span {
-  color: var(--gold);
+  color: var(--gold) !important;
+  display: inline-block; /* Küçük ekranlarda düzgün kırılması için */
 }
 
 .form-control {
@@ -122,8 +129,8 @@ body {
   top: 0;
   left: 0;
   width: 100%;
-  height: 100dvh; /* Mobil tarayıcı fix */
-  background-color: #0b0e17; /* Derin Gece Mavisi */
+  height: 100dvh;
+  background-color: #0b0e17;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -142,13 +149,9 @@ body {
 
 .preloader-logo {
   font-family: "Playfair Display", serif;
-  font-size: clamp(
-    1.1rem,
-    5.5vw,
-    2.5rem
-  ); /* Metnin tam sığması için ayarlandı */
+  font-size: clamp(1.1rem, 5.5vw, 2.5rem);
   color: #ffffff;
-  letter-spacing: clamp(2px, 1vw, 8px);
+  letter-spacing: clamp(1px, 1vw, 8px);
   text-transform: uppercase;
   margin-bottom: 20px;
   display: flex;
@@ -211,7 +214,6 @@ body {
   }
 }
 
-/* Yükleme bittiğinde eklenecek gizleme klası */
 .preloader-hidden {
   opacity: 0;
   visibility: hidden;

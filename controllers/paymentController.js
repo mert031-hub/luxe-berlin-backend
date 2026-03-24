@@ -6,6 +6,7 @@ const Order = require('../models/Order');
 /**
  * KOÇYİĞİT GmbH - OFFICIAL PAYMENT CONTROLLER
  * 🛡️ SENIOR UPDATE: ID Çakışma koruması & Webhook Bypass mühürlendi.
+ * 🛡️ MULTI-PAYMENT: Apple Pay, Google Pay, PayPal & Klarna aktif edildi.
  */
 
 exports.createCheckoutSession = async (req, res) => {
@@ -39,7 +40,10 @@ exports.createCheckoutSession = async (req, res) => {
         }));
 
         const session = await stripe.checkout.sessions.create({
-            payment_method_types: ['card'],
+            // 🛡️ REVIZE: Dashboard'da aktif ettiğin tüm yöntemleri (PayPal, Apple Pay vb.) otomatik açar.
+            automatic_payment_methods: {
+                enabled: true,
+            },
             line_items,
             mode: 'payment',
             customer_email: customerInfo.email,
@@ -91,6 +95,9 @@ exports.stripeWebhook = async (req, res) => {
             const randomStr = Math.random().toString(36).substring(2, 5).toUpperCase();
             const generatedShortId = `LB-${timestamp}${randomStr}`;
 
+            // 🛡️ Ödeme yöntemini dinamik olarak alıyoruz (Card, PayPal, Klarna vb.)
+            const methodType = session.payment_method_types[0]?.toUpperCase() || 'STRIPE';
+
             const newOrder = new Order({
                 customer: {
                     firstName: session.metadata.firstName,
@@ -102,7 +109,7 @@ exports.stripeWebhook = async (req, res) => {
                 items,
                 totalAmount: session.amount_total / 100,
                 paymentStatus: 'Paid',
-                paymentMethod: 'KARTE (Stripe)',
+                paymentMethod: `${methodType} (Online)`,
                 stripeSessionId: session.id,
                 shortId: generatedShortId
             });

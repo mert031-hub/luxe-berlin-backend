@@ -2,6 +2,7 @@
  * KOÇYİĞİT GmbH - CHECKOUT LOGIC (ULTRA STABLE & STRIPE LIVE)
  * 🛡️ REBRANDING: LUXE BERLIN -> KOÇYİĞİT GmbH mühürlendi.
  * 🛡️ LIVE READY: Stripe Live Publishable Key entegre edildi.
+ * 🛡️ MULTI-PAYMENT: automatic_payment_methods uyumlu hale getirildi.
  */
 
 let products = [];
@@ -146,7 +147,6 @@ document.getElementById('checkoutForm')?.addEventListener('submit', async (e) =>
         const session = await response.json();
 
         if (session.url) {
-            // Sepeti temizlemeden yönlendir (Webhook siparişi oluşturacak, başarı sayfasında temizlenecek)
             window.location.href = session.url;
         } else {
             alert("Fehler: " + (session.message || "KOÇYİĞİT Betrieb&Handel: Stripe Sitzung konnte nicht erstellt werden."));
