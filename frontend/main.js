@@ -426,7 +426,10 @@ function updateModalUI() {
         qtyInput.value = currentQty;
     }
 
-    document.getElementById('mPriceDisplay').innerText = euro.format(selectedProduct.price * currentQty);
+    // 🔥 DÜZELTME: Eğer miktar 0 ise (Ürün tükendiyse veya kutu silindiyse)
+    // her zaman en az 1 adet fiyatını göster. (0,00 € hatasına KESİN ÇÖZÜM)
+    const displayQty = Math.max(1, currentQty);
+    document.getElementById('mPriceDisplay').innerText = euro.format(selectedProduct.price * displayQty);
 
     const addBtn = document.getElementById('add-to-cart-btn');
     if (addBtn) addBtn.disabled = avail <= 0 || currentQty <= 0;
@@ -465,9 +468,7 @@ window.validateManualQty = function (input) {
 
     if (valStr === "") {
         currentQty = 0;
-        document.getElementById('mPriceDisplay').innerText = euro.format(0);
-        const addBtn = document.getElementById('add-to-cart-btn');
-        if (addBtn) addBtn.disabled = true;
+        updateModalUI(); // Fiyatın 0 görünmemesi için updateModalUI tetiklenir
         return;
     }
 
