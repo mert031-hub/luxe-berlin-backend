@@ -2,9 +2,9 @@ const Product = require('../models/Product');
 const path = require('path');
 
 /**
- * KOÇYİĞİT GmbH - PRODUCT CONTROLLER (V13 MASTER - MÜHÜRLÜ)
+ * KOÇYİĞİT GmbH - PRODUCT CONTROLLER (V14 MASTER - MÜHÜRLÜ)
  * 🛡️ REVIZE: oldPrice desteği eklendi.
- * 🛡️ FIX: 404 Resim hataları ve Path sorunları giderildi.
+ * 🛡️ FIX: Cloudinary URL'lerinin kırpılması (path.basename) engellendi. Resimler artık direkt Cloudinary linkiyle kaydediliyor.
  */
 
 // 1. TÜM ÜRÜNLERİ GETİR
@@ -62,8 +62,8 @@ exports.createProduct = async (req, res) => {
     try {
         const { name, price, oldPrice, stock, description } = req.body;
 
-        // 🛡️ FIX: Sadece dosya adını kaydediyoruz (404 hatasını önlemek için)
-        const imageUrl = req.file ? path.basename(req.file.path) : null;
+        // 🛡️ KRİTİK FIX: path.basename İPTAL EDİLDİ! Gelen Cloudinary URL'sini tam olarak (req.file.path) kaydediyoruz.
+        const imageUrl = req.file ? req.file.path : null;
 
         if (!name || !price) {
             return res.status(400).json({ success: false, message: "Name und Preis sind erforderlich" });
@@ -75,10 +75,10 @@ exports.createProduct = async (req, res) => {
         const newProduct = new Product({
             name,
             price,
-            oldPrice: oldPrice || null, // 🛡️ YENİ: İndirimli fiyat desteği
+            oldPrice: oldPrice || null,
             stock: stock || 0,
             description,
-            image: imageUrl,
+            image: imageUrl, // Artık tam link: https://res.cloudinary.com/...
             orderIndex: nextIndex
         });
 
@@ -99,14 +99,14 @@ exports.updateProduct = async (req, res) => {
         const updateData = {
             name,
             price,
-            oldPrice: oldPrice || null, // 🛡️ YENİ: İndirimli fiyat güncelleniyor
+            oldPrice: oldPrice || null,
             stock,
             description
         };
 
-        // 🛡️ FIX: Resim güncellenirse sadece dosya adını al
+        // 🛡️ KRİTİK FIX: Resim güncellenirse path.basename kullanmıyoruz, tam Cloudinary URL'sini alıyoruz.
         if (req.file) {
-            updateData.image = path.basename(req.file.path);
+            updateData.image = req.file.path;
         }
 
         const product = await Product.findByIdAndUpdate(req.params.id, updateData, { new: true });

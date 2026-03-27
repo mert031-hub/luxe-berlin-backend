@@ -1,15 +1,22 @@
 /**
- * KOÇYİĞİT GmbH - MASTER ADMIN JAVASCRIPT (V14 ULTIMATE - MÜHÜRLÜ)
+ * KOÇYİĞİT GmbH - MASTER ADMIN JAVASCRIPT (V18 ULTIMATE - MÜHÜRLÜ)
  * ---------------------------------------------------------------
  * - HARDENED SECURITY: HttpOnly Cookie tabanlı oturum yönetimi.
  * - ARCHIVE SYSTEM: Soft-Delete & Restore (Geri Getirme) entegre edildi.
  * - ANALYTICS V2: Çift eksenli (Umsatz & Volumen) Çizgi Grafik.
- * - OPERATIONAL INTEL: Sipariş Durum Pastası (Doughnut Chart).
+ * - OPERATIONAL INTEL: Sipariş Durum Pastası (Doughnut Chart) + Datalabels (% ve Adet) + Ortada Toplam Sayı.
  * - INVENTORY RADAR: Kritik Stok Uyarı Sistemi.
  * - SALES ENGINE: Top-Seller ürün analizi ve AOV hesaplama.
  * - REORDER ENGINE: SortableJS ile kalıcı veritabanı sıralaması.
- * - SALE SYSTEM: Streichpreis (Eski Fiyat) & Resim Fix entegre edildi.
+ * - 🛡️ SMART IMAGE RESOLVER: Tüm 404 resim hatalarını çözen akıllı URL sistemi eklendi.
  */
+
+// 🛡️ GÜVENLİK KALKANI: Eklenti yüklenemezse bile Admin Paneli ÇÖKMEZ!
+if (typeof ChartDataLabels !== 'undefined') {
+    Chart.register(ChartDataLabels);
+} else {
+    console.warn("⚠️ Uyarı: ChartDataLabels eklentisi yüklenemedi ama sistem çalışmaya devam ediyor.");
+}
 
 // --- GLOBAL DEĞİŞKENLER ---
 let currentUser = "Admin";
@@ -19,6 +26,32 @@ let allOrdersData = [];
 let allProductsData = [];
 let currentChartMode = 'monthly';
 let pendingUpdate = { id: null, status: null, selectEl: null };
+
+// --- GLOBAL YAPILANDIRMA ---
+const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    ? 'http://localhost:5000/api'
+    : 'https://kocyigit-trade.com/api';
+
+const API = API_URL;
+
+const UPLOADS_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    ? 'http://localhost:5000/uploads'
+    : 'https://kocyigit-trade.com/uploads';
+
+const euro = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' });
+
+// 🛡️ AKILLI RESİM ÇÖZÜCÜ (SMART IMAGE RESOLVER)
+// Veritabanındaki resim yolu nasıl olursa olsun onu doğru URL'ye çevirir.
+function getImageUrl(imagePath) {
+    if (!imagePath) return 'https://placehold.co/150?text=No+Image'; // Resim yoksa
+    if (imagePath.startsWith('http')) return imagePath; // Harici bir URL ise (Örn: Cloudinary)
+
+    // Eğer isimde zaten "uploads/" veya "/uploads/" varsa bunları temizle (Çiftleşmeyi önle)
+    let cleanPath = imagePath.replace(/^\/?(uploads\/)+/, '');
+
+    // Temizlenmiş ismin başına doğru ana URL'yi ekle
+    return `${UPLOADS_URL}/${cleanPath}`;
+}
 
 // --- 1. OTURUM KONTROLÜ (GÜVENLİ YÖNTEM) ---
 async function checkInitialAuth() {
@@ -34,19 +67,6 @@ async function checkInitialAuth() {
         window.location.href = 'login.html';
     }
 }
-
-// --- GLOBAL YAPILANDIRMA ---
-const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-    ? 'http://localhost:5000/api'
-    : 'https://kocyigit-trade.com/api';
-
-const API = API_URL;
-
-const UPLOADS_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-    ? 'http://localhost:5000/uploads'
-    : '/uploads';
-
-const euro = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' });
 
 // --- 💡 LUXE TOAST BİLDİRİM SİSTEMİ ---
 function showLuxeAlert(message, type = 'success') {
@@ -73,7 +93,6 @@ function showLuxeAlert(message, type = 'success') {
     }, 4000);
 }
 
-// 🛡️ GÜVENLİK GÜNCELLEMESİ
 const handleAuthError = (res) => {
     if (res && res.status === 401) {
         showLuxeAlert("Sitzung abgelaufen. Bitte erneut anmelden.", "error");
@@ -150,7 +169,7 @@ function renderSalesChart(orders, mode = 'monthly', backendChartData = null) {
     let revenueData = [];
     let orderCountData = [];
 
-    const validOrders = orders.filter(o => o.status !== 'Cancelled');
+    const validOrders = orders.filter(o => o.status !== 'Cancelled' && !o.isArchived);
     const now = new Date();
 
     if (backendChartData && backendChartData.length > 0) {
@@ -207,6 +226,7 @@ function renderSalesChart(orders, mode = 'monthly', backendChartData = null) {
             interaction: { mode: 'index', intersect: false },
             plugins: {
                 legend: { display: true, position: 'top' },
+                datalabels: { display: false },
                 tooltip: {
                     callbacks: {
                         label: function (context) {
@@ -230,12 +250,16 @@ function renderStatusChart(orders) {
     const canvas = document.getElementById('statusChart');
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
+
     const statusCounts = {
-        'Delivered': orders.filter(o => o.status === 'Delivered').length,
-        'Pending': orders.filter(o => o.status === 'Pending' || o.status === 'Processing').length,
-        'Shipped': orders.filter(o => o.status === 'Shipped').length,
-        'Cancelled': orders.filter(o => o.status === 'Cancelled').length
+        'Delivered': orders.filter(o => o.status === 'Delivered' && !o.isArchived).length,
+        'Pending': orders.filter(o => (o.status === 'Pending' || o.status === 'Processing') && !o.isArchived).length,
+        'Shipped': orders.filter(o => o.status === 'Shipped' && !o.isArchived).length,
+        'Cancelled': orders.filter(o => o.status === 'Cancelled' && !o.isArchived).length
     };
+
+    const totalOrders = Object.values(statusCounts).reduce((a, b) => a + b, 0);
+
     if (statusChart) statusChart.destroy();
     statusChart = new Chart(ctx, {
         type: 'doughnut',
@@ -244,13 +268,79 @@ function renderStatusChart(orders) {
             datasets: [{
                 data: [statusCounts.Delivered, statusCounts.Pending, statusCounts.Shipped, statusCounts.Cancelled],
                 backgroundColor: ['#198754', '#ffc107', '#0dcaf0', '#dc3545'],
-                borderWidth: 0, hoverOffset: 15
+                borderWidth: 2,
+                borderColor: '#ffffff',
+                hoverOffset: 15
             }]
         },
         options: {
-            responsive: true, maintainAspectRatio: false, cutout: '75%',
-            plugins: { legend: { display: true, position: 'bottom', labels: { padding: 20, usePointStyle: true } } }
-        }
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '75%',
+            plugins: {
+                // 🛡️ REVIZE: Legend (Alt açıklamalar) aktif edildi
+                legend: {
+                    display: true,
+                    position: 'bottom',
+                    labels: {
+                        padding: 20,
+                        usePointStyle: true,
+                        font: { family: "'Montserrat', sans-serif", size: 12 }
+                    }
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(28, 37, 65, 0.9)',
+                    titleFont: { size: 14, weight: 'bold' },
+                    bodyFont: { size: 13 },
+                    padding: 12,
+                    cornerRadius: 8
+                },
+                datalabels: {
+                    display: function (context) { return context.dataset.data[context.dataIndex] > 0; },
+                    color: '#ffffff',
+                    font: { family: "'Montserrat', sans-serif", weight: 'bold', size: 13 },
+                    textShadowColor: 'rgba(0, 0, 0, 0.5)',
+                    textShadowBlur: 4,
+                    textAlign: 'center',
+                    formatter: (value, ctx) => {
+                        let percentage = (value * 100 / totalOrders).toFixed(0) + "%";
+                        return value + "\n" + percentage;
+                    }
+                }
+            },
+            elements: { center: { text: totalOrders.toString(), color: '#1c2541', fontStyle: 'Montserrat', sidePadding: 20, minFontSize: 20, lineHeight: 25 } }
+        },
+        plugins: [{
+            id: 'centerText',
+            beforeDraw: function (chart) {
+                if (chart.config.options.elements.center) {
+                    var ctx = chart.ctx;
+                    var centerConfig = chart.config.options.elements.center;
+                    var fontStyle = centerConfig.fontStyle || 'Arial';
+                    var txt = centerConfig.text;
+                    var color = centerConfig.color || '#000';
+                    var maxFontSize = centerConfig.maxFontSize || 40;
+                    var sidePadding = centerConfig.sidePadding || 20;
+                    var sidePaddingCalculated = (sidePadding / 100) * (chart.innerRadius * 2);
+
+                    ctx.font = "30px " + fontStyle;
+                    var stringWidth = ctx.measureText(txt).width;
+                    var elementWidth = (chart.innerRadius * 2) - sidePaddingCalculated;
+                    var widthRatio = elementWidth / stringWidth;
+                    var newFontSize = Math.floor(30 * widthRatio);
+                    var fontSizeToUse = Math.min(newFontSize, maxFontSize, centerConfig.minFontSize || maxFontSize);
+
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    var centerX = ((chart.chartArea.left + chart.chartArea.right) / 2);
+                    // Legend eklendiği için merkezi biraz yukarı kaydırdık
+                    var centerY = ((chart.chartArea.top + chart.chartArea.bottom) / 2) - 10;
+                    ctx.font = "bold " + fontSizeToUse + "px " + fontStyle;
+                    ctx.fillStyle = color;
+                    ctx.fillText(txt, centerX, centerY);
+                }
+            }
+        }]
     });
 }
 
@@ -267,7 +357,7 @@ function updateInventoryAlerts(products) {
 
 function calculateTopSellers(orders) {
     const productCounts = {};
-    const validOrders = orders.filter(o => o.status !== 'Cancelled');
+    const validOrders = orders.filter(o => o.status !== 'Cancelled' && !o.isArchived);
     validOrders.forEach(order => {
         order.items.forEach(item => { productCounts[item.name] = (productCounts[item.name] || 0) + item.qty; });
     });
@@ -308,7 +398,7 @@ window.changeChartMode = (mode) => {
     renderSalesChart(allOrdersData, mode);
 };
 
-// --- 🛡️ 4. SİPARİŞ YÖNETİMİ (REVIZE: ARCHIVE & RESTORE) ---
+// --- 🛡️ 4. SİPARİŞ YÖNETİMİ ---
 window.loadOrders = async () => {
     try {
         const res = await fetch(`${API_URL}/orders`, { credentials: 'include' }).then(handleAuthError);
@@ -470,7 +560,7 @@ window.viewDetails = async (id) => {
     }
 };
 
-// --- 🛡️ 5. ÜRÜN YÖNETİMİ ---
+// --- 🛡️ 5. ÜRÜN YÖNETİMİ & AKILLI RESİM ÇÖZÜCÜ ---
 window.loadProducts = async () => {
     try {
         const res = await fetch(`${API_URL}/products`, { credentials: 'include' }).then(handleAuthError);
@@ -482,12 +572,9 @@ window.loadProducts = async () => {
         list.innerHTML = "";
 
         products.filter(p => p.isDeleted !== true).forEach(p => {
-            let imgSrc;
-            if (p.image) {
-                imgSrc = p.image.startsWith('http') ? p.image : `${UPLOADS_URL}/${encodeURIComponent(p.image)}`;
-            } else {
-                imgSrc = 'https://placehold.co/150?text=No+Image';
-            }
+
+            // 🛡️ SMART IMAGE RESOLVER UYGULANDI
+            let imgSrc = getImageUrl(p.image);
 
             let priceDisplay = p.oldPrice
                 ? `<div class="text-decoration-line-through text-muted small">${euro.format(p.oldPrice)}</div><div class="fw-bold text-gold">${euro.format(p.price)}</div>`
@@ -568,10 +655,12 @@ window.loadArchivedProducts = async () => {
 
         archivedList.innerHTML = "";
         archived.forEach(p => {
-            let imgSrc = p.image && p.image.startsWith('http') ? p.image : 'https://placehold.co/150';
+            // 🛡️ SMART IMAGE RESOLVER UYGULANDI
+            let imgSrc = getImageUrl(p.image);
+
             archivedList.innerHTML += `
                 <tr>
-                    <td><img src="${imgSrc}" width="30" height="30" style="object-fit: cover;" class="grayscale rounded shadow-sm"></td>
+                    <td><img src="${imgSrc}" width="30" height="30" style="object-fit: cover;" class="grayscale rounded shadow-sm" onerror="this.src='https://placehold.co/150?text=404'"></td>
                     <td class="small text-muted ps-3">${p.name}</td>
                     <td class="text-end">
                         <button class="btn btn-sm btn-outline-success border-0 py-0" title="Wiederherstellen" onclick="restoreProduct('${p._id}')">♻️</button>
@@ -643,7 +732,8 @@ window.editProduct = async (id) => {
     const preview = document.getElementById('imagePreview');
     if (preview && p.image) {
         preview.classList.remove('d-none');
-        document.getElementById('previewImg').src = p.image.startsWith('http') ? p.image : `${UPLOADS_URL}/${p.image}`;
+        // 🛡️ SMART IMAGE RESOLVER UYGULANDI
+        document.getElementById('previewImg').src = getImageUrl(p.image);
     }
     document.getElementById('productFormTitle').innerText = "Produkt bearbeiten";
     document.getElementById('productSubmitBtn').innerText = "Aktualisieren";

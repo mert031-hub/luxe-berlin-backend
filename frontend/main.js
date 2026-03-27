@@ -3,6 +3,8 @@
  * Tüm özellikler: Ürün Sınırı (9 Ürün), Sepet Onarımı, Miktar Koruması, 1 Yorum Sınırı, 
  * Karakter Sayacı, İsim Sınırı (50 Karakter), Küfür Filtresi ve Kademeli Yorum Gösterimi.
  * REVIZE: Yorumlar artık 9'ar 9'ar yüklenecek şekilde mühürlendi.
+ * 🛡️ SMART IMAGE RESOLVER: Vitrindeki 404 Resim hataları mühürlendi (Çift uploads/ sorunu çözüldü).
+ * 🛡️ AEO & GEO ENGINE: Dinamik Ürün ve Yorum Schema (JSON-LD) enjeksiyonları eklendi.
  */
 
 // --- GLOBAL DEĞİŞKENLER ---
@@ -25,6 +27,89 @@ const UPLOADS_URL = window.location.hostname === 'localhost' || window.location.
     : '/uploads';
 
 const badWords = ["küfür1", "küfür2", "argo1", "argo2", "idiot", "badword", "scheiße"];
+
+// 🛡️ AKILLI RESİM ÇÖZÜCÜ (SMART IMAGE RESOLVER)
+// Veritabanındaki resim yolu nasıl olursa olsun onu doğru URL'ye çevirir.
+function getImageUrl(imagePath) {
+    if (!imagePath) return 'https://via.placeholder.com/400x400?text=No+Image'; // Resim yoksa
+    if (imagePath.startsWith('http')) return imagePath; // Harici bir URL ise
+
+    // Eğer isimde zaten "uploads/" veya "/uploads/" varsa bunları temizle
+    let cleanPath = imagePath.replace(/^\/?(uploads\/)+/, '');
+
+    // Temizlenmiş ismin başına doğru ana URL'yi ekle
+    return `${UPLOADS_URL}/${cleanPath}`;
+}
+
+// 🛡️ GEO & AEO OPTİMİZASYONU: DİNAMİK ÜRÜN ŞEMASI ENJEKSİYONU
+// Bu fonksiyon, ekranda gösterilen ürünleri yapay zeka motorlarının anında okuyabilmesi için JSON-LD'ye çevirir.
+function injectProductSchema(renderedProducts) {
+    if (!renderedProducts || renderedProducts.length === 0) return;
+    let schemaScript = document.getElementById('dynamic-product-schema');
+    if (!schemaScript) {
+        schemaScript = document.createElement('script');
+        schemaScript.type = 'application/ld+json';
+        schemaScript.id = 'dynamic-product-schema';
+        document.head.appendChild(schemaScript);
+    }
+    const schemaData = {
+        "@context": "https://schema.org",
+        "@type": "ItemList",
+        "itemListElement": renderedProducts.map((p, index) => ({
+            "@type": "ListItem",
+            "position": index + 1,
+            "item": {
+                "@type": "Product",
+                "name": p.name,
+                "image": p.img,
+                "description": p.description || "Exklusives Premium-Produkt von Koçyiğit Betrieb&Handel",
+                "offers": {
+                    "@type": "Offer",
+                    "price": p.price,
+                    "priceCurrency": "EUR",
+                    "availability": (p.stock > 0 && p.tag !== "Ausverkaft") ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+                    "url": window.location.href
+                }
+            }
+        }))
+    };
+    schemaScript.text = JSON.stringify(schemaData);
+}
+
+// 🛡️ GEO & AEO OPTİMİZASYONU: DİNAMİK YORUM ŞEMASI ENJEKSİYONU
+// Ortalama puanı hesaplar ve arama motorlarında sitenin yıldızlarla (Trust Sinyali) çıkmasını sağlar.
+function injectReviewSchema(allReviews) {
+    if (!allReviews || allReviews.length === 0) return;
+    let schemaScript = document.getElementById('dynamic-review-schema');
+    if (!schemaScript) {
+        schemaScript = document.createElement('script');
+        schemaScript.type = 'application/ld+json';
+        schemaScript.id = 'dynamic-review-schema';
+        document.head.appendChild(schemaScript);
+    }
+
+    const totalStars = allReviews.reduce((acc, r) => acc + (r.rating || r.stars || 5), 0);
+    const avgRating = (totalStars / allReviews.length).toFixed(1);
+
+    const schemaData = {
+        "@context": "https://schema.org",
+        "@type": "LocalBusiness",
+        "@id": "https://www.kocyigit-trade.com/",
+        "name": "Koçyiğit Betrieb&Handel",
+        "aggregateRating": {
+            "@type": "AggregateRating",
+            "ratingValue": avgRating,
+            "reviewCount": allReviews.length
+        },
+        "review": allReviews.slice(0, 5).map(r => ({
+            "@type": "Review",
+            "author": { "@type": "Person", "name": r.name },
+            "reviewRating": { "@type": "Rating", "ratingValue": r.rating || r.stars || 5 },
+            "reviewBody": r.text
+        }))
+    };
+    schemaScript.text = JSON.stringify(schemaData);
+}
 
 // --- 1. LUXE TOAST BİLDİRİM FONKSİYONU ---
 function showLuxeAlert(message, type = 'success') {
@@ -85,7 +170,7 @@ async function fetchProducts() {
             oldPrice: p.oldPrice || null,
             stock: p.stock || 0,
             tag: p.tag || (p.stock <= 0 ? "Ausverkaft" : "Neu"),
-            img: p.image ? (p.image.startsWith('http') ? p.image : `${UPLOADS_URL}/${p.image}`) : 'https://via.placeholder.com/400',
+            img: getImageUrl(p.image), // 🛡️ AKILLI ÇÖZÜCÜYÜ BURAYA MÜHÜRLEDİK
             description: p.description || "",
             orderIndex: p.orderIndex
         }));
@@ -124,7 +209,7 @@ function renderProducts(listToDisplay) {
                 <div class="product-card shadow-sm" data-bs-toggle="modal" data-bs-target="#luxeModal" onclick="setupModal('${p.id}')">
                     ${saleTag}
                     ${p.tag ? `<span class="product-tag ${tagClass}">${p.tag}</span>` : ''}
-                    <div class="product-img-box"><img src="${p.img}" alt="${p.name}" loading="lazy"></div>
+                    <div class="product-img-box"><img src="${p.img}" alt="${p.name}" loading="lazy" onerror="this.src='https://via.placeholder.com/400x400?text=Not+Found'"></div>
                     <div class="product-info p-4 text-center">
                         <h3 class="h5 mb-2" style="font-family:'Playfair Display';">${p.name}</h3>
                         ${priceHtml}
@@ -136,6 +221,9 @@ function renderProducts(listToDisplay) {
     if (showMoreProductsWrapper) {
         showMoreProductsWrapper.style.display = listToDisplay.length > shownProductsCount ? "block" : "none";
     }
+
+    // 🛡️ DİNAMİK ÜRÜN ŞEMASINI ÇALIŞTIR
+    injectProductSchema(listToShow);
 }
 
 window.filterProducts = function () {
@@ -201,6 +289,9 @@ async function initTestimonials() {
     if (showMoreWrapper) {
         showMoreWrapper.style.display = testimonials.length > shownReviewsCount ? "block" : "none";
     }
+
+    // 🛡️ DİNAMİK YORUM ŞEMASINI ÇALIŞTIR
+    injectReviewSchema(testimonials);
 }
 
 function initReviewCounter() {
