@@ -22,7 +22,7 @@ async function sendStatusEmail(order, newStatus) {
 
     // Durum Belirleme
     if (status === "pending" || status === "eingegangen") {
-        subject = `Bestellbestätigung - KOÇYİĞİT GmbH #${order.shortId}`;
+        subject = `Bestellbestätigung - KOÇYİĞİT  #${order.shortId}`;
         statusLabel = "Bestellbestätigung";
         message = "Wir haben Ihre Bestellung erhalten und bereiten sie mit höchster Sorgfalt vor.";
     }
@@ -39,10 +39,10 @@ async function sendStatusEmail(order, newStatus) {
     else if (status === "delivered" || status === "geliefert") {
         subject = "Ihre Bestellung wurde zugestellt";
         statusLabel = "Zugestellt";
-        message = "Vielen Dank für Ihr Vertrauen in KOÇYİĞİT GmbH. Wir hoffen, dass Sie viel Freude mit Ihrem Kauf haben!";
+        message = "Vielen Dank für Ihr Vertrauen in KOÇYİĞİT Betrieb&Handel. Wir hoffen, dass Sie viel Freude mit Ihrem Kauf haben!";
     }
     else if (status === "cancelled" || status === "storniert") {
-        subject = "Bestellung storniert - KOÇYİĞİT GmbH";
+        subject = "Bestellung storniert - KOÇYİĞİT Betrieb&Handel";
         statusLabel = "Storniert";
         message = "Ihre Bestellung wurde erfolgreich storniert. Falls bereits Zahlungen geleistet wurden, werden diese umgehend erstattet.";
     }
@@ -75,7 +75,7 @@ async function sendStatusEmail(order, newStatus) {
     try {
         // --- 1. MÜŞTERİYE GİDEN LÜKS MAİL ---
         await resend.emails.send({
-            from: "KOÇYİĞİT GmbH <noreply@kocyigit-trade.com>",
+            from: "KOÇYİĞİT Betrieb&Handel <noreply@kocyigit-trade.com>",
             to: [order.customer.email],
             subject: subject,
             html: `
@@ -100,7 +100,7 @@ async function sendStatusEmail(order, newStatus) {
             </head>
             <body>
                 <div class="container">
-                    <div class="header"><div class="logo">KOÇYİĞİT<span>GmbH</span></div></div>
+                    <div class="header"><div class="logo">KOÇYİĞİT<span>Betrieb&Handel</span></div></div>
                     <div class="content">
                         <div class="status-badge">${statusLabel}</div>
                         <h2 style="margin-top: 0; font-size: 22px;">Hallo ${order.customer.firstName},</h2>
@@ -124,7 +124,7 @@ async function sendStatusEmail(order, newStatus) {
                         <div style="margin-top: 30px; font-size: 11px; color: #cbd5e0; text-align: center;">Bestell-ID: #${order.shortId}</div>
                     </div>
                     <div class="footer">
-                        <p>&copy; 2026 KOÇYİĞİT GmbH. Berlin, Deutschland.</p>
+                        <p>&copy; 2026 KOÇYİĞİT Betrieb&Handel. Berlin, Deutschland.</p>
                     </div>
                 </div>
             </body>

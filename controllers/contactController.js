@@ -22,11 +22,11 @@ exports.sendContactMail = async (req, res) => {
             reply_to: email,
 
             // 🛡️ REBRANDING: Mail başlığı kurumsal kimliğe mühürlendi
-            subject: `KOÇYİĞİT GmbH - Neue Kontaktanfrage: ${subject}`,
+            subject: `KOÇYİĞİT Betrieb&Handel - Neue Kontaktanfrage: ${subject}`,
             html: `
                 <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: auto;">
                     <h2 style="color: #1c2541; border-bottom: 2px solid #c5a059; padding-bottom: 10px;">
-                        KOÇYİĞİT GmbH - Neue Nachricht
+                        KOÇYİĞİT Betrieb&Handel - Neue Nachricht
                     </h2>
                     <div style="background:#f9f9f9; padding:20px; border-radius:10px; border-left: 5px solid #c5a059;">
                         <p><strong>Absender Name:</strong> ${name}</p>
@@ -37,7 +37,7 @@ exports.sendContactMail = async (req, res) => {
                         <p style="white-space: pre-wrap;">${message}</p>
                     </div>
                     <p style="font-size: 0.8em; color: #777; margin-top: 20px; text-align: center;">
-                        Diese E-Mail wurde über das KOÇYİĞİT GmbH Kontaktformular gesendet.
+                        Diese E-Mail wurde über das KOÇYİĞİT Betrieb&Handel Kontaktformular gesendet.
                     </p>
                 </div>
             `
