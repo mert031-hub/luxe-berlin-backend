@@ -9,6 +9,7 @@
  * - SALES ENGINE: Top-Seller ürün analizi ve AOV hesaplama.
  * - REORDER ENGINE: SortableJS ile kalıcı veritabanı sıralaması.
  * - 🛡️ SMART IMAGE RESOLVER: Tüm 404 resim hatalarını çözen akıllı URL sistemi eklendi.
+ * - 🛡️ INVOICE ENGINE: Admin sipariş detaylarına PDF fatura indirme butonu entegre edildi.
  */
 
 // 🛡️ GÜVENLİK KALKANI: Eklenti yüklenemezse bile Admin Paneli ÇÖKMEZ!
@@ -520,6 +521,7 @@ window.restoreOrder = async (id) => {
     } catch (err) { console.error(err); }
 };
 
+// 🛡️ SİPARİŞ DETAYLARI VE E-FATURA İNDİRME (MÜHÜRLENDİ)
 window.viewDetails = async (id) => {
     const o = allOrdersData.find(item => item._id === id);
     if (!o) return;
@@ -555,7 +557,14 @@ window.viewDetails = async (id) => {
                 <div class="d-flex justify-content-between mt-3 fw-bold fs-5 pt-2 border-top">
                     <span>Gesamtbetrag:</span><span class="text-primary">${euro.format(o.totalAmount)}</span>
                 </div>
+            </div>
+            
+            <div class="mt-4 pt-3 border-top text-center">
+                <a href="${API_URL}/orders/${o._id}/invoice" target="_blank" class="btn btn-outline-dark rounded-pill px-4 py-2 fw-bold shadow-sm w-100">
+                    <i class="fas fa-file-pdf me-2 text-danger"></i> Rechnung Herunterladen
+                </a>
             </div>`;
+
         new bootstrap.Modal(document.getElementById('orderDetailModal')).show();
     }
 };
