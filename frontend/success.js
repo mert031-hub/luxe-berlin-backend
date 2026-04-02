@@ -2,6 +2,7 @@
  * KOÇYİĞİT GmbH - SUCCESS PAGE LOGIC (STRIPE LIVE READY)
  * FIX: Sipariş özetine ürün görselleri eklendi.
  * NEW: Stripe session doğrulama ve otomatik sepet temizleme mühürlendi.
+ * NEW: E-Fatura indirme butonu entegrasyonu sağlandı.
  */
 
 const euro = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' });
@@ -91,6 +92,13 @@ function renderOrderDetails(order) {
     const addressEl = document.getElementById('addressText');
     if (addressEl) {
         addressEl.innerText = `${order.customer.firstName} ${order.customer.lastName}, ${order.customer.address}`;
+    }
+
+    // 🛡️ E-Fatura Linkini Ekle ve Butonu Görünür Yap
+    const invoiceBtn = document.getElementById('invoiceDownloadBtn');
+    if (invoiceBtn && order._id) {
+        invoiceBtn.href = `${API_URL}/orders/${order._id}/invoice`;
+        invoiceBtn.classList.remove('d-none');
     }
 
     localStorage.setItem('luxeHasOrdered', 'true');

@@ -21,6 +21,9 @@ router.get('/', auth, orderController.getAllOrders);
 // 4. Tekil sipariş sorgulama (Tracking / ID veya ShortID ile)
 router.get('/:id', orderController.getOrderById);
 
+// 📄 4.5 E-Fatura İndirme Rotası (PDF Engine)
+router.get('/:id/invoice', orderController.downloadInvoice);
+
 // 🛡️ 5. Sipariş durumunu güncelleme (ADIM 404 FIX)
 // Admin panelinden gelen PATCH /api/orders/:id/status isteğini karşılar
 router.patch('/:id/status', auth, orderController.updateOrderStatus);

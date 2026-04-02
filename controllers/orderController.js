@@ -2,6 +2,7 @@ const Order = require("../models/Order");
 const Product = require("../models/Product");
 const { sendStatusEmail } = require("../config/mailer");
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+const PDFDocument = require('pdfkit'); // 🛡️ PDF Motoru Kütüphanesi
 
 /**
  * 🛡️ MASTER REFUND HELPER
@@ -119,7 +120,8 @@ exports.getOrderBySession = async (req, res) => {
         }
         return res.status(404).json({ message: "Bestellung wird verarbeitet..." });
     } catch (err) {
-        res.status(500).json({ message: "Fehler" });
+        console.error("🔴 SİPARİŞ OLUŞTURMA HATASI (getOrderBySession):", err);
+        res.status(500).json({ message: "Fehler", error: err.message });
     }
 };
 
@@ -131,7 +133,6 @@ exports.getAllOrders = async (req, res) => {
         const threeMonthsAgo = new Date();
         threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
 
-        // Arşivlenmiş veya aktif farketmeksizin son 3 ayın tamamını çekiyoruz
         const orders = await Order.find({
             date: { $gte: threeMonthsAgo }
         }).sort({ date: -1 }).populate('items.productId');
@@ -210,7 +211,6 @@ exports.cancelOrder = async (req, res) => {
 
 /**
  * 7️⃣ SİPARİŞİ LİSTEDEN KALDIR (SOFT DELETE / ARCHIVE)
- * 🛡️ REVIZE: Siparişi silmez, sadece arşivler.
  */
 exports.deleteOrder = async (req, res) => {
     try {
@@ -222,7 +222,6 @@ exports.deleteOrder = async (req, res) => {
 
 /**
  * 8️⃣ SİPARİŞİ ARŞİVDEN GERİ GETİR (RESTORE)
- * 🛡️ MÜHÜR: Yanlışlıkla silinen siparişi aktif listeye döndürür.
  */
 exports.restoreOrder = async (req, res) => {
     try {
@@ -232,10 +231,116 @@ exports.restoreOrder = async (req, res) => {
     } catch (err) { res.status(500).json({ message: err.message }); }
 };
 
-// Eski archiveOrder metodunu uyumluluk için koruyoruz
 exports.archiveOrder = async (req, res) => {
     try {
         await Order.findByIdAndUpdate(req.params.id, { isArchived: true });
         res.json({ message: "Sipariş arşivlendi." });
     } catch (err) { res.status(500).json({ message: err.message }); }
+};
+
+/**
+ * 🛡️ 9️⃣ KOÇYİĞİT GmbH - PDF FATURA OLUŞTURUCU (MÜHÜRLÜ DİZAYN)
+ */
+exports.downloadInvoice = async (req, res) => {
+    try {
+        const order = await Order.findById(req.params.id);
+        if (!order) return res.status(404).send('Bestellung nicht gefunden');
+
+        const doc = new PDFDocument({ margin: 50, size: 'A4' });
+
+        let invoiceName = `Rechnung_KOCYIGIT_${order.shortId || order._id.toString().slice(-6).toUpperCase()}.pdf`;
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="${invoiceName}"`);
+
+        doc.pipe(res);
+
+        // 🛡️ Türkçe Karakter Temizleyici (PDF Hatalarını Önler)
+        const sanitize = (text) => {
+            if (!text) return "";
+            return text.replace(/Ğ/g, 'G').replace(/ğ/g, 'g')
+                .replace(/Ü/g, 'U').replace(/ü/g, 'u')
+                .replace(/Ş/g, 'S').replace(/ş/g, 's')
+                .replace(/İ/g, 'I').replace(/ı/g, 'i')
+                .replace(/Ö/g, 'O').replace(/ö/g, 'o')
+                .replace(/Ç/g, 'C').replace(/ç/g, 'c');
+        };
+
+        // 1. Şirket Bilgileri ve Başlık (Altın rengi eklendi)
+        doc.fillColor('#444444').fontSize(26).font('Helvetica-Bold').text('RECHNUNG', { align: 'right' });
+        doc.moveDown();
+
+        doc.fillColor('#1c2541').fontSize(14).font('Helvetica-Bold').text('KOCYIGIT Betrieb&Handel', 50, 90);
+        doc.fillColor('#777777').fontSize(10).font('Helvetica');
+        doc.text('Sinkenbreite 1', 50, 110);
+        doc.text('89180 Berghulen', 50, 125);
+        doc.text('Deutschland', 50, 140);
+
+        // Çizgi
+        doc.strokeColor('#e0e0e0').lineWidth(1).moveTo(50, 170).lineTo(550, 170).stroke();
+
+        // 2. Müşteri ve Sipariş Bilgileri (Hizalanmış 2 Sütun)
+        doc.fillColor('#1c2541').fontSize(11).font('Helvetica-Bold').text('Rechnung an:', 50, 190);
+        doc.fillColor('#444444').fontSize(10).font('Helvetica');
+        doc.text(sanitize(`${order.customer.firstName} ${order.customer.lastName}`), 50, 210);
+        doc.text(sanitize(`${order.customer.address}`), 50, 225);
+        doc.text(sanitize(`${order.customer.email}`), 50, 240);
+
+        doc.fillColor('#1c2541').font('Helvetica-Bold').text('Bestellnummer:', 320, 190);
+        doc.fillColor('#444444').font('Helvetica').text(`#${order.shortId || order._id.toString().slice(-6).toUpperCase()}`, 420, 190);
+
+        doc.fillColor('#1c2541').font('Helvetica-Bold').text('Datum:', 320, 210);
+        doc.fillColor('#444444').font('Helvetica').text(`${new Date(order.date || Date.now()).toLocaleDateString('de-DE')}`, 420, 210);
+
+        doc.fillColor('#1c2541').font('Helvetica-Bold').text('Zahlungsart:', 320, 230);
+        doc.fillColor('#444444').font('Helvetica').text(sanitize(`${order.paymentMethod || 'Online Zahlung'}`), 420, 230);
+
+        // 3. Ürün Tablosu Başlıkları (Milimetrik Hizalama)
+        const tableTop = 290;
+        doc.fillColor('#1c2541').font('Helvetica-Bold').fontSize(10);
+        doc.text('Artikel', 50, tableTop);
+        doc.text('Menge', 320, tableTop, { width: 50, align: 'center' });
+        doc.text('Preis', 400, tableTop, { width: 60, align: 'right' });
+        doc.text('Gesamt', 480, tableTop, { width: 70, align: 'right' });
+
+        // Altın Çizgi
+        doc.strokeColor('#c5a059').lineWidth(2).moveTo(50, tableTop + 15).lineTo(550, tableTop + 15).stroke();
+
+        // 4. Ürünleri Listeleme
+        let y = tableTop + 25;
+        doc.fillColor('#444444').font('Helvetica');
+        (order.items || []).forEach(item => {
+            doc.text(sanitize(item.name || 'Produkt'), 50, y, { width: 260 });
+            doc.text((item.qty || 1).toString(), 320, y, { width: 50, align: 'center' });
+            doc.text(`${(item.price || 0).toFixed(2)} EUR`, 400, y, { width: 60, align: 'right' });
+            doc.text(`${((item.price || 0) * (item.qty || 1)).toFixed(2)} EUR`, 480, y, { width: 70, align: 'right' });
+            y += 20; // Sonraki ürün için satırı aşağı kaydır
+        });
+
+        doc.strokeColor('#e0e0e0').lineWidth(1).moveTo(50, y + 10).lineTo(550, y + 10).stroke();
+
+        // 5. Vergi ve Toplam Hesaplamaları (Almanya Standardı)
+        const total = order.totalAmount || 0;
+        const netto = (total / 1.19).toFixed(2);
+        const mwst = (total - netto).toFixed(2);
+
+        doc.font('Helvetica').text('Nettobetrag:', 380, y + 25, { width: 90, align: 'right' });
+        doc.text(`${netto} EUR`, 480, y + 25, { width: 70, align: 'right' });
+
+        doc.text('MwSt (19%):', 380, y + 45, { width: 90, align: 'right' });
+        doc.text(`${mwst} EUR`, 480, y + 45, { width: 70, align: 'right' });
+
+        doc.font('Helvetica-Bold').fontSize(14).fillColor('#c5a059').text('Gesamtsumme:', 320, y + 70, { width: 150, align: 'right' });
+        doc.text(`${total.toFixed(2)} EUR`, 480, y + 70, { width: 70, align: 'right' });
+
+        // 6. Alt Bilgi (Footer)
+        doc.font('Helvetica-Oblique').fontSize(10).fillColor('#777777').text(
+            'Vielen Dank fur Ihren Einkauf bei KOCYIGIT Betrieb&Handel!',
+            50, 750, { align: 'center', width: 500 }
+        );
+
+        doc.end();
+    } catch (error) {
+        console.error("PDF Fatura Hatası:", error);
+        res.status(500).send('Fatura oluşturulurken hata oluştu.');
+    }
 };

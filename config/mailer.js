@@ -1,9 +1,112 @@
 const { Resend } = require("resend");
+const PDFDocument = require('pdfkit'); // 🛡️ PDF Motoru eklendi
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 // 🛡️ KOÇYİĞİT GmbH - PATRON BİLDİRİM AYARI
 const ADMIN_EMAIL = 'kocyigit.trade@gmail.com';
+
+/**
+ * 🛡️ PDF Fatura Buffer Oluşturucu (Mail Eklentisi İçin)
+ */
+function createInvoiceBuffer(order) {
+    return new Promise((resolve, reject) => {
+        try {
+            const doc = new PDFDocument({ margin: 50, size: 'A4' });
+            let buffers = [];
+
+            doc.on('data', buffers.push.bind(buffers));
+            doc.on('end', () => {
+                let pdfData = Buffer.concat(buffers);
+                resolve(pdfData);
+            });
+
+            // 🛡️ Türkçe Karakter Temizleyici
+            const sanitize = (text) => {
+                if (!text) return "";
+                return text.replace(/Ğ/g, 'G').replace(/ğ/g, 'g')
+                    .replace(/Ü/g, 'U').replace(/ü/g, 'u')
+                    .replace(/Ş/g, 'S').replace(/ş/g, 's')
+                    .replace(/İ/g, 'I').replace(/ı/g, 'i')
+                    .replace(/Ö/g, 'O').replace(/ö/g, 'o')
+                    .replace(/Ç/g, 'C').replace(/ç/g, 'c');
+            };
+
+            // 1. Şirket Bilgileri
+            doc.fillColor('#444444').fontSize(26).font('Helvetica-Bold').text('RECHNUNG', { align: 'right' });
+            doc.moveDown();
+
+            doc.fillColor('#1c2541').fontSize(14).font('Helvetica-Bold').text('KOCYIGIT Betrieb&Handel', 50, 90);
+            doc.fillColor('#777777').fontSize(10).font('Helvetica');
+            doc.text('Sinkenbreite 1', 50, 110);
+            doc.text('89180 Berghulen', 50, 125);
+            doc.text('Deutschland', 50, 140);
+
+            doc.strokeColor('#e0e0e0').lineWidth(1).moveTo(50, 170).lineTo(550, 170).stroke();
+
+            // 2. Müşteri Bilgileri
+            doc.fillColor('#1c2541').fontSize(11).font('Helvetica-Bold').text('Rechnung an:', 50, 190);
+            doc.fillColor('#444444').fontSize(10).font('Helvetica');
+            doc.text(sanitize(`${order.customer.firstName} ${order.customer.lastName}`), 50, 210);
+            doc.text(sanitize(`${order.customer.address}`), 50, 225);
+            doc.text(sanitize(`${order.customer.email}`), 50, 240);
+
+            doc.fillColor('#1c2541').font('Helvetica-Bold').text('Bestellnummer:', 320, 190);
+            doc.fillColor('#444444').font('Helvetica').text(`#${order.shortId || order._id.toString().slice(-6).toUpperCase()}`, 420, 190);
+
+            doc.fillColor('#1c2541').font('Helvetica-Bold').text('Datum:', 320, 210);
+            doc.fillColor('#444444').font('Helvetica').text(`${new Date(order.date || Date.now()).toLocaleDateString('de-DE')}`, 420, 210);
+
+            doc.fillColor('#1c2541').font('Helvetica-Bold').text('Zahlungsart:', 320, 230);
+            doc.fillColor('#444444').font('Helvetica').text(sanitize(`${order.paymentMethod || 'Online Zahlung'}`), 420, 230);
+
+            // 3. Ürünler
+            const tableTop = 290;
+            doc.fillColor('#1c2541').font('Helvetica-Bold').fontSize(10);
+            doc.text('Artikel', 50, tableTop);
+            doc.text('Menge', 320, tableTop, { width: 50, align: 'center' });
+            doc.text('Preis', 400, tableTop, { width: 60, align: 'right' });
+            doc.text('Gesamt', 480, tableTop, { width: 70, align: 'right' });
+
+            doc.strokeColor('#c5a059').lineWidth(2).moveTo(50, tableTop + 15).lineTo(550, tableTop + 15).stroke();
+
+            let y = tableTop + 25;
+            doc.fillColor('#444444').font('Helvetica');
+            (order.items || []).forEach(item => {
+                doc.text(sanitize(item.name || 'Produkt'), 50, y, { width: 260 });
+                doc.text((item.qty || 1).toString(), 320, y, { width: 50, align: 'center' });
+                doc.text(`${(item.price || 0).toFixed(2)} EUR`, 400, y, { width: 60, align: 'right' });
+                doc.text(`${((item.price || 0) * (item.qty || 1)).toFixed(2)} EUR`, 480, y, { width: 70, align: 'right' });
+                y += 20;
+            });
+
+            doc.strokeColor('#e0e0e0').lineWidth(1).moveTo(50, y + 10).lineTo(550, y + 10).stroke();
+
+            // 4. Toplam
+            const total = order.totalAmount || 0;
+            const netto = (total / 1.19).toFixed(2);
+            const mwst = (total - netto).toFixed(2);
+
+            doc.font('Helvetica').text('Nettobetrag:', 380, y + 25, { width: 90, align: 'right' });
+            doc.text(`${netto} EUR`, 480, y + 25, { width: 70, align: 'right' });
+
+            doc.text('MwSt (19%):', 380, y + 45, { width: 90, align: 'right' });
+            doc.text(`${mwst} EUR`, 480, y + 45, { width: 70, align: 'right' });
+
+            doc.font('Helvetica-Bold').fontSize(14).fillColor('#c5a059').text('Gesamtsumme:', 320, y + 70, { width: 150, align: 'right' });
+            doc.text(`${total.toFixed(2)} EUR`, 480, y + 70, { width: 70, align: 'right' });
+
+            doc.font('Helvetica-Oblique').fontSize(10).fillColor('#777777').text(
+                'Vielen Dank fur Ihren Einkauf bei KOCYIGIT Betrieb&Handel!',
+                50, 750, { align: 'center', width: 500 }
+            );
+
+            doc.end();
+        } catch (error) {
+            reject(error);
+        }
+    });
+}
 
 /**
  * Sipariş durumuna göre mail gönderen servis.
@@ -73,11 +176,28 @@ async function sendStatusEmail(order, newStatus) {
     }).join('');
 
     try {
+        // 🛡️ FATURA EKLENTİSİNİ HAZIRLA (Sadece Yeni Siparişlerde)
+        let attachments = [];
+        if (status === "pending" || status === "eingegangen") {
+            try {
+                const invoiceBuffer = await createInvoiceBuffer(order);
+                const invoiceName = `Rechnung_KOCYIGIT_${order.shortId || order._id.toString().slice(-6).toUpperCase()}.pdf`;
+                attachments.push({
+                    filename: invoiceName,
+                    content: invoiceBuffer
+                });
+                console.log(`📄 PDF Fatura oluşturuldu ve maile eklendi: ${invoiceName}`);
+            } catch (pdfErr) {
+                console.error("❌ PDF Fatura mail eklentisi oluşturulurken hata:", pdfErr);
+            }
+        }
+
         // --- 1. MÜŞTERİYE GİDEN LÜKS MAİL ---
         await resend.emails.send({
             from: "KOÇYİĞİT Betrieb&Handel <noreply@kocyigit-trade.com>",
             to: [order.customer.email],
             subject: subject,
+            attachments: attachments, // 🛡️ Eklentiyi Gönder
             html: `
             <!DOCTYPE html>
             <html>

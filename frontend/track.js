@@ -2,6 +2,7 @@
  * KOÇYİĞİT GmbH - ADVANCED TRACKING LOGIC (FULL & CANCEL-READY)
  * 🛡️ REBRANDING: LUXE BERLIN -> KOÇYİĞİT GmbH mühürlendi.
  * 🛡️ SECURITY FIX: Sert kilit ve spinner eklendi. (Race Condition Protected)
+ * 🛡️ INVOICE UPDATE: E-Fatura indirme butonu linki bağlandı.
  */
 
 const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
@@ -84,6 +85,12 @@ async function trackOrder() {
             document.getElementById('display-address').innerText = `📍 ${order.customer?.address || 'K.A.'}`;
             document.getElementById('display-total').innerText = euro.format(order.totalAmount || 0);
 
+            // 🛡️ E-Fatura Linkini Güncelle
+            const invoiceBtn = document.getElementById('invoiceDownloadBtn');
+            if (invoiceBtn) {
+                invoiceBtn.href = `${API_URL}/orders/${order._id}/invoice`;
+            }
+
             updateProgressSteps(order.status || 'Pending');
 
             const footerNote = resultArea.querySelector('.mt-5.small.text-muted.italic');
@@ -123,7 +130,6 @@ window.executeCancellation = async function () {
 
     // 🛡️ MASTER LOCK: Modal içindeki tüm butonları dondur ve gizle
     const modal = document.getElementById('cancelConfirmModal');
-    // Görseldeki o kırmızı butonu yakalamak için en garanti seçiciyi kullanıyoruz
     const confirmBtn = document.getElementById('confirmCancelBtn') || modal.querySelector('.btn-danger');
     const secondaryBtns = modal.querySelectorAll('.btn-close, .btn-secondary');
 
