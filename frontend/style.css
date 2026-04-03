@@ -141,24 +141,71 @@ body.dark-mode .bg-light {
   color: var(--gold) !important;
 }
 
-/* HERO SECTION */
+/* 🛡️ HERO SECTION (GENİŞ FOTOĞRAF İÇİN ANİMASYONLU LÜKS DİZAYN) */
 .hero-section {
-  height: 45vh;
+  position: relative;
+  min-height: 75vh;
+  width: 100%;
   display: flex;
-  align-items: center;
+  align-items: flex-end; /* Yazıyı aşağı, dükkan içine doğru iter */
   justify-content: center;
-  background:
-    linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)),
-    url("https://images.unsplash.com/photo-1441984904996-e0b6ba687e04?q=80&w=2070")
-      center/cover;
-  animation: heroZoom 10s infinite alternate;
+  padding-bottom: 12vh;
+  overflow: hidden;
+  background: var(--dark-midnight);
 }
-@keyframes heroZoom {
-  from {
-    background-size: 100%;
+
+/* Resim katmanı: Animasyon sadece bu katmanda çalışır, yazıyı oynatmaz */
+.hero-section::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: url("hero.jpg") no-repeat center center / cover;
+  /* 18 saniyeden 12 saniyeye düşürdük, hareket daha çabuk fark edilecek */
+  animation: luxeZoom 12s infinite alternate ease-in-out;
+  z-index: 0;
+}
+
+/* Lüks Zoom Animasyonu (Daha Belirgin Hali) */
+@keyframes luxeZoom {
+  0% {
+    transform: scale(1);
   }
-  to {
-    background-size: 110%;
+  /* 1.06 olan yakınlaşma oranını 1.15'e çıkardık, artık çok daha belirgin */
+  100% {
+    transform: scale(1.15);
+  }
+}
+
+/* Karanlık Filtre: Üst taraf (tabela) parlak, alt taraf (yazı) karanlık */
+.hero-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    to bottom,
+    rgba(28, 37, 65, 0.15) 0%,
+    rgba(28, 37, 65, 0.95) 90%
+  );
+  z-index: 1;
+}
+
+.hero-section .container {
+  position: relative;
+  z-index: 2;
+}
+
+@media (max-width: 768px) {
+  .hero-section {
+    min-height: 50vh;
+    padding-bottom: 40px;
+  }
+  .hero-section h1.display-3 {
+    font-size: 2rem;
   }
 }
 
@@ -583,6 +630,22 @@ body.dark-mode .btn-luxe {
 }
 .visit-us-area {
   background-color: var(--bg-secondary) !important;
+}
+
+/* 🛡️ SOSYAL MEDYA (INSTA-IMG) TASARIMI - TAŞMA ÖNLEYİCİ VE GECE MODU */
+.insta-img {
+  width: 100%;
+  aspect-ratio: 1 / 1; /* Resimleri kusursuz kare yapar */
+  object-fit: cover; /* Resmi büzmeden, keserek sığdırır (Taşmayı önler) */
+  transition: var(--theme-transition);
+}
+
+body.dark-mode .insta-img {
+  filter: brightness(0.85) contrast(1.1); /* Gece modunda göz almasın diye hafif kararır */
+}
+
+body.dark-mode .insta-img:hover {
+  filter: brightness(1) contrast(1.1); /* Üzerine gelince parlar */
 }
 
 /* 💳 PAYMENT SHOWCASE */
