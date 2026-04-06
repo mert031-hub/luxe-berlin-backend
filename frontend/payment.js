@@ -3,10 +3,12 @@
  * 🛡️ REBRANDING: LUXE BERLIN -> KOÇYİĞİT GmbH mühürlendi.
  * 🛡️ LIVE READY: Stripe Live Publishable Key entegre edildi.
  * 🛡️ MULTI-PAYMENT: automatic_payment_methods uyumlu hale getirildi.
+ * 🛡️ DYNAMIC SHIPPING: Admin panelinden gelen kargo limitleri eklendi ve UI düzeltildi.
  */
 
 let products = [];
 let cart = JSON.parse(localStorage.getItem('luxeCartArray')) || [];
+let shopSettings = { shippingCost: 4.99, freeShippingThreshold: 50 }; // Varsayılan
 
 const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
     ? 'http://localhost:5000/api'
@@ -17,14 +19,22 @@ const euro = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR'
 
 async function fetchProductsAndLoad() {
     try {
+        // 1. Ayarları Çek
+        const setRes = await fetch(`${API_URL}/settings`);
+        if (setRes.ok) {
+            shopSettings = await setRes.json();
+        }
+
+        // 2. Ürünleri Çek
         const res = await fetch(`${API_URL}/products`);
         const data = await res.json();
         products = data.filter(p => !p.isDeleted).map(p => ({
             id: p._id, name: p.name, price: p.price, stock: p.stock,
             img: p.image?.startsWith('http') ? p.image : `${UPLOADS_URL}/${p.image}`
         }));
+
         loadCheckout();
-    } catch (err) { console.error("KOÇYİĞİT Betrieb&Handel - Ürün yükleme hatası:", err); }
+    } catch (err) { console.error("KOÇYİĞİT Betrieb&Handel - Yükleme hatası:", err); }
 }
 
 function loadCheckout() {
@@ -57,10 +67,35 @@ function loadCheckout() {
         }).join('');
     }
 
+    // 🛡️ DİNAMİK KARGO HESAPLAMASI
+    let currentShippingCost = 0;
+    if (sub > 0 && sub < shopSettings.freeShippingThreshold) {
+        currentShippingCost = shopSettings.shippingCost;
+    }
+
     const net = sub / 1.19;
+    const finalTotal = sub + currentShippingCost;
+
     if (document.getElementById('summary-net')) document.getElementById('summary-net').innerText = euro.format(net);
     if (document.getElementById('summary-tax')) document.getElementById('summary-tax').innerText = euro.format(sub - net);
-    if (document.getElementById('summary-total')) document.getElementById('summary-total').innerText = euro.format(sub);
+
+    // 🛡️ UI GÜNCELLEMESİ: Kargo Ücreti Gösterimi
+    // Hem 'summary-shipping' hem de eski olası ID'leri tarar.
+    const shipEl = document.getElementById('summary-shipping') || document.getElementById('shippingEl');
+    if (shipEl) {
+        if (sub === 0) {
+            shipEl.innerText = "0,00 €";
+            shipEl.classList.remove('text-success');
+        } else if (currentShippingCost === 0) {
+            shipEl.innerText = "GRATIS";
+            shipEl.classList.add('text-success'); // Ücretsizse yeşil yap
+        } else {
+            shipEl.innerText = euro.format(currentShippingCost);
+            shipEl.classList.remove('text-success'); // Ücretliyse yeşili kaldır (beyaz/normal renge döner)
+        }
+    }
+
+    if (document.getElementById('summary-total')) document.getElementById('summary-total').innerText = euro.format(finalTotal);
 
     const btn = document.querySelector('.btn-order-submit');
     if (btn) btn.disabled = sub <= 0;

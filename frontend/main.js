@@ -3,19 +3,21 @@
  * Tüm özellikler: Ürün Sınırı (9 Ürün), Sepet Onarımı, Miktar Koruması, 1 Yorum Sınırı, 
  * Karakter Sayacı, İsim Sınırı (50 Karakter), Küfür Filtresi ve Kademeli Yorum Gösterimi.
  * REVIZE: Yorumlar artık 9'ar 9'ar yüklenecek şekilde mühürlendi.
- * 🛡️ SMART IMAGE RESOLVER: Vitrindeki 404 Resim hataları mühürlendi (Çift uploads/ sorunu çözüldü).
+ * 🛡️ SMART IMAGE RESOLVER: Vitrindeki 404 Resim hataları mühürlendi.
  * 🛡️ AEO & GEO ENGINE: Dinamik Ürün ve Yorum Schema (JSON-LD) enjeksiyonları eklendi.
+ * 🛡️ UPSELLING ENGINE: Kargo teşvik hesaplamaları ve Admin API bağlantısı eklendi.
  */
 
 // --- GLOBAL DEĞİŞKENLER ---
 let products = [];
 let cart = JSON.parse(localStorage.getItem('luxeCartArray')) || [];
+let shopSettings = { shippingCost: 4.99, freeShippingThreshold: 50 }; // Varsayılan Kargo Ayarları
 const euro = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' });
 let selectedProduct = null, currentQty = 1;
 
 // ÜRÜN VE YORUM GÖSTERİM SINIRLARI
 let shownProductsCount = 9;
-let shownReviewsCount = 9; // 🛡️ REVIZE: Başlangıçta 9 yorum gösterilecek
+let shownReviewsCount = 9;
 let testimonials = [];
 
 const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
@@ -29,20 +31,14 @@ const UPLOADS_URL = window.location.hostname === 'localhost' || window.location.
 const badWords = ["küfür1", "küfür2", "argo1", "argo2", "idiot", "badword", "scheiße"];
 
 // 🛡️ AKILLI RESİM ÇÖZÜCÜ (SMART IMAGE RESOLVER)
-// Veritabanındaki resim yolu nasıl olursa olsun onu doğru URL'ye çevirir.
 function getImageUrl(imagePath) {
-    if (!imagePath) return 'https://via.placeholder.com/400x400?text=No+Image'; // Resim yoksa
-    if (imagePath.startsWith('http')) return imagePath; // Harici bir URL ise
-
-    // Eğer isimde zaten "uploads/" veya "/uploads/" varsa bunları temizle
+    if (!imagePath) return 'https://via.placeholder.com/400x400?text=No+Image';
+    if (imagePath.startsWith('http')) return imagePath;
     let cleanPath = imagePath.replace(/^\/?(uploads\/)+/, '');
-
-    // Temizlenmiş ismin başına doğru ana URL'yi ekle
     return `${UPLOADS_URL}/${cleanPath}`;
 }
 
 // 🛡️ GEO & AEO OPTİMİZASYONU: DİNAMİK ÜRÜN ŞEMASI ENJEKSİYONU
-// Bu fonksiyon, ekranda gösterilen ürünleri yapay zeka motorlarının anında okuyabilmesi için JSON-LD'ye çevirir.
 function injectProductSchema(renderedProducts) {
     if (!renderedProducts || renderedProducts.length === 0) return;
     let schemaScript = document.getElementById('dynamic-product-schema');
@@ -77,7 +73,6 @@ function injectProductSchema(renderedProducts) {
 }
 
 // 🛡️ GEO & AEO OPTİMİZASYONU: DİNAMİK YORUM ŞEMASI ENJEKSİYONU
-// Ortalama puanı hesaplar ve arama motorlarında sitenin yıldızlarla (Trust Sinyali) çıkmasını sağlar.
 function injectReviewSchema(allReviews) {
     if (!allReviews || allReviews.length === 0) return;
     let schemaScript = document.getElementById('dynamic-review-schema');
@@ -155,8 +150,23 @@ function initTheme() {
     });
 }
 
-// --- 3. ÜRÜN İŞLEMLERİ ---
-async function fetchProducts() {
+// --- 🛡️ 3. ÜRÜN İŞLEMLERİ VE KARGO AYARLARI ---
+async function fetchSettingsAndProducts() {
+    // Kargo ayarlarını çek
+    try {
+        const resSettings = await fetch(`${API_URL}/settings`);
+        if (resSettings.ok) {
+            shopSettings = await resSettings.json();
+
+            // 🛡️ Arama Çubuğu Altındaki Sabit Yazıyı Güncelle (2. RESİM)
+            const searchShippingText = document.getElementById('search-shipping-threshold');
+            if (searchShippingText) {
+                searchShippingText.innerText = euro.format(shopSettings.freeShippingThreshold);
+            }
+        }
+    } catch (e) { console.error("Kargo ayarları çekilemedi", e); }
+
+    // Ürünleri çek
     try {
         const response = await fetch(`${API_URL}/products`);
         const data = await response.json();
@@ -170,13 +180,13 @@ async function fetchProducts() {
             oldPrice: p.oldPrice || null,
             stock: p.stock || 0,
             tag: p.tag || (p.stock <= 0 ? "Ausverkaft" : "Neu"),
-            img: getImageUrl(p.image), // 🛡️ AKILLI ÇÖZÜCÜYÜ BURAYA MÜHÜRLEDİK
+            img: getImageUrl(p.image),
             description: p.description || "",
             orderIndex: p.orderIndex
         }));
 
         renderProducts(products);
-        updateCartUI();
+        updateCartUI(); // Ayarlar ve ürünler yüklendikten sonra sepet teşvikini de günceller
     } catch (error) {
         console.error("Backend bağlantı hatası:", error);
     }
@@ -222,7 +232,6 @@ function renderProducts(listToDisplay) {
         showMoreProductsWrapper.style.display = listToDisplay.length > shownProductsCount ? "block" : "none";
     }
 
-    // 🛡️ DİNAMİK ÜRÜN ŞEMASINI ÇALIŞTIR
     injectProductSchema(listToShow);
 }
 
@@ -235,7 +244,7 @@ window.filterProducts = function () {
     renderProducts(filtered);
 }
 
-// --- 4. YORUM YÖNETİMİ (REVIZE) ---
+// --- 4. YORUM YÖNETİMİ ---
 function censorText(text) {
     if (!text) return "";
     const regex = new RegExp(badWords.join("|"), "gi");
@@ -266,7 +275,6 @@ async function initTestimonials() {
         }
     }
 
-    // 🛡️ REVIZE: Yorumları shownReviewsCount kadarıyla sınırla
     const reviewsToDisplay = testimonials.slice(0, shownReviewsCount);
 
     container.innerHTML = reviewsToDisplay.map(t => `
@@ -285,12 +293,10 @@ async function initTestimonials() {
             </div>
         </div>`).join('');
 
-    // 🛡️ REVIZE: Daha fazla yorum varsa butonu göster
     if (showMoreWrapper) {
         showMoreWrapper.style.display = testimonials.length > shownReviewsCount ? "block" : "none";
     }
 
-    // 🛡️ DİNAMİK YORUM ŞEMASINI ÇALIŞTIR
     injectReviewSchema(testimonials);
 }
 
@@ -315,7 +321,6 @@ function initReviewCounter() {
 }
 
 document.addEventListener('click', function (e) {
-    // 🛡️ REVIZE: Yorumları 9'ar 9'ar arttır
     if (e.target && e.target.id === 'showMoreReviewsBtn') {
         shownReviewsCount += 9;
         initTestimonials();
@@ -426,8 +431,6 @@ function updateModalUI() {
         qtyInput.value = currentQty;
     }
 
-    // 🔥 DÜZELTME: Eğer miktar 0 ise (Ürün tükendiyse veya kutu silindiyse)
-    // her zaman en az 1 adet fiyatını göster. (0,00 € hatasına KESİN ÇÖZÜM)
     const displayQty = Math.max(1, currentQty);
     document.getElementById('mPriceDisplay').innerText = euro.format(selectedProduct.price * displayQty);
 
@@ -468,7 +471,7 @@ window.validateManualQty = function (input) {
 
     if (valStr === "") {
         currentQty = 0;
-        updateModalUI(); // Fiyatın 0 görünmemesi için updateModalUI tetiklenir
+        updateModalUI();
         return;
     }
 
@@ -493,7 +496,7 @@ window.blockNonIntegers = function (e) {
     if ([".", ",", "e", "E", "+", "-"].includes(e.key)) e.preventDefault();
 }
 
-// --- 6. SEPET YÖNETİMİ ---
+// --- 6. SEPET YÖNETİMİ & TEŞVİK MOTORU (UPSELLING) ---
 window.addToCart = function () {
     if (currentQty <= 0) return;
 
@@ -532,14 +535,27 @@ function updateCartUI() {
     const badge = document.getElementById('cart-badge');
     if (badge) { badge.innerText = totalQty; badge.style.display = totalQty > 0 ? "block" : "none"; }
 
+    // 🛡️ DİNAMİK KARGO TEŞVİK SİSTEMİ (1. RESİMDEKİ KISIM)
     const floatBar = document.getElementById('luxe-floating-cart');
     const floatTotal = document.getElementById('float-total-amount');
+    const shipTextEl = document.getElementById('float-shipping-text');
 
     if (floatBar && floatTotal) {
         if (totalQty > 0) {
             floatBar.classList.add('active');
             floatTotal.innerText = euro.format(totalPrice);
             floatBar.onclick = (e) => handleCheckoutNavigation(e);
+
+            if (shipTextEl) {
+                if (totalPrice < shopSettings.freeShippingThreshold) {
+                    const remaining = shopSettings.freeShippingThreshold - totalPrice;
+                    shipTextEl.innerHTML = `Noch <span class="text-white">${euro.format(remaining)}</span> bis Gratis-Versand!`;
+                    shipTextEl.className = "shipping-alert-pill text-warning";
+                } else {
+                    shipTextEl.innerHTML = `<i class="fas fa-check-circle"></i> GRATIS VERSAND ERREICHT!`;
+                    shipTextEl.className = "shipping-alert-pill text-success border-success";
+                }
+            }
         } else {
             floatBar.classList.remove('active');
             floatBar.onclick = null;
@@ -583,7 +599,7 @@ function initCookieConsent() {
 
 // --- 8. BAŞLATMA ---
 document.addEventListener('DOMContentLoaded', () => {
-    fetchProducts();
+    fetchSettingsAndProducts();
     initTheme();
     initTestimonials();
     initReviewCounter();

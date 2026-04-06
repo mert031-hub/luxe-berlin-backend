@@ -88,7 +88,7 @@
           "name": "Welche Produkte bietet Koçyiğit an?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "Koçyiğit Betrieb&Handel bietet Premium-Mode, Lifestyle-Produkte, Autopflege (Magurex) und exklusive Gartenartikel (Yaşam Garden) mit erstklassigem Service."
+            "text": "Koçyiğit Betrieb&Handel bietet Premium-Mode, Lifestyle-Produkte, Autpflege (Magurex) und exklusive Gartenartikel (Yaşam Garden) mit erstklassigem Service."
           }
         }
       ]
@@ -154,8 +154,16 @@
                 <input type="text" id="mainSearchInput" class="luxe-search-input"
                     placeholder="Suchen Sie in unserer Kollektion..." onkeyup="filterProducts()">
             </div>
-            <p class="text-muted small mt-3 opacity-50" style="letter-spacing: 1px;">PREMIUM PFLEGE & EXKLUSIVES DESIGN
-            </p>
+
+            <div class="mt-4 mx-auto" style="max-width: 500px;" data-aos="zoom-in" data-aos-delay="300">
+                <div class="p-2 px-4 rounded-pill shadow-sm border"
+                    style="background-color: var(--midnight); border-color: var(--gold) !important;">
+                    <div class="text-gold fw-bold mb-0" style="font-size: 0.85rem; letter-spacing: 0.5px;">
+                        <i class="fas fa-truck me-2"></i> KOSTENLOSER VERSAND AB <span
+                            id="search-shipping-threshold">50,00 €</span>!
+                    </div>
+                </div>
+            </div>
         </div>
     </section>
 
@@ -335,14 +343,20 @@
         <i class="fas fa-chevron-up"></i>
     </button>
 
-    <div id="luxe-floating-cart" class="floating-cart-pill">
-        <div class="float-price-info">
-            <small>Gesamtbetrag</small>
-            <span id="float-total-amount">0,00 €</span>
+    <div id="luxe-floating-cart" class="floating-cart-container">
+        <div id="float-shipping-text" class="shipping-alert-pill text-warning">
+            Kostenloser Versand ab 50,00 €
         </div>
-        <a href="payment.html" class="float-checkout-btn">
-            ZUR KASSE <i class="fas fa-chevron-right"></i>
-        </a>
+
+        <div class="floating-cart-pill">
+            <div class="float-price-info">
+                <small>Gesamtbetrag</small>
+                <span id="float-total-amount">0,00 €</span>
+            </div>
+            <a href="payment.html" class="float-checkout-btn">
+                ZUR KASSE <i class="fas fa-chevron-right"></i>
+            </a>
+        </div>
     </div>
 
     <div class="modal fade" id="reviewLimitModal" tabindex="-1" aria-hidden="true">

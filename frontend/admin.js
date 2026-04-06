@@ -10,6 +10,7 @@
  * - REORDER ENGINE: SortableJS ile kalıcı veritabanı sıralaması.
  * - 🛡️ SMART IMAGE RESOLVER: Tüm 404 resim hatalarını çözen akıllı URL sistemi eklendi.
  * - 🛡️ INVOICE ENGINE: Admin sipariş detaylarına PDF fatura indirme butonu entegre edildi.
+ * - 🛡️ SHIPPING ENGINE: Dinamik kargo bedeli ve bedava kargo limiti entegre edildi.
  */
 
 // 🛡️ GÜVENLİK KALKANI: Eklenti yüklenemezse bile Admin Paneli ÇÖKMEZ!
@@ -42,15 +43,10 @@ const UPLOADS_URL = window.location.hostname === 'localhost' || window.location.
 const euro = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' });
 
 // 🛡️ AKILLI RESİM ÇÖZÜCÜ (SMART IMAGE RESOLVER)
-// Veritabanındaki resim yolu nasıl olursa olsun onu doğru URL'ye çevirir.
 function getImageUrl(imagePath) {
     if (!imagePath) return 'https://placehold.co/150?text=No+Image'; // Resim yoksa
-    if (imagePath.startsWith('http')) return imagePath; // Harici bir URL ise (Örn: Cloudinary)
-
-    // Eğer isimde zaten "uploads/" veya "/uploads/" varsa bunları temizle (Çiftleşmeyi önle)
+    if (imagePath.startsWith('http')) return imagePath; // Harici bir URL ise
     let cleanPath = imagePath.replace(/^\/?(uploads\/)+/, '');
-
-    // Temizlenmiş ismin başına doğru ana URL'yi ekle
     return `${UPLOADS_URL}/${cleanPath}`;
 }
 
@@ -279,7 +275,6 @@ function renderStatusChart(orders) {
             maintainAspectRatio: false,
             cutout: '75%',
             plugins: {
-                // 🛡️ REVIZE: Legend (Alt açıklamalar) aktif edildi
                 legend: {
                     display: true,
                     position: 'bottom',
@@ -334,7 +329,6 @@ function renderStatusChart(orders) {
                     ctx.textAlign = 'center';
                     ctx.textBaseline = 'middle';
                     var centerX = ((chart.chartArea.left + chart.chartArea.right) / 2);
-                    // Legend eklendiği için merkezi biraz yukarı kaydırdık
                     var centerY = ((chart.chartArea.top + chart.chartArea.bottom) / 2) - 10;
                     ctx.font = "bold " + fontSizeToUse + "px " + fontStyle;
                     ctx.fillStyle = color;
@@ -521,7 +515,6 @@ window.restoreOrder = async (id) => {
     } catch (err) { console.error(err); }
 };
 
-// 🛡️ SİPARİŞ DETAYLARI VE E-FATURA İNDİRME (MÜHÜRLENDİ)
 window.viewDetails = async (id) => {
     const o = allOrdersData.find(item => item._id === id);
     if (!o) return;
@@ -581,10 +574,7 @@ window.loadProducts = async () => {
         list.innerHTML = "";
 
         products.filter(p => p.isDeleted !== true).forEach(p => {
-
-            // 🛡️ SMART IMAGE RESOLVER UYGULANDI
             let imgSrc = getImageUrl(p.image);
-
             let priceDisplay = p.oldPrice
                 ? `<div class="text-decoration-line-through text-muted small">${euro.format(p.oldPrice)}</div><div class="fw-bold text-gold">${euro.format(p.price)}</div>`
                 : `<div class="fw-bold">${euro.format(p.price)}</div>`;
@@ -664,9 +654,7 @@ window.loadArchivedProducts = async () => {
 
         archivedList.innerHTML = "";
         archived.forEach(p => {
-            // 🛡️ SMART IMAGE RESOLVER UYGULANDI
             let imgSrc = getImageUrl(p.image);
-
             archivedList.innerHTML += `
                 <tr>
                     <td><img src="${imgSrc}" width="30" height="30" style="object-fit: cover;" class="grayscale rounded shadow-sm" onerror="this.src='https://placehold.co/150?text=404'"></td>
@@ -741,7 +729,6 @@ window.editProduct = async (id) => {
     const preview = document.getElementById('imagePreview');
     if (preview && p.image) {
         preview.classList.remove('d-none');
-        // 🛡️ SMART IMAGE RESOLVER UYGULANDI
         document.getElementById('previewImg').src = getImageUrl(p.image);
     }
     document.getElementById('productFormTitle').innerText = "Produkt bearbeiten";
@@ -902,10 +889,53 @@ window.logout = async () => {
     finally { window.location.href = 'login.html'; }
 };
 
+// --- 🛡️ 10. KARGO VE SİSTEM AYARLARI MOTORU ---
+window.loadSettings = async () => {
+    try {
+        const res = await fetch(`${API_URL}/settings`);
+        if (res && res.ok) {
+            const data = await res.json();
+            document.getElementById('setShippingCost').value = data.shippingCost.toFixed(2);
+            document.getElementById('setFreeShippingThreshold').value = data.freeShippingThreshold.toFixed(2);
+        }
+    } catch (err) { console.error("Ayarlar yüklenemedi:", err); }
+};
+
+document.getElementById('settingsForm')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('saveSettingsBtn');
+    const origText = btn.innerHTML;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Speichern...';
+
+    const payload = {
+        shippingCost: parseFloat(document.getElementById('setShippingCost').value),
+        freeShippingThreshold: parseFloat(document.getElementById('setFreeShippingThreshold').value)
+    };
+
+    try {
+        const res = await fetch(`${API_URL}/settings`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify(payload)
+        }).then(handleAuthError);
+
+        if (res && res.ok) {
+            showLuxeAlert("Versandeinstellungen aktualisiert!", "success");
+            window.logActivity("Versandeinstellungen geändert", currentUser, "Success");
+        }
+    } catch (err) {
+        showLuxeAlert("Fehler beim Speichern", "error");
+    } finally {
+        btn.innerHTML = origText;
+    }
+});
+
 // --- 🛡️ 9. BAŞLATICI ---
 document.addEventListener('DOMContentLoaded', async () => {
     await checkInitialAuth();
     loadDashboard();
+    await loadSettings(); // Ayarları yükle
     startAuthWatcher();
 });
 

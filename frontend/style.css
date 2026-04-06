@@ -520,53 +520,78 @@ body.dark-mode .qty-control-luxe {
   font-size: 1.1rem;
 }
 
-/* YÜZEN SEPET */
-.floating-cart-pill {
+/* 🛡️ YÜZEN SEPET KONTEYNERI (YENİ YAPI) */
+.floating-cart-container {
   position: fixed;
   bottom: 30px;
   left: 50%;
-  transform: translateX(-50%) translateY(120px);
-  background: #1c2541;
+  transform: translateX(-50%) translateY(150px);
+  z-index: 1050;
+  transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: auto;
+}
+.floating-cart-container.active {
+  transform: translateX(-50%) translateY(0);
+}
+
+/* 🛡️ ÜSTTEKİ DİNAMİK UYARI HAPI (1. RESİM) */
+.shipping-alert-pill {
+  background: var(--midnight);
+  color: var(--gold);
+  border: 1px solid var(--gold);
+  padding: 6px 20px;
+  border-radius: 50px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+  text-align: center;
+  white-space: nowrap;
+  transition: var(--theme-transition);
+}
+
+/* ANA SEPET KARTUŞU */
+.floating-cart-pill {
+  background: var(--midnight);
   color: white;
-  padding: 12px 12px 12px 25px;
+  padding: 10px 10px 10px 25px;
   border-radius: 100px;
   display: flex;
   align-items: center;
   gap: 20px;
   box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
-  z-index: 1050;
-  border: 1px solid #c5a059;
-  transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  border: 1px solid var(--gold);
   min-width: 320px;
-}
-.floating-cart-pill.active {
-  transform: translateX(-50%) translateY(0);
+  justify-content: space-between;
 }
 .float-price-info {
   display: flex;
   flex-direction: column;
-  line-height: 1.2;
+  line-height: 1.1;
 }
 .float-price-info small {
-  font-size: 0.65rem;
+  font-size: 0.6rem;
   text-transform: uppercase;
-  color: #c5a059;
+  color: var(--gold);
   letter-spacing: 1px;
   font-weight: 700;
 }
 .float-price-info span {
-  font-size: 1.2rem;
-  font-weight: 700;
+  font-size: 1.3rem;
+  font-weight: 800;
 }
 .float-checkout-btn {
-  background: #c5a059;
-  color: #1c2541;
+  background: var(--gold);
+  color: var(--midnight);
   border: none;
-  padding: 12px 25px;
+  padding: 14px 28px;
   border-radius: 100px;
-  font-weight: 700;
+  font-weight: 800;
   text-decoration: none;
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   transition: 0.3s;
   display: flex;
   align-items: center;
@@ -575,8 +600,9 @@ body.dark-mode .qty-control-luxe {
 .float-checkout-btn:hover {
   background: white;
   transform: scale(1.05);
-  color: #1c2541;
+  color: var(--midnight);
 }
+
 .btn-luxe {
   background: var(--midnight);
   color: white;
@@ -635,24 +661,24 @@ body.dark-mode .btn-luxe {
 /* 🛡️ SOSYAL MEDYA (INSTA-IMG) TASARIMI - TAŞMA ÖNLEYİCİ VE GECE MODU */
 .insta-img {
   width: 100%;
-  aspect-ratio: 1 / 1; /* Resimleri kusursuz kare yapar */
-  object-fit: cover; /* Resmi büzmeden, keserek sığdırır (Taşmayı önler) */
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
   transition: var(--theme-transition);
 }
 
 body.dark-mode .insta-img {
-  filter: brightness(0.85) contrast(1.1); /* Gece modunda göz almasın diye hafif kararır */
+  filter: brightness(0.85) contrast(1.1);
 }
 
 body.dark-mode .insta-img:hover {
-  filter: brightness(1) contrast(1.1); /* Üzerine gelince parlar */
+  filter: brightness(1) contrast(1.1);
 }
 
 /* 💳 PAYMENT SHOWCASE */
 .luxe-payment-showcase {
   background-color: var(--bg-secondary);
   padding: 20px 0;
-  width: 100%; /* FIX: MOBİL KAYMAYI ÖNLER */
+  width: 100%;
 }
 .payment-title {
   font-size: 0.65rem;
@@ -755,6 +781,16 @@ body.dark-mode .payment-brand-grid:hover {
   z-index: 1040;
   border: 1px solid var(--gold);
   transition: 0.4s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.luxe-whatsapp-float i {
+  font-size: 1.2rem;
+}
+.luxe-whatsapp-text {
+  font-weight: 600;
+  font-size: 0.9rem;
 }
 .luxe-whatsapp-float:hover {
   background-color: var(--gold);
@@ -780,6 +816,7 @@ body.dark-mode .payment-brand-grid:hover {
   visibility: hidden;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
   outline: none !important;
+  transition: var(--theme-transition);
 }
 .luxe-back-to-top.show {
   opacity: 1;
@@ -863,7 +900,7 @@ body.dark-mode .payment-brand-grid:hover {
   top: 0;
   left: 0;
   width: 100%;
-  height: 100dvh; /* Dinamik yükseklik: Mobil tarayıcı barlarına tam uyum */
+  height: 100dvh;
   background-color: #0b0e17;
   display: flex;
   align-items: center;
@@ -884,20 +921,16 @@ body.dark-mode .payment-brand-grid:hover {
 
 .preloader-logo {
   font-family: "Playfair Display", serif;
-  font-size: clamp(
-    1.1rem,
-    5.5vw,
-    2.5rem
-  ); /* FIX: MOBILDE TAM SIGMASI İÇİN AYARLANDI */
+  font-size: clamp(1.1rem, 5.5vw, 2.5rem);
   color: #ffffff;
   letter-spacing: clamp(1px, 0.8vw, 4px);
   text-transform: uppercase;
   margin-bottom: 25px;
   display: flex;
-  flex-wrap: wrap; /* Gerekirse alt satıra geçer */
+  flex-wrap: wrap;
   justify-content: center;
   animation: luxeFadePulse 2.5s ease-in-out infinite;
-  max-width: 100%; /* Taşmayı önler */
+  max-width: 100%;
 }
 
 .preloader-bar {
@@ -970,7 +1003,7 @@ body.dark-mode .payment-brand-grid:hover {
 .luxe-cookie-banner {
   position: fixed;
   bottom: 20px;
-  left: 10px; /* Mobil için kenar boşlukları daraltıldı */
+  left: 10px;
   right: 10px;
   background: var(--midnight);
   color: white;
@@ -997,9 +1030,8 @@ body.dark-mode .payment-brand-grid:hover {
   line-height: 1.5;
 }
 
-/* 📱 MOBILE PRODUCT GRID FIX */
-@media (max-width: 576px) {
-  /* Ürün kartlarını yan yana 2 tane yapar */
+/* 📱 MOBILE RESPONSIVE FIXES (CART & WHATSAPP OVERLAP) */
+@media (max-width: 768px) {
   .row-cols-1 {
     display: flex !important;
     flex-wrap: wrap !important;
@@ -1010,18 +1042,16 @@ body.dark-mode .payment-brand-grid:hover {
     padding: 8px !important;
   }
 
-  /* Ürün görsellerini kart boyutuna göre küçültür */
   .product-img-box {
-    height: 160px !important; /* Kart küçüldüğü için resmi de küçülttük */
+    height: 160px !important;
     padding: 10px !important;
   }
 
-  /* Yazı boyutlarını küçülterek sığmasını sağlar */
   .product-card .h5,
   .product-card h5 {
     font-size: 0.85rem !important;
     margin-bottom: 5px !important;
-    height: 38px; /* İsimlerin hizalı durması için */
+    height: 38px;
     overflow: hidden;
   }
 
@@ -1038,7 +1068,6 @@ body.dark-mode .payment-brand-grid:hover {
     padding: 6px 12px !important;
   }
 
-  /* 🛡️ SALE SYSTEM MOBILE ADJUSTMENTS */
   .sale-tag {
     padding: 3px 8px !important;
     font-size: 0.5rem !important;
@@ -1047,5 +1076,47 @@ body.dark-mode .payment-brand-grid:hover {
   }
   .old-price {
     font-size: 0.75rem !important;
+  }
+
+  /* 🛡️ WHATSAPP & YÜZEN SEPET KESİŞME (OVERLAP) ÇÖZÜMÜ */
+  .floating-cart-container {
+    width: 92%;
+    bottom: 15px; /* Sepet ekranın tam altına otursun */
+  }
+  .floating-cart-pill {
+    width: 100%;
+    min-width: unset;
+    padding: 8px 8px 8px 20px;
+    gap: 10px;
+  }
+  .float-price-info span {
+    font-size: 1.1rem;
+  }
+  .float-checkout-btn {
+    padding: 12px 20px;
+    font-size: 0.8rem;
+  }
+  .shipping-alert-pill {
+    font-size: 0.7rem;
+    padding: 5px 15px;
+  }
+  .luxe-whatsapp-float {
+    bottom: 125px; /* Whatsapp butonu sepetin tam üstüne çıkarıldı */
+    right: 15px;
+    padding: 12px;
+    width: 50px;
+    height: 50px;
+    justify-content: center;
+  }
+  .luxe-whatsapp-text {
+    display: none; /* Mobilde yer kaplamaması için yazı gizlendi, sadece ikon kaldı */
+  }
+  .luxe-whatsapp-float i {
+    font-size: 1.6rem;
+    margin: 0;
+  }
+  .luxe-back-to-top {
+    bottom: 185px; /* Yukarı çık butonu da WhatsApp'ın üstüne çıkarıldı */
+    right: 15px;
   }
 }

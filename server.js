@@ -2,6 +2,7 @@
  * KOÇYİĞİT GmbH - OFFICIAL BACKEND SERVER (ULTRA STABLE V13)
  * OPTİMİZASYON: Gzip/Brotli Sıkıştırma, Static Caching ve DNS Önceliği.
  * 🛡️ REVIZE: Apple Pay (.well-known) Desteği ve Resim Erişimi Mühürlendi.
+ * 🛡️ KARGO MOTORU: Dinamik kargo ayarları rotası entegre edildi.
  */
 
 require('dotenv').config();
@@ -91,6 +92,7 @@ app.use('/api/reviews', require('./routes/reviewRoutes'));
 app.use('/api/logs', require('./routes/logRoutes'));
 app.use('/api', require('./routes/testRoutes'));
 app.use('/api/payment', require('./routes/paymentRoutes'));
+app.use('/api/settings', require('./routes/settingRoutes')); // 🛡️ DİNAMİK KARGO ROTASI
 
 // API Durum Kontrolü
 app.get('/api-status', (req, res) => {
