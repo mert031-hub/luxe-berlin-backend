@@ -239,11 +239,11 @@ exports.archiveOrder = async (req, res) => {
 };
 
 /**
- * 🛡️ 9️⃣ KOÇYİĞİT GmbH - PDF FATURA OLUŞTURUCU (MÜHÜRLÜ DİZAYN)
+ * 🛡️ 9️⃣ KOÇYİĞİT GmbH - PDF FATURA OLUŞTURUCU (MÜHÜRLÜ DİZAYN + KARGO EKLENTİSİ)
  */
 exports.downloadInvoice = async (req, res) => {
     try {
-        const order = await Order.findById(req.params.id);
+        const order = await Order.findById(req.params.id).populate('items.productId');
         if (!order) return res.status(404).send('Bestellung nicht gefunden');
 
         const doc = new PDFDocument({ margin: 50, size: 'A4' });
@@ -254,7 +254,6 @@ exports.downloadInvoice = async (req, res) => {
 
         doc.pipe(res);
 
-        // 🛡️ Türkçe Karakter Temizleyici (PDF Hatalarını Önler)
         const sanitize = (text) => {
             if (!text) return "";
             return text.replace(/Ğ/g, 'G').replace(/ğ/g, 'g')
@@ -265,7 +264,7 @@ exports.downloadInvoice = async (req, res) => {
                 .replace(/Ç/g, 'C').replace(/ç/g, 'c');
         };
 
-        // 1. Şirket Bilgileri ve Başlık (Altın rengi eklendi)
+        // 1. Şirket Bilgileri
         doc.fillColor('#444444').fontSize(26).font('Helvetica-Bold').text('RECHNUNG', { align: 'right' });
         doc.moveDown();
 
@@ -275,10 +274,9 @@ exports.downloadInvoice = async (req, res) => {
         doc.text('89180 Berghulen', 50, 125);
         doc.text('Deutschland', 50, 140);
 
-        // Çizgi
         doc.strokeColor('#e0e0e0').lineWidth(1).moveTo(50, 170).lineTo(550, 170).stroke();
 
-        // 2. Müşteri ve Sipariş Bilgileri (Hizalanmış 2 Sütun)
+        // 2. Müşteri ve Sipariş Bilgileri
         doc.fillColor('#1c2541').fontSize(11).font('Helvetica-Bold').text('Rechnung an:', 50, 190);
         doc.fillColor('#444444').fontSize(10).font('Helvetica');
         doc.text(sanitize(`${order.customer.firstName} ${order.customer.lastName}`), 50, 210);
@@ -294,7 +292,7 @@ exports.downloadInvoice = async (req, res) => {
         doc.fillColor('#1c2541').font('Helvetica-Bold').text('Zahlungsart:', 320, 230);
         doc.fillColor('#444444').font('Helvetica').text(sanitize(`${order.paymentMethod || 'Online Zahlung'}`), 420, 230);
 
-        // 3. Ürün Tablosu Başlıkları (Milimetrik Hizalama)
+        // 3. Ürün Tablosu Başlıkları
         const tableTop = 290;
         doc.fillColor('#1c2541').font('Helvetica-Bold').fontSize(10);
         doc.text('Artikel', 50, tableTop);
@@ -302,35 +300,53 @@ exports.downloadInvoice = async (req, res) => {
         doc.text('Preis', 400, tableTop, { width: 60, align: 'right' });
         doc.text('Gesamt', 480, tableTop, { width: 70, align: 'right' });
 
-        // Altın Çizgi
         doc.strokeColor('#c5a059').lineWidth(2).moveTo(50, tableTop + 15).lineTo(550, tableTop + 15).stroke();
 
-        // 4. Ürünleri Listeleme
+        // 4. Ürünleri Listeleme ve Alt Toplam Hesaplama
         let y = tableTop + 25;
         doc.fillColor('#444444').font('Helvetica');
+        let subtotal = 0;
+
         (order.items || []).forEach(item => {
-            doc.text(sanitize(item.name || 'Produkt'), 50, y, { width: 260 });
-            doc.text((item.qty || 1).toString(), 320, y, { width: 50, align: 'center' });
-            doc.text(`${(item.price || 0).toFixed(2)} EUR`, 400, y, { width: 60, align: 'right' });
-            doc.text(`${((item.price || 0) * (item.qty || 1)).toFixed(2)} EUR`, 480, y, { width: 70, align: 'right' });
-            y += 20; // Sonraki ürün için satırı aşağı kaydır
+            const itemPrice = item.price || (item.productId && item.productId.price) || 0;
+            const itemQty = item.qty || 1;
+            const itemTotal = itemPrice * itemQty;
+            subtotal += itemTotal;
+
+            doc.text(sanitize(item.productId?.name || item.name || 'Produkt'), 50, y, { width: 260 });
+            doc.text(itemQty.toString(), 320, y, { width: 50, align: 'center' });
+            doc.text(`${itemPrice.toFixed(2)} EUR`, 400, y, { width: 60, align: 'right' });
+            doc.text(`${itemTotal.toFixed(2)} EUR`, 480, y, { width: 70, align: 'right' });
+            y += 20;
         });
+
+        // 🛡️ KARGO (Versandkosten) SATIRINI EKLİYORUZ
+        const total = order.totalAmount || 0;
+        let shippingCost = total - subtotal;
+        if (shippingCost < 0.05) shippingCost = 0; // Küsürat toleransı
 
         doc.strokeColor('#e0e0e0').lineWidth(1).moveTo(50, y + 10).lineTo(550, y + 10).stroke();
 
+        y += 20;
+        doc.fillColor('#1c2541').font('Helvetica-Oblique').text('Versandkosten (Standard)', 50, y, { width: 260 });
+        doc.fillColor('#444444').font('Helvetica').text('1', 320, y, { width: 50, align: 'center' });
+        doc.text(`${shippingCost.toFixed(2)} EUR`, 400, y, { width: 60, align: 'right' });
+        doc.text(`${shippingCost.toFixed(2)} EUR`, 480, y, { width: 70, align: 'right' });
+
+        doc.strokeColor('#c5a059').lineWidth(1).moveTo(380, y + 20).lineTo(550, y + 20).stroke();
+
         // 5. Vergi ve Toplam Hesaplamaları (Almanya Standardı)
-        const total = order.totalAmount || 0;
         const netto = (total / 1.19).toFixed(2);
         const mwst = (total - netto).toFixed(2);
 
-        doc.font('Helvetica').text('Nettobetrag:', 380, y + 25, { width: 90, align: 'right' });
-        doc.text(`${netto} EUR`, 480, y + 25, { width: 70, align: 'right' });
+        doc.font('Helvetica').text('Nettobetrag:', 380, y + 35, { width: 90, align: 'right' });
+        doc.text(`${netto} EUR`, 480, y + 35, { width: 70, align: 'right' });
 
-        doc.text('MwSt (19%):', 380, y + 45, { width: 90, align: 'right' });
-        doc.text(`${mwst} EUR`, 480, y + 45, { width: 70, align: 'right' });
+        doc.text('MwSt (19%):', 380, y + 55, { width: 90, align: 'right' });
+        doc.text(`${mwst} EUR`, 480, y + 55, { width: 70, align: 'right' });
 
-        doc.font('Helvetica-Bold').fontSize(14).fillColor('#c5a059').text('Gesamtsumme:', 320, y + 70, { width: 150, align: 'right' });
-        doc.text(`${total.toFixed(2)} EUR`, 480, y + 70, { width: 70, align: 'right' });
+        doc.font('Helvetica-Bold').fontSize(14).fillColor('#c5a059').text('Gesamtsumme:', 320, y + 80, { width: 150, align: 'right' });
+        doc.text(`${total.toFixed(2)} EUR`, 480, y + 80, { width: 70, align: 'right' });
 
         // 6. Alt Bilgi (Footer)
         doc.font('Helvetica-Oblique').fontSize(10).fillColor('#777777').text(

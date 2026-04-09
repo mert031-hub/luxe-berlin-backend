@@ -249,6 +249,42 @@ body.dark-mode .bg-light {
   z-index: 5;
 }
 
+/* ==========================================================================
+   🛡️ ARAMA ÇUBUĞU ALTI SABİT KARGO UYARISI (GECE/GÜNDÜZ MODU KALKANI)
+   ========================================================================== */
+
+.search-shipping-pill {
+  background-color: var(--midnight) !important;
+  border: 1px solid var(--gold) !important;
+  transition: var(--theme-transition);
+}
+
+/* ☀️ GÜNDÜZ MODU: Arka plan lacivert, Yazılar Kar Beyazı, İkon Altın Sarısı */
+.search-shipping-pill .shipping-text,
+.search-shipping-pill #search-shipping-threshold {
+  color: #ffffff !important;
+}
+
+.search-shipping-pill .shipping-icon {
+  color: var(--gold) !important;
+}
+
+/* 🌙 GECE MODU (DARK MODE): Arka plan kart rengi, Yazı Açık Gri, Tutar ve İkon Altın Sarısı */
+body.dark-mode .search-shipping-pill {
+  background-color: var(--card-bg) !important;
+  box-shadow: 0 5px 15px rgba(197, 160, 89, 0.1) !important;
+}
+
+body.dark-mode .search-shipping-pill .shipping-text {
+  color: var(--text-main) !important;
+}
+
+body.dark-mode .search-shipping-pill #search-shipping-threshold,
+body.dark-mode .search-shipping-pill .shipping-icon {
+  color: var(--gold) !important;
+  text-shadow: 0 0 5px rgba(197, 160, 89, 0.2);
+}
+
 /* ÜRÜN KARTLARI */
 .product-card {
   border: 1px solid var(--border-color);

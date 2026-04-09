@@ -2,7 +2,7 @@ const { sendStatusEmail } = require('../config/mailer');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const Product = require('../models/Product');
 const Order = require('../models/Order');
-const Setting = require('../models/Setting'); // 🛡️ YENİ: Kargo ayarlarını çekeceğimiz model
+const Setting = require('../models/Setting');
 
 /**
  * KOÇYİĞİT GmbH - OFFICIAL PAYMENT CONTROLLER (V16 ULTIMATE)
@@ -10,13 +10,14 @@ const Setting = require('../models/Setting'); // 🛡️ YENİ: Kargo ayarların
  * 🛡️ REFUND SHIELD: Asenkron ödemeler (SEPA/Sofort) için iade kalkanı eklendi.
  * 🛡️ STOK KORUMASI: Atomik "findOneAndUpdate" ile yarış durumları engellendi.
  * 🛡️ DYNAMIC SHIPPING: Admin panelinden gelen kargo ücreti Stripe faturasına eklendi.
+ * 🛡️ MULTI-PAY: Tüm küresel ödeme yöntemleri (Amazon Pay, Klarna, Blik vb.) eklendi.
  */
 
 exports.createCheckoutSession = async (req, res) => {
     try {
         const { cartItems, customerInfo } = req.body;
         const verifiedItemsForMetadata = [];
-        let subtotal = 0; // Sepet toplamını hesaplamak için
+        let subtotal = 0;
 
         const line_items = await Promise.all(cartItems.map(async (item) => {
             const product = await Product.findById(item.id);
@@ -27,14 +28,14 @@ exports.createCheckoutSession = async (req, res) => {
                 throw new Error(`Entschuldigung, ${product.name} ist leider gerade ausverkauft.`);
             }
 
-            subtotal += product.price * item.qty; // Alt toplamı hesapla
+            subtotal += product.price * item.qty;
 
+            // Metadata sınırı için resmi çıkarıyoruz
             verifiedItemsForMetadata.push({
                 productId: product._id.toString(),
-                name: product.name,
+                name: product.name.substring(0, 40),
                 qty: item.qty,
-                price: product.price,
-                image: product.image
+                price: product.price
             });
 
             return {
@@ -50,13 +51,12 @@ exports.createCheckoutSession = async (req, res) => {
             };
         }));
 
-        // 🛡️ 3. KİLİT: DİNAMİK KARGO HESAPLAMASI VE STRIPE'A EKLENMESİ
+        // 🛡️ 3. KİLİT: DİNAMİK KARGO HESAPLAMASI
         let settings = await Setting.findOne();
-        if (!settings) settings = { shippingCost: 4.99, freeShippingThreshold: 50 }; // Güvenlik varsayılanı
+        if (!settings) settings = { shippingCost: 4.99, freeShippingThreshold: 50 };
 
         let appliedShippingCost = 0;
 
-        // Eğer sepet tutarı bedava kargo limitinin altındaysa kargoyu faturaya ekle
         if (subtotal < settings.freeShippingThreshold) {
             appliedShippingCost = settings.shippingCost;
 
@@ -64,17 +64,18 @@ exports.createCheckoutSession = async (req, res) => {
                 price_data: {
                     currency: 'eur',
                     product_data: {
-                        name: 'Versandkosten (Kargo Ücreti)', // Stripe sayfasında görünecek isim
+                        name: 'Versandkosten (Kargo Ücreti)',
                         description: 'Standard Lieferung',
                     },
-                    unit_amount: Math.round(appliedShippingCost * 100), // Stripe cent cinsinden çalışır
+                    unit_amount: Math.round(appliedShippingCost * 100),
                 },
                 quantity: 1,
             });
         }
 
+        // 🛡️ ANA MERKEZ: OTURUM OLUŞTURMA
         const session = await stripe.checkout.sessions.create({
-            payment_method_types: ['card'],
+            payment_method_types: ['card', 'amazon_pay', 'link', 'naver_pay', 'payco', 'bancontact', 'pix', 'klarna', 'eps', 'blik'],
             line_items,
             mode: 'payment',
             customer_email: customerInfo.email,
@@ -86,7 +87,7 @@ exports.createCheckoutSession = async (req, res) => {
                 phone: customerInfo.phone,
                 address: customerInfo.address,
                 cartItems: JSON.stringify(verifiedItemsForMetadata),
-                shippingCost: appliedShippingCost.toString() // Webhook'ta lazım olursa diye kargo ücretini not ediyoruz
+                shippingCost: appliedShippingCost.toString()
             }
         });
 
@@ -128,7 +129,7 @@ exports.stripeWebhook = async (req, res) => {
             let stockError = false;
 
             // 🛡️ 2. KİLİT: Atomik Stok Düşüşü Denemesi
-            for (const item of items) {
+            for (let item of items) {
                 const updatedProduct = await Product.findOneAndUpdate(
                     { _id: item.productId, stock: { $gte: item.qty } },
                     { $inc: { stock: -item.qty } },
@@ -140,13 +141,14 @@ exports.stripeWebhook = async (req, res) => {
                     console.error(`⚠️ KRİTİK HATA: ${item.name} için stok yetersiz! Otomatik iade süreci başlıyor...`);
                     break;
                 }
+
+                item.image = updatedProduct.image;
             }
 
             // ❌ EĞER STOK YETMEDİYSE (GHOST CHECKOUT & REFUND SHIELD)
             if (stockError) {
-                let refundStatus = 'Pending / Manual Refund Required'; // Varsayılan hata durumu (Asenkron ödemeler için)
+                let refundStatus = 'Pending / Manual Refund Required';
 
-                // 1. Parayı Stripe üzerinden otomatik iade etmeyi DENE
                 if (session.payment_intent) {
                     try {
                         await stripe.refunds.create({
@@ -154,15 +156,13 @@ exports.stripeWebhook = async (req, res) => {
                             reason: 'requested_by_customer',
                             metadata: { reason: "Automatischer Refund: Lagerbestand überschritten" }
                         });
-                        refundStatus = 'Refunded (Auto)'; // İade başarılıysa durumu güncelle
+                        refundStatus = 'Refunded (Auto)';
                         console.log("💰 Otomatik İade Başarılı.");
                     } catch (refundErr) {
-                        // Sofort/SEPA gibi asenkron ödemelerde iade patlarsa sistemi çökertme!
                         console.error("⚠️ STRIPE OTOMATİK İADE HATASI (Manuel iade gerekebilir):", refundErr.message);
                     }
                 }
 
-                // 2. Siparişi "Storniert/Hata" olarak GÜVENLE kaydet
                 const errorOrder = new Order({
                     customer: {
                         firstName: session.metadata.firstName,
@@ -173,7 +173,7 @@ exports.stripeWebhook = async (req, res) => {
                     },
                     items,
                     totalAmount: session.amount_total / 100,
-                    paymentStatus: refundStatus, // Dinamik iade durumu (Başarılı veya Manuel Bekliyor)
+                    paymentStatus: refundStatus,
                     status: 'Cancelled',
                     paymentMethod: 'Stock Error',
                     stripeSessionId: session.id,
@@ -200,7 +200,7 @@ exports.stripeWebhook = async (req, res) => {
                     address: session.metadata.address
                 },
                 items,
-                totalAmount: session.amount_total / 100, // Kargo dahil Stripe'ın çektiği total para
+                totalAmount: session.amount_total / 100,
                 paymentStatus: 'Paid',
                 paymentMethod: `${methodType} (Online)`,
                 stripeSessionId: session.id,

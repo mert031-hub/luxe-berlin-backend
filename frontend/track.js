@@ -3,6 +3,7 @@
  * 🛡️ REBRANDING: LUXE BERLIN -> KOÇYİĞİT GmbH mühürlendi.
  * 🛡️ SECURITY FIX: Sert kilit ve spinner eklendi. (Race Condition Protected)
  * 🛡️ INVOICE UPDATE: E-Fatura indirme butonu linki bağlandı.
+ * 🛡️ SHIPPING ENGINE: Mongoose schema fiyat eksikliği koruması eklendi.
  */
 
 const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
@@ -56,6 +57,8 @@ async function trackOrder() {
                 <h4 class="fw-bold">Status: <span style="color:#c5a059;">${translateStatus(order.status)}</span></h4>
             `;
 
+            let subtotal = 0;
+
             if (order.items && order.items.length > 0) {
                 itemsList.innerHTML = order.items.map((item, index) => {
                     let imgPath = item.productId?.image || item.image;
@@ -64,6 +67,10 @@ async function trackOrder() {
                     if (imgPath) {
                         finalImgSrc = imgPath.startsWith('http') ? imgPath : `${UPLOADS_URL}/${imgPath}`;
                     }
+
+                    // 🛡️ MONGOOSE FAILSAFE
+                    const itemPrice = item.price || (item.productId && item.productId.price) || 0;
+                    subtotal += itemPrice * item.qty;
 
                     return `
                         <div class="product-item d-flex justify-content-between align-items-center py-3" 
@@ -75,7 +82,7 @@ async function trackOrder() {
                                     <span class="small fw-semibold text-muted">${prodName}</span>
                                 </div>
                             </div>
-                            <div class="fw-bold text-navy">${euro.format(item.price * item.qty)}</div>
+                            <div class="fw-bold text-navy">${euro.format(itemPrice * item.qty)}</div>
                         </div>`;
                 }).join('');
             } else {
@@ -83,9 +90,26 @@ async function trackOrder() {
             }
 
             document.getElementById('display-address').innerText = `📍 ${order.customer?.address || 'K.A.'}`;
+
+            const subtotalEl = document.getElementById('display-subtotal');
+            if (subtotalEl) subtotalEl.innerText = euro.format(subtotal);
+
+            let shippingCost = order.totalAmount - subtotal;
+            if (shippingCost < 0.05) shippingCost = 0;
+
+            const shippingEl = document.getElementById('display-shipping');
+            if (shippingEl) {
+                if (shippingCost === 0) {
+                    shippingEl.innerText = "GRATIS";
+                    shippingEl.classList.add('text-success');
+                } else {
+                    shippingEl.innerText = euro.format(shippingCost);
+                    shippingEl.classList.remove('text-success');
+                }
+            }
+
             document.getElementById('display-total').innerText = euro.format(order.totalAmount || 0);
 
-            // 🛡️ E-Fatura Linkini Güncelle
             const invoiceBtn = document.getElementById('invoiceDownloadBtn');
             if (invoiceBtn) {
                 invoiceBtn.href = `${API_URL}/orders/${order._id}/invoice`;
@@ -128,20 +152,17 @@ window.openCancelModal = function () {
 window.executeCancellation = async function () {
     if (!currentLoadedOrderId) return;
 
-    // 🛡️ MASTER LOCK: Modal içindeki tüm butonları dondur ve gizle
     const modal = document.getElementById('cancelConfirmModal');
     const confirmBtn = document.getElementById('confirmCancelBtn') || modal.querySelector('.btn-danger');
     const secondaryBtns = modal.querySelectorAll('.btn-close, .btn-secondary');
 
-    if (confirmBtn.disabled) return; // Zaten işlem başladıysa dur
+    if (confirmBtn.disabled) return;
 
-    // 1. ADIM: Butonu kilitle ve spinner'ı başlat
     confirmBtn.disabled = true;
-    confirmBtn.style.pointerEvents = 'none'; // Fare etkileşimini tamamen kes
+    confirmBtn.style.pointerEvents = 'none';
     confirmBtn.style.opacity = '0.7';
     confirmBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Bitte warten...';
 
-    // 2. ADIM: Kapatma ve İptal butonlarını gizle (Kullanıcı pencereden çıkamasın)
     secondaryBtns.forEach(btn => btn.style.visibility = 'hidden');
 
     try {
@@ -153,11 +174,9 @@ window.executeCancellation = async function () {
         const data = await res.json();
 
         if (res.ok) {
-            // Başarılı durumda direkt yeniliyoruz
             alert("Ihre Bestellung wurde erfolgreich storniert.");
             window.location.reload();
         } else {
-            // Hata durumunda butonları geri aç
             alert("Fehler: " + (data.message || "Stornierung fehlgeschlagen."));
             confirmBtn.disabled = false;
             confirmBtn.style.pointerEvents = 'auto';
@@ -168,7 +187,6 @@ window.executeCancellation = async function () {
     } catch (err) {
         console.error("Cancellation error:", err);
         alert("Ein technischer Fehler ist aufgetreten.");
-        // Kritik hatada her şeyi geri getir
         confirmBtn.disabled = false;
         confirmBtn.style.pointerEvents = 'auto';
         confirmBtn.style.opacity = '1';

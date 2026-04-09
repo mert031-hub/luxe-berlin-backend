@@ -1,5 +1,5 @@
 const { Resend } = require("resend");
-const PDFDocument = require('pdfkit'); // 🛡️ PDF Motoru eklendi
+const PDFDocument = require('pdfkit');
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -7,7 +7,7 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 const ADMIN_EMAIL = 'kocyigit.trade@gmail.com';
 
 /**
- * 🛡️ PDF Fatura Buffer Oluşturucu (Mail Eklentisi İçin)
+ * 🛡️ PDF Fatura Buffer Oluşturucu (Mail Eklentisi İçin + Kargo Eklentisi)
  */
 function createInvoiceBuffer(order) {
     return new Promise((resolve, reject) => {
@@ -21,7 +21,6 @@ function createInvoiceBuffer(order) {
                 resolve(pdfData);
             });
 
-            // 🛡️ Türkçe Karakter Temizleyici
             const sanitize = (text) => {
                 if (!text) return "";
                 return text.replace(/Ğ/g, 'G').replace(/ğ/g, 'g')
@@ -32,7 +31,6 @@ function createInvoiceBuffer(order) {
                     .replace(/Ç/g, 'C').replace(/ç/g, 'c');
             };
 
-            // 1. Şirket Bilgileri
             doc.fillColor('#444444').fontSize(26).font('Helvetica-Bold').text('RECHNUNG', { align: 'right' });
             doc.moveDown();
 
@@ -44,7 +42,6 @@ function createInvoiceBuffer(order) {
 
             doc.strokeColor('#e0e0e0').lineWidth(1).moveTo(50, 170).lineTo(550, 170).stroke();
 
-            // 2. Müşteri Bilgileri
             doc.fillColor('#1c2541').fontSize(11).font('Helvetica-Bold').text('Rechnung an:', 50, 190);
             doc.fillColor('#444444').fontSize(10).font('Helvetica');
             doc.text(sanitize(`${order.customer.firstName} ${order.customer.lastName}`), 50, 210);
@@ -60,7 +57,6 @@ function createInvoiceBuffer(order) {
             doc.fillColor('#1c2541').font('Helvetica-Bold').text('Zahlungsart:', 320, 230);
             doc.fillColor('#444444').font('Helvetica').text(sanitize(`${order.paymentMethod || 'Online Zahlung'}`), 420, 230);
 
-            // 3. Ürünler
             const tableTop = 290;
             doc.fillColor('#1c2541').font('Helvetica-Bold').fontSize(10);
             doc.text('Artikel', 50, tableTop);
@@ -72,29 +68,47 @@ function createInvoiceBuffer(order) {
 
             let y = tableTop + 25;
             doc.fillColor('#444444').font('Helvetica');
+            let subtotal = 0;
+
             (order.items || []).forEach(item => {
-                doc.text(sanitize(item.name || 'Produkt'), 50, y, { width: 260 });
-                doc.text((item.qty || 1).toString(), 320, y, { width: 50, align: 'center' });
-                doc.text(`${(item.price || 0).toFixed(2)} EUR`, 400, y, { width: 60, align: 'right' });
-                doc.text(`${((item.price || 0) * (item.qty || 1)).toFixed(2)} EUR`, 480, y, { width: 70, align: 'right' });
+                const itemPrice = item.price || (item.productId && item.productId.price) || 0;
+                const itemQty = item.qty || 1;
+                const itemTotal = itemPrice * itemQty;
+                subtotal += itemTotal;
+
+                doc.text(sanitize(item.productId?.name || item.name || 'Produkt'), 50, y, { width: 260 });
+                doc.text(itemQty.toString(), 320, y, { width: 50, align: 'center' });
+                doc.text(`${itemPrice.toFixed(2)} EUR`, 400, y, { width: 60, align: 'right' });
+                doc.text(`${itemTotal.toFixed(2)} EUR`, 480, y, { width: 70, align: 'right' });
                 y += 20;
             });
 
+            // 🛡️ KARGO (Versandkosten) SATIRINI EKLİYORUZ
+            const total = order.totalAmount || 0;
+            let shippingCost = total - subtotal;
+            if (shippingCost < 0.05) shippingCost = 0;
+
             doc.strokeColor('#e0e0e0').lineWidth(1).moveTo(50, y + 10).lineTo(550, y + 10).stroke();
 
-            // 4. Toplam
-            const total = order.totalAmount || 0;
+            y += 20;
+            doc.fillColor('#1c2541').font('Helvetica-Oblique').text('Versandkosten (Standard)', 50, y, { width: 260 });
+            doc.fillColor('#444444').font('Helvetica').text('1', 320, y, { width: 50, align: 'center' });
+            doc.text(`${shippingCost.toFixed(2)} EUR`, 400, y, { width: 60, align: 'right' });
+            doc.text(`${shippingCost.toFixed(2)} EUR`, 480, y, { width: 70, align: 'right' });
+
+            doc.strokeColor('#c5a059').lineWidth(1).moveTo(380, y + 20).lineTo(550, y + 20).stroke();
+
             const netto = (total / 1.19).toFixed(2);
             const mwst = (total - netto).toFixed(2);
 
-            doc.font('Helvetica').text('Nettobetrag:', 380, y + 25, { width: 90, align: 'right' });
-            doc.text(`${netto} EUR`, 480, y + 25, { width: 70, align: 'right' });
+            doc.font('Helvetica').text('Nettobetrag:', 380, y + 35, { width: 90, align: 'right' });
+            doc.text(`${netto} EUR`, 480, y + 35, { width: 70, align: 'right' });
 
-            doc.text('MwSt (19%):', 380, y + 45, { width: 90, align: 'right' });
-            doc.text(`${mwst} EUR`, 480, y + 45, { width: 70, align: 'right' });
+            doc.text('MwSt (19%):', 380, y + 55, { width: 90, align: 'right' });
+            doc.text(`${mwst} EUR`, 480, y + 55, { width: 70, align: 'right' });
 
-            doc.font('Helvetica-Bold').fontSize(14).fillColor('#c5a059').text('Gesamtsumme:', 320, y + 70, { width: 150, align: 'right' });
-            doc.text(`${total.toFixed(2)} EUR`, 480, y + 70, { width: 70, align: 'right' });
+            doc.font('Helvetica-Bold').fontSize(14).fillColor('#c5a059').text('Gesamtsumme:', 320, y + 80, { width: 150, align: 'right' });
+            doc.text(`${total.toFixed(2)} EUR`, 480, y + 80, { width: 70, align: 'right' });
 
             doc.font('Helvetica-Oblique').fontSize(10).fillColor('#777777').text(
                 'Vielen Dank fur Ihren Einkauf bei KOCYIGIT Betrieb&Handel!',
@@ -110,7 +124,6 @@ function createInvoiceBuffer(order) {
 
 /**
  * Sipariş durumuna göre mail gönderen servis.
- * 🛡️ REBRANDING: KOÇYİĞİT GmbH mühürlendi.
  */
 async function sendStatusEmail(order, newStatus) {
     if (!order || !order.customer || !order.customer.email) {
@@ -123,7 +136,6 @@ async function sendStatusEmail(order, newStatus) {
     let statusLabel = "Bestell-Update";
     const status = newStatus ? newStatus.toLowerCase() : "";
 
-    // Durum Belirleme
     if (status === "pending" || status === "eingegangen") {
         subject = `Bestellbestätigung - KOÇYİĞİT  #${order.shortId}`;
         statusLabel = "Bestellbestätigung";
@@ -154,29 +166,49 @@ async function sendStatusEmail(order, newStatus) {
         message = `Der aktuelle Status Ihrer Bestellung wurde aktualisiert: ${newStatus}`;
     }
 
-    // Ürün Tablosu (HTML)
+    // Ürün Tablosu (HTML) - GÜVENLİ FİYAT HESAPLAMASI EKLENDİ
+    let subtotal = 0;
     const itemsHTML = (order.items || []).map(item => {
         const productImg = (item.productId && item.productId.image)
             ? item.productId.image
             : 'https://kocyigit-trade.com/favicon.png';
 
+        const itemPrice = item.price || (item.productId && item.productId.price) || 0;
+        const itemQty = item.qty || 1;
+        subtotal += (itemPrice * itemQty);
+
         return `
         <tr>
             <td style="padding: 12px 0; border-bottom: 1px solid #eeeeee; width: 60px;">
-                <img src="${productImg}" alt="${item.name}" width="50" height="50" style="border-radius: 6px; object-fit: cover; display: block; border: 1px solid #f0f0f0;">
+                <img src="${productImg}" alt="${item.name || 'Produkt'}" width="50" height="50" style="border-radius: 6px; object-fit: cover; display: block; border: 1px solid #f0f0f0;">
             </td>
             <td style="padding: 12px 15px; border-bottom: 1px solid #eeeeee; font-size: 14px;">
-                <span style="font-weight: 600; color: #1c2541;">${item.qty}x</span> ${item.name}
+                <span style="font-weight: 600; color: #1c2541;">${itemQty}x</span> ${item.productId?.name || item.name || 'Produkt'}
             </td>
             <td style="padding: 12px 0; border-bottom: 1px solid #eeeeee; text-align: right; font-weight: 600; color: #c5a059; font-size: 14px;">
-                ${new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(item.price * item.qty)}
+                ${new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(itemPrice * itemQty)}
             </td>
         </tr>
         `;
     }).join('');
 
+    // 🛡️ MAİL İÇİ KARGO SATIRI EKLENDİ
+    const total = order.totalAmount || 0;
+    let shippingCost = total - subtotal;
+    if (shippingCost < 0.05) shippingCost = 0;
+
+    let shippingHTML = '';
+    if (shippingCost > 0) {
+        shippingHTML = `
+        <tr>
+            <td colspan="2" style="padding-top: 15px; font-weight: 500; font-size: 13px; color: #666;">Versandkosten</td>
+            <td style="padding-top: 15px; text-align: right; color: #666; font-size: 13px;">
+                ${new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(shippingCost)}
+            </td>
+        </tr>`;
+    }
+
     try {
-        // 🛡️ FATURA EKLENTİSİNİ HAZIRLA (Sadece Yeni Siparişlerde)
         let attachments = [];
         if (status === "pending" || status === "eingegangen") {
             try {
@@ -197,7 +229,7 @@ async function sendStatusEmail(order, newStatus) {
             from: "KOÇYİĞİT Betrieb&Handel <noreply@kocyigit-trade.com>",
             to: [order.customer.email],
             subject: subject,
-            attachments: attachments, // 🛡️ Eklentiyi Gönder
+            attachments: attachments,
             html: `
             <!DOCTYPE html>
             <html>
@@ -228,10 +260,11 @@ async function sendStatusEmail(order, newStatus) {
                         <div style="margin-bottom: 10px; font-size: 12px; color: #a0aec0; font-weight: 700;">BESTELLÜBERSICHT</div>
                         <table class="order-table">
                             ${itemsHTML}
+                            ${shippingHTML}
                             <tr>
-                                <td colspan="2" style="padding-top: 20px; font-weight: 700;">Gesamtsumme</td>
-                                <td style="padding-top: 20px; text-align: right; color: #1c2541; font-weight: 700;">
-                                    ${new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(order.totalAmount)}
+                                <td colspan="2" style="padding-top: 15px; font-weight: 700;">Gesamtsumme</td>
+                                <td style="padding-top: 15px; text-align: right; color: #1c2541; font-weight: 700;">
+                                    ${new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(total)}
                                 </td>
                             </tr>
                         </table>
@@ -252,7 +285,7 @@ async function sendStatusEmail(order, newStatus) {
             `
         });
 
-        // --- 2. PATRONA GİDEN BİLDİRİM MAİLİ (SADECE YENİ SİPARİŞLERDE) ---
+        // --- 2. PATRONA GİDEN BİLDİRİM MAİLİ ---
         if (status === "pending" || status === "eingegangen") {
             await resend.emails.send({
                 from: "SİSTEM BİLDİRİMİ <noreply@kocyigit-trade.com>",
@@ -271,9 +304,10 @@ async function sendStatusEmail(order, newStatus) {
                     <h4 style="margin-bottom: 10px;">Ürünler:</h4>
                     <table style="width: 100%; font-size: 14px;">
                         ${itemsHTML}
+                        ${shippingHTML}
                     </table>
                     <h3 style="color: #198754; text-align: right; margin-top: 20px;">
-                        Toplam Kazanç: ${new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(order.totalAmount)}
+                        Toplam Kazanç: ${new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(total)}
                     </h3>
                     <div style="text-align: center; margin-top: 20px;">
                         <a href="https://kocyigit-trade.com/admin.html" style="background: #1c2541; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Admin Paneline Git</a>
