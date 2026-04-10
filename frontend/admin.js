@@ -1,5 +1,5 @@
 /**
- * KOÇYİĞİT GmbH - MASTER ADMIN JAVASCRIPT (V18 ULTIMATE - MÜHÜRLÜ)
+ * KOÇYİĞİT GmbH - MASTER ADMIN JAVASCRIPT (V20 ULTIMATE - MÜHÜRLÜ)
  * ---------------------------------------------------------------
  * - HARDENED SECURITY: HttpOnly Cookie tabanlı oturum yönetimi.
  * - ARCHIVE SYSTEM: Soft-Delete & Restore (Geri Getirme) entegre edildi.
@@ -10,7 +10,7 @@
  * - REORDER ENGINE: SortableJS ile kalıcı veritabanı sıralaması.
  * - 🛡️ SMART IMAGE RESOLVER: Tüm 404 resim hatalarını çözen akıllı URL sistemi eklendi.
  * - 🛡️ INVOICE ENGINE: Admin sipariş detaylarına PDF fatura indirme butonu entegre edildi.
- * - 🛡️ SHIPPING ENGINE: Dinamik kargo bedeli ve bedava kargo limiti entegre edildi.
+ * - 🛡️ DYNAMIC GALLERY ENGINE: Instagram vitrin resimleri artık doğrudan PC'den yüklenebilir!
  */
 
 // 🛡️ GÜVENLİK KALKANI: Eklenti yüklenemezse bile Admin Paneli ÇÖKMEZ!
@@ -889,7 +889,7 @@ window.logout = async () => {
     finally { window.location.href = 'login.html'; }
 };
 
-// --- 🛡️ 10. KARGO VE SİSTEM AYARLARI MOTORU ---
+// --- 🛡️ 10. KARGO VE GALERİ AYARLARI MOTORU ---
 window.loadSettings = async () => {
     try {
         const res = await fetch(`${API_URL}/settings`);
@@ -897,6 +897,14 @@ window.loadSettings = async () => {
             const data = await res.json();
             document.getElementById('setShippingCost').value = data.shippingCost.toFixed(2);
             document.getElementById('setFreeShippingThreshold').value = data.freeShippingThreshold.toFixed(2);
+
+            // 🛡️ Admin yüklenirken mevcut Instagram resimlerini alanlara doldur (Görsel Önizleme)
+            if (data.socialImages && data.socialImages.length > 0) {
+                if (data.socialImages[0]) document.getElementById('previewInsta1').src = getImageUrl(data.socialImages[0]);
+                if (data.socialImages[1]) document.getElementById('previewInsta2').src = getImageUrl(data.socialImages[1]);
+                if (data.socialImages[2]) document.getElementById('previewInsta3').src = getImageUrl(data.socialImages[2]);
+                if (data.socialImages[3]) document.getElementById('previewInsta4').src = getImageUrl(data.socialImages[3]);
+            }
         }
     } catch (err) { console.error("Ayarlar yüklenemedi:", err); }
 };
@@ -907,22 +915,39 @@ document.getElementById('settingsForm')?.addEventListener('submit', async (e) =>
     const origText = btn.innerHTML;
     btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Speichern...';
 
-    const payload = {
-        shippingCost: parseFloat(document.getElementById('setShippingCost').value),
-        freeShippingThreshold: parseFloat(document.getElementById('setFreeShippingThreshold').value)
-    };
+    // 🛡️ FormData oluştur (Hem yazılar hem dosyalar için)
+    const formData = new FormData();
+    formData.append('shippingCost', document.getElementById('setShippingCost').value);
+    formData.append('freeShippingThreshold', document.getElementById('setFreeShippingThreshold').value);
+
+    // 🛡️ Dosyaları yakala (Eğer seçildiyse FormData'ya ekle)
+    const img1 = document.getElementById('setInstaImg1').files[0];
+    const img2 = document.getElementById('setInstaImg2').files[0];
+    const img3 = document.getElementById('setInstaImg3').files[0];
+    const img4 = document.getElementById('setInstaImg4').files[0];
+
+    if (img1) formData.append('instaImg1', img1);
+    if (img2) formData.append('instaImg2', img2);
+    if (img3) formData.append('instaImg3', img3);
+    if (img4) formData.append('instaImg4', img4);
 
     try {
         const res = await fetch(`${API_URL}/settings`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             credentials: 'include',
-            body: JSON.stringify(payload)
+            body: formData
         }).then(handleAuthError);
 
         if (res && res.ok) {
-            showLuxeAlert("Versandeinstellungen aktualisiert!", "success");
-            window.logActivity("Versandeinstellungen geändert", currentUser, "Success");
+            showLuxeAlert("Einstellungen & Galerie aktualisiert!", "success");
+            window.logActivity("Systemeinstellungen & Galerie geändert", currentUser, "Success");
+
+            // Önizlemeleri yenilemek için formu resetleyip ayarları baştan çekiyoruz
+            document.getElementById('setInstaImg1').value = "";
+            document.getElementById('setInstaImg2').value = "";
+            document.getElementById('setInstaImg3').value = "";
+            document.getElementById('setInstaImg4').value = "";
+            window.loadSettings();
         }
     } catch (err) {
         showLuxeAlert("Fehler beim Speichern", "error");
@@ -935,7 +960,7 @@ document.getElementById('settingsForm')?.addEventListener('submit', async (e) =>
 document.addEventListener('DOMContentLoaded', async () => {
     await checkInitialAuth();
     loadDashboard();
-    await loadSettings(); // Ayarları yükle
+    await loadSettings(); // Ayarları ve Instagram resimlerini yükle
     startAuthWatcher();
 });
 

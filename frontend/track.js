@@ -4,6 +4,7 @@
  * 🛡️ SECURITY FIX: Sert kilit ve spinner eklendi. (Race Condition Protected)
  * 🛡️ INVOICE UPDATE: E-Fatura indirme butonu linki bağlandı.
  * 🛡️ SHIPPING ENGINE: Mongoose schema fiyat eksikliği koruması eklendi.
+ * 🛡️ CACHE BUSTING: Takip ekranında resimlerin önbellekten dolayı eski kalması sorunu çözüldü.
  */
 
 const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
@@ -64,13 +65,16 @@ async function trackOrder() {
                     let imgPath = item.productId?.image || item.image;
                     let prodName = item.productId?.name || item.name || "Produkt";
                     let finalImgSrc = 'https://via.placeholder.com/60';
+
                     if (imgPath) {
-                        finalImgSrc = imgPath.startsWith('http') ? imgPath : `${UPLOADS_URL}/${imgPath}`;
+                        const baseImg = imgPath.startsWith('http') ? imgPath : `${UPLOADS_URL}/${imgPath}`;
+                        // 🛡️ CACHE BUSTING EKLENTİSİ:
+                        finalImgSrc = baseImg + (baseImg.includes('?') ? '&' : '?') + "cb=" + new Date().getTime();
                     }
 
-                    // 🛡️ MONGOOSE FAILSAFE
-                    const itemPrice = item.price || (item.productId && item.productId.price) || 0;
-                    subtotal += itemPrice * item.qty;
+                    const itemPrice = parseFloat(item.price || (item.productId && item.productId.price) || 0);
+                    const itemQty = parseInt(item.qty || 1);
+                    subtotal += (itemPrice * itemQty);
 
                     return `
                         <div class="product-item d-flex justify-content-between align-items-center py-3" 
@@ -78,11 +82,11 @@ async function trackOrder() {
                             <div class="d-flex align-items-center">
                                 <img src="${finalImgSrc}" alt="${prodName}" class="product-thumb me-3 shadow-sm">
                                 <div>
-                                    <span class="fw-bold text-navy me-1">${item.qty}x</span> 
+                                    <span class="fw-bold text-navy me-1">${itemQty}x</span> 
                                     <span class="small fw-semibold text-muted">${prodName}</span>
                                 </div>
                             </div>
-                            <div class="fw-bold text-navy">${euro.format(itemPrice * item.qty)}</div>
+                            <div class="fw-bold text-navy">${euro.format(itemPrice * itemQty)}</div>
                         </div>`;
                 }).join('');
             } else {
@@ -94,7 +98,8 @@ async function trackOrder() {
             const subtotalEl = document.getElementById('display-subtotal');
             if (subtotalEl) subtotalEl.innerText = euro.format(subtotal);
 
-            let shippingCost = order.totalAmount - subtotal;
+            const totalAmount = parseFloat(order.totalAmount || 0);
+            let shippingCost = totalAmount - subtotal;
             if (shippingCost < 0.05) shippingCost = 0;
 
             const shippingEl = document.getElementById('display-shipping');
@@ -108,7 +113,7 @@ async function trackOrder() {
                 }
             }
 
-            document.getElementById('display-total').innerText = euro.format(order.totalAmount || 0);
+            document.getElementById('display-total').innerText = euro.format(totalAmount);
 
             const invoiceBtn = document.getElementById('invoiceDownloadBtn');
             if (invoiceBtn) {

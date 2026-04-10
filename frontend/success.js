@@ -3,7 +3,8 @@
  * FIX: Sipariş özetine ürün görselleri eklendi.
  * NEW: Stripe session doğrulama ve otomatik sepet temizleme mühürlendi.
  * NEW: E-Fatura indirme butonu entegrasyonu sağlandı.
- * 🛡️ SHIPPING ENGINE: Kargo ücreti ve ara toplam (Mongoose Failsafe ile) onarıldı.
+ * 🛡️ SHIPPING ENGINE: Kargo ücreti ve ara toplam güvenli matematik motoru eklendi.
+ * 🛡️ CACHE BUSTING: Başarı ekranında sipariş resimlerinin hep taze çekilmesi sağlandı.
  */
 
 const euro = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' });
@@ -68,11 +69,14 @@ function renderOrderDetails(order) {
     if (list && order.items) {
         list.innerHTML = order.items.map(item => {
             const imgPath = item.productId?.image || item.image || 'https://via.placeholder.com/50';
-            const finalImg = imgPath.startsWith('http') ? imgPath : `${UPLOADS_URL}/${imgPath}`;
 
-            // 🛡️ MONGOOSE FAILSAFE: Eğer "price" silinmişse, populated veriden fiyatı çek
-            const itemPrice = item.price || (item.productId && item.productId.price) || 0;
-            subtotal += itemPrice * item.qty;
+            // 🛡️ CACHE BUSTING KORUMASI:
+            let finalImg = imgPath.startsWith('http') ? imgPath : `${UPLOADS_URL}/${imgPath}`;
+            finalImg += (finalImg.includes('?') ? '&' : '?') + "cb=" + new Date().getTime();
+
+            const itemPrice = parseFloat(item.price || (item.productId && item.productId.price) || 0);
+            const itemQty = parseInt(item.qty || 1);
+            subtotal += (itemPrice * itemQty);
 
             return `
                 <div class="summary-item d-flex justify-content-between align-items-center mb-3">
@@ -80,10 +84,10 @@ function renderOrderDetails(order) {
                         <img src="${finalImg}" width="45" height="45" class="me-3 rounded shadow-sm" style="object-fit: cover; border: 1px solid rgba(0,0,0,0.05);">
                         <div class="d-flex flex-column">
                             <span class="small fw-bold text-dark">${item.productId?.name || item.name || 'Produkt'}</span>
-                            <span class="text-muted" style="font-size: 0.75rem;">Menge: ${item.qty}</span>
+                            <span class="text-muted" style="font-size: 0.75rem;">Menge: ${itemQty}</span>
                         </div>
                     </div>
-                    <span class="small fw-bold text-navy">${euro.format(itemPrice * item.qty)}</span>
+                    <span class="small fw-bold text-navy">${euro.format(itemPrice * itemQty)}</span>
                 </div>
             `;
         }).join('');
@@ -92,7 +96,8 @@ function renderOrderDetails(order) {
     const subtotalEl = document.getElementById('subtotalAmountText');
     if (subtotalEl) subtotalEl.innerText = euro.format(subtotal);
 
-    let shippingCost = order.totalAmount - subtotal;
+    const totalAmount = parseFloat(order.totalAmount || 0);
+    let shippingCost = totalAmount - subtotal;
     if (shippingCost < 0.05) shippingCost = 0;
 
     const shippingEl = document.getElementById('shippingAmountText');
@@ -107,7 +112,7 @@ function renderOrderDetails(order) {
     }
 
     const totalEl = document.getElementById('totalAmountText');
-    if (totalEl) totalEl.innerText = euro.format(order.totalAmount);
+    if (totalEl) totalEl.innerText = euro.format(totalAmount);
 
     const addressEl = document.getElementById('addressText');
     if (addressEl) {

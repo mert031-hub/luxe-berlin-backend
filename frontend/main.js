@@ -3,7 +3,7 @@
  * Tüm özellikler: Ürün Sınırı (9 Ürün), Sepet Onarımı, Miktar Koruması, 1 Yorum Sınırı, 
  * Karakter Sayacı, İsim Sınırı (50 Karakter), Küfür Filtresi ve Kademeli Yorum Gösterimi.
  * REVIZE: Yorumlar artık 9'ar 9'ar yüklenecek şekilde mühürlendi.
- * 🛡️ SMART IMAGE RESOLVER: Vitrindeki 404 Resim hataları mühürlendi.
+ * 🛡️ SMART IMAGE RESOLVER + CACHE BUSTING: Vitrindeki resimler her zaman en güncel haliyle çekilecek.
  * 🛡️ AEO & GEO ENGINE: Dinamik Ürün ve Yorum Schema (JSON-LD) enjeksiyonları eklendi.
  * 🛡️ UPSELLING ENGINE: Kargo teşvik hesaplamaları ve Admin API bağlantısı eklendi.
  */
@@ -11,7 +11,7 @@
 // --- GLOBAL DEĞİŞKENLER ---
 let products = [];
 let cart = JSON.parse(localStorage.getItem('luxeCartArray')) || [];
-let shopSettings = { shippingCost: 4.99, freeShippingThreshold: 50 }; // Varsayılan Kargo Ayarları
+let shopSettings = { shippingCost: 4.99, freeShippingThreshold: 50 };
 const euro = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' });
 let selectedProduct = null, currentQty = 1;
 
@@ -30,12 +30,16 @@ const UPLOADS_URL = window.location.hostname === 'localhost' || window.location.
 
 const badWords = ["küfür1", "küfür2", "argo1", "argo2", "idiot", "badword", "scheiße"];
 
-// 🛡️ AKILLI RESİM ÇÖZÜCÜ (SMART IMAGE RESOLVER)
+// 🛡️ AKILLI RESİM ÇÖZÜCÜ VE CACHE BUSTER (ÖNBELLEK KIRICI)
 function getImageUrl(imagePath) {
     if (!imagePath) return 'https://via.placeholder.com/400x400?text=No+Image';
-    if (imagePath.startsWith('http')) return imagePath;
-    let cleanPath = imagePath.replace(/^\/?(uploads\/)+/, '');
-    return `${UPLOADS_URL}/${cleanPath}`;
+    let finalUrl = imagePath;
+    if (!imagePath.startsWith('http')) {
+        let cleanPath = imagePath.replace(/^\/?(uploads\/)+/, '');
+        finalUrl = `${UPLOADS_URL}/${cleanPath}`;
+    }
+    // 🛡️ CACHE BUSTING: Resmin her yüklemede taze gelmesini sağlar
+    return finalUrl + (finalUrl.includes('?') ? '&' : '?') + "cb=" + new Date().getTime();
 }
 
 // 🛡️ GEO & AEO OPTİMİZASYONU: DİNAMİK ÜRÜN ŞEMASI ENJEKSİYONU
@@ -152,21 +156,34 @@ function initTheme() {
 
 // --- 🛡️ 3. ÜRÜN İŞLEMLERİ VE KARGO AYARLARI ---
 async function fetchSettingsAndProducts() {
-    // Kargo ayarlarını çek
     try {
         const resSettings = await fetch(`${API_URL}/settings`);
         if (resSettings.ok) {
             shopSettings = await resSettings.json();
 
-            // 🛡️ Arama Çubuğu Altındaki Sabit Yazıyı Güncelle (2. RESİM)
+            // Kargo barı limiti yazısını güncelle
             const searchShippingText = document.getElementById('search-shipping-threshold');
             if (searchShippingText) {
                 searchShippingText.innerText = euro.format(shopSettings.freeShippingThreshold);
             }
-        }
-    } catch (e) { console.error("Kargo ayarları çekilemedi", e); }
 
-    // Ürünleri çek
+            // 🛡️ DİNAMİK SOSYAL MEDYA VİTRİNİ ENJEKSİYONU
+            const socialGallery = document.getElementById('luxe-social-gallery');
+            if (socialGallery) {
+                if (shopSettings.socialImages && shopSettings.socialImages.length > 0) {
+                    socialGallery.innerHTML = shopSettings.socialImages.map((imgUrl, index) => `
+                        <div class="col-6 col-md-3" data-aos="fade-up" data-aos-delay="${(index + 1) * 100}">
+                            <img src="${imgUrl}?cb=${new Date().getTime()}" class="img-fluid rounded shadow-sm insta-img" alt="Instagram Galerie">
+                        </div>
+                    `).join('');
+                } else {
+                    // Eğer resim hiç yoksa alanı temiz bırak
+                    socialGallery.innerHTML = '';
+                }
+            }
+        }
+    } catch (e) { console.error("Ayarlar çekilemedi", e); }
+
     try {
         const response = await fetch(`${API_URL}/products`);
         const data = await response.json();
@@ -186,7 +203,7 @@ async function fetchSettingsAndProducts() {
         }));
 
         renderProducts(products);
-        updateCartUI(); // Ayarlar ve ürünler yüklendikten sonra sepet teşvikini de günceller
+        updateCartUI();
     } catch (error) {
         console.error("Backend bağlantı hatası:", error);
     }
@@ -535,7 +552,6 @@ function updateCartUI() {
     const badge = document.getElementById('cart-badge');
     if (badge) { badge.innerText = totalQty; badge.style.display = totalQty > 0 ? "block" : "none"; }
 
-    // 🛡️ DİNAMİK KARGO TEŞVİK SİSTEMİ (1. RESİMDEKİ KISIM)
     const floatBar = document.getElementById('luxe-floating-cart');
     const floatTotal = document.getElementById('float-total-amount');
     const shipTextEl = document.getElementById('float-shipping-text');
