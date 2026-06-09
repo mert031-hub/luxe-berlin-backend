@@ -1,71 +1,140 @@
-/* LUXE BERLIN - LOGIN STYLES */
+/* LUXE BERLIN — LOGIN STYLES | MODERNIZED */
 
 :root {
   --navy: #1c2541;
+  --navy-deep: #0d1525;
   --gold: #c5a059;
+  --gold-hover: #d4b97a;
   --white: #ffffff;
 }
 
 body {
-  background: linear-gradient(135deg, #0b0e17 0%, #1c2541 100%);
+  background: radial-gradient(ellipse at 30% 60%, #1c2541 0%, #080c17 60%, #0b0e1a 100%);
   font-family: "Montserrat", sans-serif;
-  height: 100vh;
+  min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
   margin: 0;
   overflow: hidden;
+  position: relative;
+}
+
+/* Subtle background grain texture */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg width='200' height='200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Gold accent glow */
+body::after {
+  content: '';
+  position: fixed;
+  bottom: -120px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 600px;
+  height: 300px;
+  background: radial-gradient(ellipse, rgba(197, 160, 89, 0.06) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
 }
 
 .login-container {
   width: 100%;
   max-width: 420px;
   padding: 20px;
+  position: relative;
+  z-index: 1;
 }
 
 .login-card {
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(15px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 25px;
-  padding: 50px 40px;
-  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 24px;
+  padding: 52px 44px;
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(197, 160, 89, 0.08) inset;
   text-align: center;
   color: var(--white);
+  position: relative;
+}
+
+/* Top gold accent line */
+.login-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60px;
+  height: 2px;
+  background: var(--gold);
+  border-radius: 0 0 4px 4px;
 }
 
 .brand-logo {
   font-family: "Playfair Display", serif;
-  font-size: 2rem;
-  letter-spacing: 3px;
-  margin-bottom: 40px;
+  font-size: 1.9rem;
+  letter-spacing: 4px;
+  margin-bottom: 8px;
   text-transform: uppercase;
+  color: var(--white);
 }
 
 .brand-logo span {
   color: var(--gold);
 }
 
+/* Tagline under brand */
+.login-card .brand-tagline {
+  font-size: 0.6rem;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.3);
+  margin-bottom: 36px;
+}
+
+/* Field labels */
+.login-label {
+  display: block;
+  text-align: left;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: rgba(255, 255, 255, 0.45);
+  margin-bottom: 8px;
+  padding-left: 4px;
+}
+
 .form-control {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 12px;
-  padding: 12px 20px;
+  padding: 13px 18px;
   color: var(--white);
   margin-bottom: 20px;
-  transition: 0.3s;
+  transition: all 0.3s ease;
+  font-size: 0.92rem;
 }
 
 .form-control:focus {
-  background: rgba(255, 255, 255, 0.15);
-  border-color: var(--gold);
-  box-shadow: none;
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(197, 160, 89, 0.6);
+  box-shadow: 0 0 0 3px rgba(197, 160, 89, 0.1);
   color: var(--white);
+  outline: none;
 }
 
 .form-control::placeholder {
-  color: rgba(255, 255, 255, 0.4);
-  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.25);
+  font-size: 0.88rem;
 }
 
 .btn-login {
@@ -74,25 +143,28 @@ body {
   border-radius: 12px;
   padding: 14px;
   width: 100%;
-  font-weight: 600;
-  letter-spacing: 1px;
+  font-weight: 700;
+  font-size: 0.8rem;
+  letter-spacing: 2px;
   text-transform: uppercase;
   color: var(--navy);
-  transition: 0.4s;
-  margin-top: 10px;
+  transition: all 0.35s ease;
+  margin-top: 8px;
+  cursor: pointer;
 }
 
 .btn-login:hover {
-  background: #d4b16a;
+  background: var(--gold-hover);
   transform: translateY(-2px);
-  box-shadow: 0 10px 20px rgba(197, 160, 89, 0.2);
+  box-shadow: 0 12px 28px rgba(197, 160, 89, 0.25);
 }
 
 .footer-text {
-  margin-top: 30px;
-  font-size: 0.75rem;
-  opacity: 0.5;
-  letter-spacing: 1px;
+  margin-top: 28px;
+  font-size: 0.62rem;
+  opacity: 0.3;
+  letter-spacing: 2px;
+  text-transform: uppercase;
 }
 
 .back-link {
@@ -100,52 +172,50 @@ body {
   margin-top: 20px;
   color: var(--gold);
   text-decoration: none;
-  font-size: 0.8rem;
-  transition: 0.3s;
+  font-size: 0.78rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  opacity: 0.8;
 }
 
 .back-link:hover {
   color: var(--white);
+  opacity: 1;
 }
-/* --- LUXE PRELOADER STYLES --- */
+
+/* ============================================================
+   PRELOADER
+   ============================================================ */
 #preloader {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: #0b0e17; /* Derin Gece Mavisi */
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background-color: #080b12;
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 999999; /* İmleçten bile üstte olmalı */
-  transition:
-    opacity 1s cubic-bezier(0.65, 0, 0.35, 1),
-    visibility 1s;
+  z-index: 999999;
+  transition: opacity 1s cubic-bezier(0.65, 0, 0.35, 1), visibility 1s;
 }
 
-.preloader-content {
-  text-align: center;
-}
+.preloader-content { text-align: center; }
 
 .preloader-logo {
   font-family: "Playfair Display", serif;
-  font-size: 3rem;
+  font-size: 2.8rem;
   color: #ffffff;
-  letter-spacing: 8px;
+  letter-spacing: 10px;
   text-transform: uppercase;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
   animation: luxeFadePulse 2.5s ease-in-out infinite;
 }
 
-.preloader-logo span {
-  color: var(--gold);
-}
+.preloader-logo span { color: var(--gold); }
 
 .preloader-bar {
-  width: 150px;
+  width: 140px;
   height: 1px;
-  background: rgba(197, 160, 89, 0.1);
+  background: rgba(197, 160, 89, 0.12);
   margin: 0 auto 15px;
   position: relative;
   overflow: hidden;
@@ -163,36 +233,20 @@ body {
 }
 
 .preloader-text {
-  color: rgba(255, 255, 255, 0.4);
-  font-size: 0.7rem;
-  letter-spacing: 2px;
+  color: rgba(255, 255, 255, 0.35);
+  font-size: 0.65rem;
+  letter-spacing: 3px;
   text-transform: uppercase;
 }
 
-/* Animasyon Tanımları */
 @keyframes loadingSlide {
-  0% {
-    left: -60px;
-  }
-  100% {
-    left: 100%;
-  }
+  0%   { left: -60px; }
+  100% { left: 100%; }
 }
 
 @keyframes luxeFadePulse {
-  0%,
-  100% {
-    opacity: 0.4;
-    transform: scale(0.98);
-  }
-  50% {
-    opacity: 1;
-    transform: scale(1);
-  }
+  0%, 100% { opacity: 0.35; transform: scale(0.98); }
+  50%       { opacity: 1;    transform: scale(1); }
 }
 
-/* Yükleme bittiğinde eklenecek gizleme klası */
-.preloader-hidden {
-  opacity: 0;
-  visibility: hidden;
-}
+.preloader-hidden { opacity: 0; visibility: hidden; }

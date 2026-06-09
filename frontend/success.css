@@ -1,32 +1,54 @@
-/* --- LUXE BERLIN - SUCCESS PAGE STYLES --- */
+/* LUXE BERLIN — SUCCESS PAGE STYLES | MODERNIZED */
 
 :root {
   --gold: #c5a059;
+  --gold-hover: #b38f4d;
   --navy: #1c2541;
-  --platinum: #f8f9fa;
+  --platinum: #f0f2f5;
 }
 
 body {
   font-family: "Montserrat", sans-serif;
   background-color: var(--platinum);
   color: var(--navy);
+  -webkit-font-smoothing: antialiased;
 }
 
+/* ============================================================
+   SUCCESS CARD
+   ============================================================ */
 .success-card {
   background: white;
-  border-radius: 20px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+  border-radius: 22px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.07);
   border: none;
   overflow: hidden;
 }
 
+/* ============================================================
+   SUCCESS HEADER
+   ============================================================ */
 .success-header {
-  background: var(--navy);
+  background: linear-gradient(155deg, var(--navy), #0e1a32);
   color: white;
-  padding: 40px;
+  padding: 44px 40px;
+  position: relative;
+  overflow: hidden;
 }
 
-/* --- CHECKMARK ANIMATIONS --- */
+.success-header::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+}
+
+/* ============================================================
+   CHECKMARK ANIMATION
+   ============================================================ */
 .check-container {
   display: flex;
   justify-content: center;
@@ -34,16 +56,14 @@ body {
 }
 
 .checkmark {
-  width: 80px;
-  height: 80px;
+  width: 78px;
+  height: 78px;
   border-radius: 50%;
   display: block;
   stroke-width: 2;
   stroke: var(--gold);
   stroke-miterlimit: 10;
-  animation:
-    fill 0.4s ease-in-out 0.4s forwards,
-    scale 0.3s ease-in-out 0.9s both;
+  animation: fill 0.4s ease-in-out 0.4s forwards, scale 0.3s ease-in-out 0.9s both;
 }
 
 .checkmark__circle {
@@ -64,37 +84,36 @@ body {
 }
 
 @keyframes stroke {
-  100% {
-    stroke-dashoffset: 0;
-  }
-}
-@keyframes scale {
-  0%,
-  100% {
-    transform: none;
-  }
-  50% {
-    transform: scale3d(1.1, 1.1, 1);
-  }
-}
-@keyframes fill {
-  100% {
-    box-shadow: inset 0px 0px 0px 50px rgba(197, 160, 89, 0.1);
-  }
+  100% { stroke-dashoffset: 0; }
 }
 
-/* --- ORDER ID BOX & FEEDBACK --- */
+@keyframes scale {
+  0%, 100% { transform: none; }
+  50%       { transform: scale3d(1.1, 1.1, 1); }
+}
+
+@keyframes fill {
+  100% { box-shadow: inset 0px 0px 0px 50px rgba(197, 160, 89, 0.08); }
+}
+
+/* ============================================================
+   ORDER ID BOX
+   ============================================================ */
 .order-id-box {
-  background: rgba(197, 160, 89, 0.1);
-  border: 1px dashed var(--gold);
-  padding: 10px 20px;
+  background: rgba(197, 160, 89, 0.08);
+  border: 1px dashed rgba(197, 160, 89, 0.5);
+  padding: 12px 22px;
   border-radius: 10px;
   display: inline-block;
   font-family: monospace;
-  font-size: 1.1rem;
+  font-size: 1.05rem;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.25s ease;
   position: relative;
+}
+
+.order-id-box:hover {
+  background: rgba(197, 160, 89, 0.12);
 }
 
 .copy-feedback {
@@ -105,8 +124,8 @@ body {
   background: var(--navy);
   color: white;
   padding: 5px 12px;
-  border-radius: 5px;
-  font-size: 0.7rem;
+  border-radius: 6px;
+  font-size: 0.68rem;
   opacity: 0;
   visibility: hidden;
   transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
@@ -120,77 +139,84 @@ body {
   top: -45px;
 }
 
+/* ============================================================
+   CARD BODY
+   ============================================================ */
 .summary-item {
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid #f0f0f0;
   padding: 12px 0;
 }
 
 .next-steps-icon {
-  width: 40px;
-  height: 40px;
+  width: 38px;
+  height: 38px;
   background: var(--platinum);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-right: 15px;
-  font-size: 1.2rem;
+  margin-right: 14px;
+  font-size: 1.1rem;
+  flex-shrink: 0;
 }
 
+/* ============================================================
+   BUTTONS
+   ============================================================ */
 .btn-gold {
   background: var(--gold);
   color: white;
   border-radius: 50px;
-  padding: 12px 30px;
+  padding: 13px 30px;
   font-weight: 700;
-  transition: 0.3s;
+  font-size: 0.8rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  transition: all 0.3s ease;
   border: none;
+  display: inline-block;
 }
 
 .btn-gold:hover {
   background: var(--navy);
+  color: white;
   transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(28, 37, 65, 0.2);
 }
 
-/* --- LUXE PRELOADER STYLES --- */
+/* ============================================================
+   PRELOADER
+   ============================================================ */
 #preloader {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: #0b0e17;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background-color: #080b12;
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 999999;
-  transition:
-    opacity 1s cubic-bezier(0.65, 0, 0.35, 1),
-    visibility 1s;
+  transition: opacity 1s cubic-bezier(0.65, 0, 0.35, 1), visibility 1s;
 }
 
-.preloader-content {
-  text-align: center;
-}
+.preloader-content { text-align: center; }
 
 .preloader-logo {
   font-family: "Playfair Display", serif;
-  font-size: 3rem;
+  font-size: 2.8rem;
   color: #ffffff;
-  letter-spacing: 8px;
+  letter-spacing: 10px;
   text-transform: uppercase;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
   animation: luxeFadePulse 2.5s ease-in-out infinite;
 }
 
-.preloader-logo span {
-  color: var(--gold);
-}
+.preloader-logo span { color: var(--gold); }
 
 .preloader-bar {
-  width: 150px;
+  width: 140px;
   height: 1px;
-  background: rgba(197, 160, 89, 0.1);
+  background: rgba(197, 160, 89, 0.12);
   margin: 0 auto 15px;
   position: relative;
   overflow: hidden;
@@ -208,46 +234,25 @@ body {
 }
 
 .preloader-text {
-  color: rgba(255, 255, 255, 0.4);
-  font-size: 0.7rem;
-  letter-spacing: 2px;
+  color: rgba(255, 255, 255, 0.35);
+  font-size: 0.65rem;
+  letter-spacing: 3px;
   text-transform: uppercase;
 }
 
 @keyframes loadingSlide {
-  0% {
-    left: -60px;
-  }
-  100% {
-    left: 100%;
-  }
+  0%   { left: -60px; }
+  100% { left: 100%; }
 }
 
 @keyframes luxeFadePulse {
-  0%,
-  100% {
-    opacity: 0.4;
-    transform: scale(0.98);
-  }
-  50% {
-    opacity: 1;
-    transform: scale(1);
-  }
+  0%, 100% { opacity: 0.35; transform: scale(0.98); }
+  50%       { opacity: 1;    transform: scale(1); }
 }
 
-.preloader-hidden {
-  opacity: 0;
-  visibility: hidden;
-}
+.preloader-hidden { opacity: 0; visibility: hidden; }
 
-/* MOBİL PRELOADER DÜZENLEMESİ */
 @media (max-width: 576px) {
-  .preloader-logo {
-    font-size: 1.8rem !important;
-    letter-spacing: 4px !important;
-    padding: 0 15px;
-  }
-  .preloader-bar {
-    width: 100px !important;
-  }
+  .preloader-logo { font-size: 1.8rem !important; letter-spacing: 4px !important; padding: 0 15px; }
+  .preloader-bar  { width: 100px !important; }
 }

@@ -1,25 +1,31 @@
 /**
- * LUXE BERLIN - MASTER ADMIN STYLES
- * Orijinal Düzen, Görsel Onarımlar ve Mobil AOS Fix
+ * LUXE BERLIN — MASTER ADMIN STYLES | MODERNIZED
  */
 
 :root {
   --gold: #c5a059;
-  --navy: #1c2541;
-  --light-grey: #f8f9fa;
-  --border-color: #f0f0f0;
+  --gold-hover: #b38f4d;
   --gold-shadow: rgba(197, 160, 89, 0.2);
+  --navy: #1c2541;
+  --navy-light: #2a3a5c;
+  --light-grey: #f7f6f4;
+  --border-color: #eeeeee;
+  --card-radius: 18px;
+  --text-navy: #1c2541;
 }
 
-/* --- GLOBAL TEMELLER --- */
+/* ============================================================
+   GLOBAL
+   ============================================================ */
 body {
   background-color: #f0f2f5;
   font-family: "Montserrat", sans-serif;
   color: var(--navy);
   overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
 }
 
-/* MOBİL AOS GÜVENLİK DUVARI */
+/* MOBILE AOS GUARD */
 @media (max-width: 768px) {
   [data-aos] {
     opacity: 1 !important;
@@ -28,54 +34,63 @@ body {
   }
 }
 
-/* --- NAVBAR VE PRELOADER --- */
+/* ============================================================
+   NAVBAR
+   ============================================================ */
 .navbar {
   background-color: var(--navy);
-  border-bottom: 3px solid var(--gold);
+  border-bottom: 2px solid var(--gold);
+  padding: 0.9rem 0;
 }
+
 .navbar-brand {
-  font-size: 1.25rem;
+  font-family: "Playfair Display", serif;
+  font-size: 1.2rem;
   font-weight: 700;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
 }
+
 .navbar-brand span {
   color: var(--gold);
 }
 
+/* ============================================================
+   PRELOADER
+   ============================================================ */
 #preloader {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: #0b0e17;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background-color: #080b12;
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 999999;
-  transition:
-    opacity 1s cubic-bezier(0.65, 0, 0.35, 1),
-    visibility 1s;
+  transition: opacity 1s cubic-bezier(0.65, 0, 0.35, 1), visibility 1s;
 }
+
 .preloader-logo {
   font-family: "Playfair Display", serif;
-  font-size: 3rem;
+  font-size: 2.8rem;
   color: #ffffff;
-  letter-spacing: 8px;
+  letter-spacing: 10px;
   text-transform: uppercase;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
   animation: luxeFadePulse 2.5s ease-in-out infinite;
 }
-.preloader-logo span {
-  color: var(--gold);
-}
+
+.preloader-logo span { color: var(--gold); }
+
 .preloader-bar {
-  width: 150px;
+  width: 140px;
   height: 1px;
-  background: rgba(197, 160, 89, 0.1);
+  background: rgba(197, 160, 89, 0.12);
   margin: 0 auto 15px;
   position: relative;
   overflow: hidden;
 }
+
 .preloader-bar::after {
   content: "";
   display: block;
@@ -87,62 +102,93 @@ body {
   animation: loadingSlide 2s infinite ease-in-out;
 }
 
-@keyframes loadingSlide {
-  0% {
-    left: -60px;
-  }
-  100% {
-    left: 100%;
-  }
-}
-@keyframes luxeFadePulse {
-  0%,
-  100% {
-    opacity: 0.4;
-    transform: scale(0.98);
-  }
-  50% {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-.preloader-hidden {
-  opacity: 0;
-  visibility: hidden;
+.preloader-text {
+  color: rgba(255, 255, 255, 0.35);
+  font-size: 0.65rem;
+  letter-spacing: 3px;
+  text-transform: uppercase;
 }
 
-/* --- İSTATİSTİK KARTLARI --- */
-.stat-card {
-  padding: 30px;
-  border-radius: 20px;
-  color: white;
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
-  transition:
-    transform 0.3s ease,
-    box-shadow 0.3s ease;
+@keyframes loadingSlide {
+  0%   { left: -60px; }
+  100% { left: 100%; }
 }
+
+@keyframes luxeFadePulse {
+  0%, 100% { opacity: 0.35; transform: scale(0.98); }
+  50%       { opacity: 1;    transform: scale(1); }
+}
+
+.preloader-hidden { opacity: 0; visibility: hidden; }
+
+/* ============================================================
+   STAT CARDS
+   ============================================================ */
+.stat-card {
+  padding: 28px 24px;
+  border-radius: var(--card-radius);
+  color: white;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.stat-card::before {
+  content: '';
+  position: absolute;
+  top: -30px;
+  right: -20px;
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+}
+
 .stat-card:hover {
   transform: translateY(-5px);
-  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
-}
-.bg-navy {
-  background: linear-gradient(135deg, #1c2541, #3a506b);
-}
-.bg-gold {
-  background: linear-gradient(135deg, #c5a059, #e2c08d);
-}
-.bg-dark-grey {
-  background: linear-gradient(135deg, #212529, #495057);
-}
-.stat-card p {
-  opacity: 0.8;
-  font-size: 0.75rem;
-  margin-bottom: 5px;
-  text-transform: uppercase;
-  letter-spacing: 1px;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.15);
 }
 
-/* --- TABLO VE VERİ YÖNETİMİ --- */
+.bg-navy {
+  background: linear-gradient(135deg, #1c2541 0%, #2d4373 100%);
+}
+
+.bg-gold {
+  background: linear-gradient(135deg, #c5a059 0%, #e2c080 100%);
+}
+
+.bg-dark-grey {
+  background: linear-gradient(135deg, #2d3436 0%, #525c62 100%);
+}
+
+.stat-card p {
+  opacity: 0.75;
+  font-size: 0.7rem;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  font-weight: 600;
+}
+
+.stat-card h2 {
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+/* ============================================================
+   CARDS (General)
+   ============================================================ */
+.card {
+  border-radius: var(--card-radius) !important;
+  border: none !important;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06) !important;
+}
+
+/* ============================================================
+   TABLE & DATA MANAGEMENT
+   ============================================================ */
 .table-scroll-container {
   max-height: 450px;
   overflow-y: auto;
@@ -153,155 +199,253 @@ body {
   -webkit-overflow-scrolling: touch;
   margin-bottom: 1rem;
 }
+
 .table thead th {
   position: sticky;
   top: 0;
-  background-color: #f8f9fa;
+  background-color: #f8f8f8;
   z-index: 10;
-  border-bottom: 2px solid #dee2e6;
-  color: #888;
-  padding: 15px 12px;
-  font-size: 0.7rem;
-  letter-spacing: 0.8px;
+  border-bottom: 1px solid #ebebeb;
+  color: #999;
+  padding: 14px 16px;
+  font-size: 0.68rem;
+  letter-spacing: 1px;
   text-transform: uppercase;
+  font-weight: 700;
 }
+
+.table tbody tr {
+  transition: background-color 0.2s ease;
+}
+
+.table tbody tr:hover {
+  background-color: #fafaf8;
+}
+
 .table tbody td {
-  padding: 18px 12px;
+  padding: 16px 16px;
   border-bottom: 1px solid var(--border-color);
-  font-size: 0.85rem;
+  font-size: 0.84rem;
+  vertical-align: middle;
 }
+
+.table tbody tr:last-child td {
+  border-bottom: none;
+}
+
 .customer-name,
 .product-name {
   font-weight: 700;
   color: var(--navy);
 }
 
-/* Yorum Metni Onarımı */
+.text-navy { color: var(--navy) !important; }
+.text-gold { color: var(--gold) !important; }
+
+/* Review text fix */
 .review-text {
   white-space: normal !important;
-  min-width: 250px;
-  max-width: 450px;
+  min-width: 240px;
+  max-width: 420px;
   word-break: break-word;
-  line-height: 1.6;
+  line-height: 1.65;
   color: #555;
+  font-size: 0.83rem;
 }
 
-/* Durum Seçim Kutusu */
+/* ============================================================
+   STATUS SELECT
+   ============================================================ */
 .status-select {
   border-radius: 30px;
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   font-weight: 600;
-  padding: 6px 15px;
-  border: 1px solid #dee2e6;
+  padding: 6px 14px;
+  border: 1.5px solid #e0e0e0;
   background-color: white;
   width: 170px;
   cursor: pointer;
   transition: all 0.2s ease;
+  color: var(--navy);
 }
+
 .status-select:focus {
   border-color: var(--gold);
   outline: none;
   box-shadow: 0 0 0 3px var(--gold-shadow);
 }
 
-/* Aksiyon Butonları */
+/* ============================================================
+   ACTION BUTTONS
+   ============================================================ */
 .btn-delete {
   color: #e53e3e;
   background: #fff5f5;
   border: 1px solid #fed7d7;
   width: 32px;
   height: 32px;
-  border-radius: 6px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all 0.2s ease;
+  cursor: pointer;
 }
+
 .btn-delete:hover {
   background: #e53e3e;
   color: white;
   border-color: #c53030;
 }
 
-/* Inventar Görselleri */
+/* ============================================================
+   PRODUCT IMAGE THUMBNAIL
+   ============================================================ */
 .product-img-box-small {
-  width: 45px;
-  height: 45px;
+  width: 46px;
+  height: 46px;
   overflow: hidden;
-  border-radius: 8px;
+  border-radius: 10px;
   border: 1px solid #eee;
   display: flex;
   align-items: center;
   justify-content: center;
+  background: #f8f8f8;
 }
+
 .product-img-box-small img {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-/* Onay Modalı */
+/* ============================================================
+   STATUS CONFIRM MODAL
+   ============================================================ */
 #statusConfirmModal .modal-content {
   border: none;
-  border-radius: 24px;
+  border-radius: 22px;
   animation: luxeSlideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
+
 @keyframes luxeSlideUp {
-  from {
-    opacity: 0;
-    transform: translateY(30px) scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
+  from { opacity: 0; transform: translateY(30px) scale(0.95); }
+  to   { opacity: 1; transform: translateY(0)   scale(1); }
 }
+
 .status-change-box {
   background: #fdfaf3;
-  border: 1px solid rgba(197, 160, 89, 0.2);
-  border-radius: 15px;
+  border: 1px solid rgba(197, 160, 89, 0.25);
+  border-radius: 14px;
 }
+
 .status-icon-circle {
-  width: 70px;
-  height: 70px;
+  width: 68px;
+  height: 68px;
   background: white;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.07);
   margin: 0 auto 20px;
   color: var(--gold);
 }
 
-/* --- BUTON RENK ONARIMLARI --- */
+/* ============================================================
+   BUTTONS
+   ============================================================ */
 .btn-gold {
   background: var(--gold) !important;
   border-color: var(--gold) !important;
   color: white !important;
   font-weight: 700;
+  border-radius: 50px;
+  letter-spacing: 0.3px;
+  transition: all 0.3s ease;
 }
+
 .btn-gold:hover {
-  background: #b38f4d !important;
+  background: var(--gold-hover) !important;
+  border-color: var(--gold-hover) !important;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(197, 160, 89, 0.3) !important;
 }
 
 .btn-outline-primary {
   color: var(--navy) !important;
   border-color: var(--navy) !important;
+  border-radius: 50px;
+  font-weight: 600;
 }
+
 .btn-outline-primary:hover {
   background: var(--navy) !important;
   color: white !important;
 }
 
-/* Sticky Kartlar */
+.btn-dark {
+  background: var(--navy) !important;
+  border-color: var(--navy) !important;
+  border-radius: 50px !important;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  transition: all 0.3s ease;
+}
+
+.btn-dark:hover {
+  background: var(--navy-light) !important;
+  transform: translateY(-1px);
+}
+
+/* ============================================================
+   CHART TOGGLE BUTTONS
+   ============================================================ */
+.btn-chart-toggle {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  border-radius: 0 !important;
+  transition: all 0.2s ease;
+}
+
+.btn-chart-toggle.active {
+  background: var(--navy) !important;
+  color: white !important;
+  border-color: var(--navy) !important;
+}
+
+/* ============================================================
+   FORM INPUTS
+   ============================================================ */
+.form-control, .form-select {
+  border: 1.5px solid #e8e8e8;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 0.88rem;
+  transition: all 0.25s ease;
+  color: var(--navy);
+  background-color: #fafafa;
+}
+
+.form-control:focus, .form-select:focus {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px var(--gold-shadow);
+  background-color: white;
+  outline: none;
+}
+
+/* ============================================================
+   STICKY PRODUCT FORM CARD
+   ============================================================ */
 .sticky-card {
   position: sticky;
-  top: 100px;
-  max-height: calc(100vh - 120px);
+  top: 90px;
+  max-height: calc(100vh - 110px);
   overflow-y: auto;
-  padding-right: 5px;
+  padding-right: 4px;
 }
+
 @media (max-width: 991px) {
   .sticky-card {
     position: static;
@@ -309,18 +453,59 @@ body {
   }
 }
 
-/* Kaydırma Çubuğu */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+/* ============================================================
+   ACTIVITY LOG
+   ============================================================ */
+.sticky-log-header th {
+  background-color: #f8f8f8 !important;
+  font-size: 0.68rem;
+  letter-spacing: 0.8px;
+  color: #999;
+  text-transform: uppercase;
+  font-weight: 700;
 }
-::-webkit-scrollbar-track {
-  background: #f1f1f1;
+
+/* ============================================================
+   SCROLLBAR
+   ============================================================ */
+::-webkit-scrollbar        { width: 5px; height: 5px; }
+::-webkit-scrollbar-track  { background: #f1f1f1; border-radius: 10px; }
+::-webkit-scrollbar-thumb  { background: #d0d0d0; border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: var(--gold); }
+
+/* ============================================================
+   ORDER DETAIL MODAL
+   ============================================================ */
+#orderDetailModal .modal-header {
+  background: var(--navy);
+  border-radius: 18px 18px 0 0;
 }
-::-webkit-scrollbar-thumb {
-  background: #cbd5e0;
-  border-radius: 10px;
+
+#orderDetailModal .modal-content {
+  border-radius: 18px;
+  border: none;
 }
-::-webkit-scrollbar-thumb:hover {
-  background: var(--gold);
+
+/* ============================================================
+   REPLY MODAL
+   ============================================================ */
+#replyModal .modal-header {
+  background: var(--navy);
+  border-radius: 18px 18px 0 0;
+}
+
+#replyModal .modal-content {
+  border-radius: 18px;
+  border: none;
+}
+
+/* ============================================================
+   BADGE STYLES
+   ============================================================ */
+.badge {
+  font-size: 0.65rem;
+  letter-spacing: 0.5px;
+  font-weight: 700;
+  padding: 5px 10px;
+  border-radius: 50px;
 }

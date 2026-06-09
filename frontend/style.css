@@ -1,31 +1,37 @@
-/* LUXE BERLIN - GLOBAL DESIGN SYSTEM */
+/* LUXE BERLIN — GLOBAL DESIGN SYSTEM | MODERNIZED */
+
 :root {
   --gold: #c5a059;
+  --gold-light: #d4b97a;
   --gold-hover: #b38f4d;
+  --champagne: #f5ead8;
   --midnight: #1c2541;
   --dark-midnight: #0b132b;
+  --charcoal: #1a1a1a;
   --white: #ffffff;
   --platinum: #f8f9fa;
+  --off-white: #fafaf9;
   --success: #27ae60;
-  --bg-primary: #f8f9fa;
+  --bg-primary: #f7f6f4;
   --bg-secondary: #ffffff;
   --text-main: #111111;
   --text-muted: #6c757d;
   --card-bg: #ffffff;
-  --border-color: #eeeeee;
-  --gold-opacity: rgba(197, 160, 89, 0.2);
-  --soft-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+  --border-color: #ebebeb;
+  --gold-opacity: rgba(197, 160, 89, 0.15);
+  --soft-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+  --deep-shadow: 0 20px 60px rgba(0, 0, 0, 0.12);
 }
 
-/* DARK MODE RENK TANIMLARI */
+/* DARK MODE */
 body.dark-mode {
   --bg-primary: #0b0e14;
   --bg-secondary: #161b22;
-  --text-main: #ffffff;
-  --text-muted: #b0b3b8;
-  --card-bg: #1c2541;
-  --border-color: #30363d;
-  --soft-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  --text-main: #f0f0f0;
+  --text-muted: #9ba3af;
+  --card-bg: #1a2035;
+  --border-color: #2a3040;
+  --soft-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
 }
 
 body {
@@ -34,12 +40,12 @@ body {
   background-color: var(--bg-primary);
   overflow-x: hidden;
   scroll-behavior: smooth;
-  transition:
-    background-color 0.4s ease,
-    color 0.4s ease;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition: background-color 0.4s ease, color 0.4s ease;
 }
 
-/* AOS MOBİL GÜVENLİK DUVARI (1000039782.jpg FIX) */
+/* AOS MOBILE GUARD */
 @media (max-width: 768px) {
   [data-aos] {
     opacity: 1 !important;
@@ -48,44 +54,30 @@ body {
   }
 }
 
-h1,
-h2,
-h3,
-h4,
-h5,
-h6,
-p,
-span,
-li,
-label,
-div {
+h1, h2, h3, h4, h5, h6, p, span, li, label, div {
   transition: color 0.4s ease;
 }
 
-body.dark-mode .text-muted {
-  color: var(--text-muted) !important;
-}
+body.dark-mode .text-muted  { color: var(--text-muted) !important; }
+body.dark-mode .text-dark   { color: var(--text-main)  !important; }
+body.dark-mode .bg-light    { background-color: var(--bg-secondary) !important; }
 
-body.dark-mode .text-dark {
-  color: var(--text-main) !important;
-}
-
-body.dark-mode .bg-light {
-  background-color: var(--bg-secondary) !important;
-}
-
-/* NAVBAR */
+/* ============================================================
+   NAVBAR
+   ============================================================ */
 .navbar {
   background-color: var(--midnight) !important;
-  border-bottom: 2px solid var(--gold);
-  padding: 0.8rem 0;
+  border-bottom: 1px solid rgba(197, 160, 89, 0.55);
+  padding: 1rem 0;
 }
 
 .navbar-brand {
   font-family: "Playfair Display", serif;
   font-weight: 700;
-  letter-spacing: 2px;
+  font-size: 1.3rem;
+  letter-spacing: 3px;
   color: white !important;
+  text-transform: uppercase;
 }
 
 .navbar-brand span {
@@ -93,40 +85,71 @@ body.dark-mode .bg-light {
 }
 
 .nav-link {
-  color: rgba(255, 255, 255, 0.8) !important;
+  color: rgba(255, 255, 255, 0.75) !important;
   font-weight: 600;
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   text-transform: uppercase;
-  margin-left: 15px;
+  letter-spacing: 1.2px;
+  margin-left: 18px;
+  padding-bottom: 3px;
+  position: relative;
+  transition: color 0.3s ease;
+}
+
+.nav-link::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 0;
+  height: 1px;
+  background: var(--gold);
+  transition: width 0.3s ease;
 }
 
 .nav-link:hover {
   color: var(--gold) !important;
 }
 
-/* HERO SECTION */
+.nav-link:hover::after {
+  width: 100%;
+}
+
+/* ============================================================
+   HERO SECTION
+   ============================================================ */
 .hero-section {
-  height: 40vh;
+  height: 65vh;
+  min-height: 480px;
   display: flex;
   align-items: center;
   justify-content: center;
   background:
-    linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)),
-    url("https://images.unsplash.com/photo-1441984904996-e0b6ba687e04?q=80&w=2070")
-      center/cover;
-  animation: heroZoom 10s infinite alternate;
+    linear-gradient(rgba(0, 0, 0, 0.55), rgba(0, 0, 0, 0.45)),
+    url("https://images.unsplash.com/photo-1441984904996-e0b6ba687e04?q=80&w=2070") center/cover;
+  animation: heroZoom 14s infinite alternate;
+  position: relative;
+  overflow: hidden;
+}
+
+.hero-section::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(197, 160, 89, 0.7), transparent);
 }
 
 @keyframes heroZoom {
-  from {
-    background-size: 100%;
-  }
-  to {
-    background-size: 110%;
-  }
+  from { background-size: 100%; }
+  to   { background-size: 108%; }
 }
 
-/* ARAMA ÇUBUĞU */
+/* ============================================================
+   SEARCH BAR
+   ============================================================ */
 .search-container {
   max-width: 700px;
   margin: 0 auto;
@@ -141,54 +164,57 @@ body.dark-mode .bg-light {
 
 .luxe-search-input {
   width: 100%;
-  padding: 15px 25px 15px 60px;
-  border: 1px solid var(--border-color);
+  padding: 16px 25px 16px 58px;
+  border: 1.5px solid var(--border-color);
   border-radius: 50px;
   font-family: "Montserrat", sans-serif;
-  font-size: 0.95rem;
+  font-size: 0.88rem;
   background-color: var(--bg-secondary);
   color: var(--text-main);
-  box-shadow: var(--soft-shadow);
-  transition: all 0.4s ease;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.05);
+  transition: all 0.35s ease;
   outline: none;
   box-sizing: border-box;
+  letter-spacing: 0.2px;
 }
 
 .luxe-search-input:focus {
   border-color: var(--gold);
-  box-shadow: 0 10px 25px rgba(197, 160, 89, 0.15);
-  transform: translateY(-2px);
+  box-shadow: 0 8px 28px rgba(197, 160, 89, 0.12);
+  transform: translateY(-1px);
 }
 
 .search-icon-fixed {
   position: absolute;
-  left: 25px;
+  left: 22px;
   top: 50%;
   transform: translateY(-50%);
   color: var(--gold);
-  font-size: 1.2rem;
+  font-size: 1.05rem;
   pointer-events: none;
   z-index: 5;
 }
 
-/* ÜRÜN KARTLARI */
+/* ============================================================
+   PRODUCT CARDS
+   ============================================================ */
 .product-card {
   border: none;
-  border-radius: 12px;
+  border-radius: 16px;
   transition:
-    transform 0.4s cubic-bezier(0.165, 0.84, 0.44, 1),
-    box-shadow 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+    transform 0.45s cubic-bezier(0.165, 0.84, 0.44, 1),
+    box-shadow 0.45s cubic-bezier(0.165, 0.84, 0.44, 1);
   cursor: pointer;
   background: var(--card-bg);
   overflow: hidden;
   height: 100%;
   position: relative;
-  box-shadow: var(--soft-shadow);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
 }
 
 .product-card:hover {
-  transform: translateY(-12px);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15) !important;
+  transform: translateY(-10px);
+  box-shadow: 0 24px 50px rgba(0, 0, 0, 0.13) !important;
 }
 
 .product-card::after {
@@ -197,16 +223,16 @@ body.dark-mode .bg-light {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -20%);
-  background: rgba(28, 37, 65, 0.9);
+  background: rgba(28, 37, 65, 0.92);
   color: var(--gold);
-  padding: 10px 22px;
-  font-size: 0.7rem;
+  padding: 10px 24px;
+  font-size: 0.63rem;
   font-weight: 700;
-  letter-spacing: 2px;
+  letter-spacing: 2.5px;
   opacity: 0;
-  transition: all 0.4s ease;
+  transition: all 0.35s ease;
   pointer-events: none;
-  border-radius: 4px;
+  border-radius: 3px;
   z-index: 5;
 }
 
@@ -217,22 +243,21 @@ body.dark-mode .bg-light {
 
 .product-tag {
   position: absolute;
-  top: 15px;
-  left: 15px;
+  top: 14px;
+  left: 14px;
   z-index: 10;
-  padding: 6px 14px;
-  font-size: 0.65rem;
+  padding: 5px 13px;
+  font-size: 0.6rem;
   font-weight: 700;
   text-transform: uppercase;
-  border-radius: 4px;
+  border-radius: 3px;
   background: var(--gold);
   color: white;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
-  letter-spacing: 0.5px;
+  letter-spacing: 1px;
 }
 
 .product-img-box {
-  height: 350px;
+  height: 340px;
   overflow: hidden;
   background: var(--bg-primary);
   position: relative;
@@ -242,53 +267,58 @@ body.dark-mode .bg-light {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 0.8s cubic-bezier(0.165, 0.84, 0.44, 1);
+  transition: transform 0.9s cubic-bezier(0.165, 0.84, 0.44, 1);
 }
 
 .product-card:hover .product-img-box img {
-  transform: scale(1.1);
+  transform: scale(1.08);
 }
 
 .price {
   color: var(--gold);
   font-weight: 700;
-  font-size: 1.25rem;
+  font-size: 1.2rem;
+  letter-spacing: -0.01em;
 }
 
-/* TESTIMONIALS & MEHR ANZEIGEN (Fix: image_db3cb6.png) */
+/* ============================================================
+   TESTIMONIALS
+   ============================================================ */
 .gold-divider {
-  width: 60px;
-  height: 3px;
-  background-color: var(--gold);
-  margin-top: 15px;
+  width: 50px;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  margin-top: 14px;
 }
 
 .testimonial-card {
   background: var(--card-bg);
-  padding: 35px;
-  border-radius: 25px;
-  box-shadow: var(--soft-shadow);
+  padding: 32px;
+  border-radius: 20px;
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.05);
   height: 100%;
   border: 1px solid var(--border-color);
-  transition: 0.3s;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease;
   position: relative;
 }
 
 .testimonial-card:hover {
   border-color: var(--gold);
+  box-shadow: 0 8px 30px rgba(197, 160, 89, 0.1);
+  transform: translateY(-3px);
 }
 
 .testimonial-text {
   font-style: italic;
   color: var(--text-main);
-  line-height: 1.7;
-  font-size: 1.05rem;
+  line-height: 1.8;
+  font-size: 0.98rem;
 }
 
 .testimonial-date {
-  font-size: 0.7rem;
+  font-size: 0.67rem;
   color: var(--gold);
-  background: rgba(197, 160, 89, 0.12);
+  background: rgba(197, 160, 89, 0.1);
   padding: 4px 12px;
   border-radius: 50px;
   font-weight: 700;
@@ -297,30 +327,38 @@ body.dark-mode .bg-light {
 }
 
 .btn-outline-dark {
-  border: 2px solid var(--midnight);
+  border: 1.5px solid var(--midnight);
   color: var(--midnight);
   padding: 12px 40px;
   border-radius: 50px;
   font-weight: 700;
-  transition: 0.3s;
+  font-size: 0.73rem;
+  letter-spacing: 1.5px;
+  transition: all 0.3s ease;
   background: transparent;
+  text-transform: uppercase;
 }
 
 .btn-outline-dark:hover {
   background-color: var(--midnight);
   color: white;
   transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(28, 37, 65, 0.2);
 }
 
-/* YORUM SAYAÇ STİLİ (image_daea3e.png ONARIMI) */
+/* ============================================================
+   CHAR COUNT
+   ============================================================ */
 #char-count {
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   font-weight: 600;
   letter-spacing: 0.5px;
-  opacity: 0.6;
+  opacity: 0.55;
 }
 
-/* MODAL TASARIMI */
+/* ============================================================
+   MODAL
+   ============================================================ */
 .modal-content {
   border-radius: 20px;
   overflow: hidden;
@@ -337,9 +375,7 @@ body.dark-mode .bg-light {
 }
 
 @media (min-width: 768px) {
-  .modal-split-body {
-    flex-direction: row;
-  }
+  .modal-split-body { flex-direction: row; }
 }
 
 .modal-img-side {
@@ -348,13 +384,11 @@ body.dark-mode .bg-light {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 20px;
+  padding: 24px;
   min-width: 300px;
 }
 
-body.dark-mode .modal-img-side {
-  background: #111;
-}
+body.dark-mode .modal-img-side { background: #111; }
 
 .modal-img-side img {
   max-height: 450px;
@@ -371,11 +405,13 @@ body.dark-mode .modal-img-side {
   justify-content: center;
 }
 
-/* MİKTAR KONTROLÜ */
+/* ============================================================
+   QTY CONTROL
+   ============================================================ */
 .qty-control-luxe {
   display: flex;
   align-items: center;
-  border: 1px solid var(--border-color);
+  border: 1.5px solid var(--border-color);
   border-radius: 50px;
   width: fit-content;
   padding: 5px 15px;
@@ -394,7 +430,7 @@ body.dark-mode .qty-control-luxe {
   font-weight: 700;
   background: transparent;
   color: var(--text-main);
-  font-size: 1.1rem;
+  font-size: 1.05rem;
 }
 
 input::-webkit-outer-spin-button,
@@ -407,24 +443,26 @@ input[type="number"] {
   -moz-appearance: textfield;
 }
 
-/* YÜZEN SEPET */
+/* ============================================================
+   FLOATING CART
+   ============================================================ */
 .floating-cart-pill {
   position: fixed;
   bottom: 30px;
   left: 50%;
   transform: translateX(-50%) translateY(120px);
-  background: #1c2541;
+  background: var(--midnight);
   color: white;
-  padding: 12px 12px 12px 25px;
+  padding: 10px 10px 10px 24px;
   border-radius: 100px;
   display: flex;
   align-items: center;
-  gap: 20px;
-  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
+  gap: 16px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
   z-index: 1050;
-  border: 1px solid #c5a059;
+  border: 1px solid rgba(197, 160, 89, 0.5);
   transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  min-width: 320px;
+  min-width: 305px;
 }
 
 .floating-cart-pill.active {
@@ -438,28 +476,29 @@ input[type="number"] {
 }
 
 .float-price-info small {
-  font-size: 0.65rem;
+  font-size: 0.6rem;
   text-transform: uppercase;
-  color: #c5a059;
-  letter-spacing: 1px;
+  color: var(--gold);
+  letter-spacing: 1.2px;
   font-weight: 700;
 }
 
 .float-price-info span {
-  font-size: 1.2rem;
+  font-size: 1.1rem;
   font-weight: 700;
 }
 
 .float-checkout-btn {
-  background: #c5a059;
-  color: #1c2541;
+  background: var(--gold);
+  color: var(--midnight);
   border: none;
-  padding: 12px 25px;
+  padding: 11px 22px;
   border-radius: 100px;
   font-weight: 700;
   text-decoration: none;
-  font-size: 0.85rem;
-  transition: 0.3s;
+  font-size: 0.78rem;
+  letter-spacing: 0.5px;
+  transition: all 0.3s ease;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -467,10 +506,13 @@ input[type="number"] {
 
 .float-checkout-btn:hover {
   background: white;
-  transform: scale(1.05);
-  color: #1c2541;
+  transform: scale(1.04);
+  color: var(--midnight);
 }
 
+/* ============================================================
+   BUTTONS
+   ============================================================ */
 .btn-luxe {
   background: var(--midnight);
   color: white;
@@ -480,7 +522,9 @@ input[type="number"] {
   width: 100%;
   text-transform: uppercase;
   border-radius: 50px;
-  transition: 0.3s;
+  font-size: 0.78rem;
+  letter-spacing: 1.5px;
+  transition: all 0.3s ease;
 }
 
 body.dark-mode .btn-luxe {
@@ -490,6 +534,7 @@ body.dark-mode .btn-luxe {
 .btn-luxe:hover:not(:disabled) {
   background: var(--gold);
   transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(197, 160, 89, 0.25);
 }
 
 .btn-gold {
@@ -497,39 +542,46 @@ body.dark-mode .btn-luxe {
   color: white;
   border: none;
   border-radius: 50px;
-  transition: 0.3s;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  transition: all 0.3s ease;
 }
 
 .btn-gold:hover {
   background: var(--midnight);
   color: white;
+  transform: translateY(-2px);
 }
 
-/* FOOTER */
+/* ============================================================
+   FOOTER
+   ============================================================ */
 .luxe-footer {
   background-color: var(--bg-secondary) !important;
   border-top: 1px solid var(--border-color);
-  padding: 50px 0 130px 0 !important;
+  padding: 60px 0 120px 0 !important;
 }
 
 .footer-link {
   color: var(--text-muted);
-  transition: 0.3s;
+  transition: color 0.3s ease;
   font-weight: 500;
+  font-size: 0.82rem;
   text-decoration: none;
   position: relative;
   padding-bottom: 2px;
+  letter-spacing: 0.3px;
 }
 
 .footer-link::after {
   content: "";
   position: absolute;
   width: 0;
-  height: 1.5px;
+  height: 1px;
   bottom: 0;
   left: 0;
   background-color: var(--gold);
-  transition: 0.3s;
+  transition: width 0.3s ease;
 }
 
 .footer-link:hover {
@@ -540,31 +592,41 @@ body.dark-mode .btn-luxe {
   width: 100%;
 }
 
-/* WHATSAPP FLOAT */
+/* ============================================================
+   WHATSAPP FLOAT
+   ============================================================ */
 .luxe-whatsapp-float {
   position: fixed;
   bottom: 30px;
   right: 30px;
   background-color: var(--midnight);
   color: white !important;
-  padding: 12px 25px;
+  padding: 11px 20px;
   border-radius: 50px;
   text-decoration: none;
   z-index: 999;
-  border: 1px solid var(--gold);
-  transition: 0.4s;
+  border: 1px solid rgba(197, 160, 89, 0.5);
+  transition: all 0.4s ease;
+  font-size: 0.8rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .luxe-whatsapp-float:hover {
   background-color: var(--gold);
-  transform: translateY(-5px);
+  transform: translateY(-4px);
+  box-shadow: 0 10px 25px rgba(197, 160, 89, 0.3);
 }
 
-/* --- LUXE TOAST BİLDİRİM SİSTEMİ --- */
+/* ============================================================
+   TOAST SYSTEM
+   ============================================================ */
 #luxe-toast-container {
   position: fixed;
-  top: 30px;
-  right: 30px;
+  top: 24px;
+  right: 24px;
   z-index: 9999;
   pointer-events: none;
 }
@@ -572,100 +634,85 @@ body.dark-mode .btn-luxe {
 .luxe-toast {
   background: var(--midnight);
   color: white;
-  padding: 18px 25px;
-  border-radius: 15px;
+  padding: 16px 22px;
+  border-radius: 14px;
   margin-bottom: 10px;
-  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
-  border-left: 5px solid var(--gold);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  border-left: 4px solid var(--gold);
   display: flex;
   align-items: center;
-  gap: 15px;
-  min-width: 320px;
-  animation: toastSlideIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+  gap: 14px;
+  min-width: 300px;
+  animation: toastSlideIn 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
   pointer-events: auto;
 }
 
 @keyframes toastSlideIn {
-  from {
-    transform: translateX(120%);
-    opacity: 0;
-  }
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
+  from { transform: translateX(120%); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
 }
 
 .luxe-toast.fade-out {
-  animation: toastFadeOut 0.5s ease forwards;
+  animation: toastFadeOut 0.4s ease forwards;
 }
 
 @keyframes toastFadeOut {
-  to {
-    transform: translateY(-20px);
-    opacity: 0;
-  }
+  to { transform: translateY(-15px); opacity: 0; }
 }
 
 .luxe-toast i {
   color: var(--gold);
-  font-size: 1.4rem;
+  font-size: 1.3rem;
 }
 
 .luxe-toast .toast-title {
   font-weight: 700;
   color: var(--gold);
-  font-size: 0.8rem;
+  font-size: 0.7rem;
   letter-spacing: 1px;
   text-transform: uppercase;
   margin-bottom: 2px;
 }
 
 .luxe-toast .toast-msg {
-  font-size: 0.9rem;
+  font-size: 0.88rem;
   font-weight: 500;
 }
 
-/* --- LUXE PRELOADER STYLES --- */
+/* ============================================================
+   PRELOADER
+   ============================================================ */
 #preloader {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: #0b0e17;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background-color: #080b12;
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 999999;
-  transition:
-    opacity 1s cubic-bezier(0.65, 0, 0.35, 1),
-    visibility 1s;
+  transition: opacity 1s cubic-bezier(0.65, 0, 0.35, 1), visibility 1s;
 }
 
-.preloader-content {
-  text-align: center;
-}
+.preloader-content { text-align: center; }
 
 .preloader-logo {
   font-family: "Playfair Display", serif;
-  font-size: 3rem;
+  font-size: 2.8rem;
   color: #ffffff;
-  letter-spacing: 8px;
+  letter-spacing: 10px;
   text-transform: uppercase;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
   animation: luxeFadePulse 2.5s ease-in-out infinite;
 }
 
-.preloader-logo span {
-  color: var(--gold);
-}
+.preloader-logo span { color: var(--gold); }
 
 .preloader-bar {
-  width: 150px;
+  width: 140px;
   height: 1px;
-  background: rgba(197, 160, 89, 0.1);
-  margin: 0 auto 15px;
+  background: rgba(197, 160, 89, 0.12);
+  margin: 0 auto 18px;
   position: relative;
   overflow: hidden;
 }
@@ -682,31 +729,20 @@ body.dark-mode .btn-luxe {
 }
 
 .preloader-text {
-  color: rgba(255, 255, 255, 0.4);
-  font-size: 0.7rem;
-  letter-spacing: 2px;
+  color: rgba(255, 255, 255, 0.35);
+  font-size: 0.65rem;
+  letter-spacing: 3px;
   text-transform: uppercase;
 }
 
 @keyframes loadingSlide {
-  0% {
-    left: -60px;
-  }
-  100% {
-    left: 100%;
-  }
+  0%   { left: -60px; }
+  100% { left: 100%; }
 }
 
 @keyframes luxeFadePulse {
-  0%,
-  100% {
-    opacity: 0.4;
-    transform: scale(0.98);
-  }
-  50% {
-    opacity: 1;
-    transform: scale(1);
-  }
+  0%, 100% { opacity: 0.35; transform: scale(0.98); }
+  50%       { opacity: 1;    transform: scale(1); }
 }
 
 .preloader-hidden {
@@ -714,18 +750,26 @@ body.dark-mode .btn-luxe {
   visibility: hidden;
 }
 
-/* UTILS */
+/* ============================================================
+   UTILS
+   ============================================================ */
 .animate-fadeIn {
   animation: fadeIn 0.4s ease forwards;
 }
 
 @keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Instagram-style social section images */
+.insta-img {
+  transition: transform 0.4s ease, filter 0.4s ease;
+  filter: grayscale(10%);
+  border-radius: 8px !important;
+}
+
+.insta-img:hover {
+  transform: scale(1.03);
+  filter: grayscale(0%);
 }

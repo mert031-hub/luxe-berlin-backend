@@ -1,126 +1,206 @@
+/* LUXE BERLIN — CONTACT PAGE STYLES | MODERNIZED */
+
 :root {
   --gold: #c5a059;
+  --gold-hover: #b38f4d;
   --navy: #1c2541;
-  --platinum: #f8f9fa;
+  --platinum: #f0f2f5;
 }
 
 body {
   font-family: "Montserrat", sans-serif;
   background-color: var(--platinum);
   color: var(--navy);
+  -webkit-font-smoothing: antialiased;
 }
 
+/* ============================================================
+   NAVBAR
+   ============================================================ */
 .navbar-brand {
   font-family: "Playfair Display", serif;
-  letter-spacing: 2px;
+  letter-spacing: 2.5px;
+  font-size: 1.25rem;
+  text-transform: uppercase;
+  color: var(--navy) !important;
 }
+
 .navbar-brand span {
   color: var(--gold);
 }
 
-/* İletişim Kartı Tasarımı */
+/* ============================================================
+   CONTACT CARD
+   ============================================================ */
 .success-card {
   background: white;
-  border-radius: 30px;
-  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.1);
+  border-radius: 24px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
 }
 
-/* Sol Panel: Navy & Gold Gradient */
+/* ============================================================
+   LEFT PANEL — INFO
+   ============================================================ */
 .contact-info-panel {
-  background: linear-gradient(135deg, var(--navy) 0%, #2c3e50 100%);
+  background: linear-gradient(155deg, var(--navy) 0%, #0d1a35 100%);
   color: white;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Subtle gold gradient orb in the background */
+.contact-info-panel::after {
+  content: '';
+  position: absolute;
+  bottom: -80px;
+  right: -60px;
+  width: 240px;
+  height: 240px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(197, 160, 89, 0.1) 0%, transparent 70%);
+  pointer-events: none;
 }
 
 .info-icon {
-  width: 45px;
-  height: 45px;
-  background: rgba(197, 160, 89, 0.2);
-  border: 1px solid var(--gold);
-  border-radius: 12px;
+  width: 44px;
+  height: 44px;
+  background: rgba(197, 160, 89, 0.12);
+  border: 1px solid rgba(197, 160, 89, 0.35);
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-right: 15px;
-  font-size: 1.2rem;
+  font-size: 1.1rem;
+  flex-shrink: 0;
 }
 
 .social-links a {
   color: var(--gold);
   text-decoration: none;
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   font-weight: 700;
-  transition: 0.3s;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  transition: all 0.3s ease;
+  padding-bottom: 2px;
+  border-bottom: 1px solid transparent;
 }
 
 .social-links a:hover {
   color: white;
+  border-bottom-color: rgba(255,255,255,0.3);
 }
 
-/* Form Tasarımı */
+/* ============================================================
+   RIGHT PANEL — FORM
+   ============================================================ */
+.form-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  color: #888;
+  margin-bottom: 8px;
+}
+
 .form-control,
 .form-select {
-  border: 1px solid #eee;
-  padding: 14px 18px;
+  border: 1.5px solid #ebebeb;
+  padding: 13px 16px;
   border-radius: 12px;
-  background-color: #fdfdfd;
+  background-color: #fafafa;
+  font-size: 0.9rem;
+  color: var(--navy);
+  transition: all 0.3s ease;
 }
 
-.form-control:focus {
+.form-control:focus,
+.form-select:focus {
   border-color: var(--gold);
-  box-shadow: 0 0 0 4px rgba(197, 160, 89, 0.1);
+  box-shadow: 0 0 0 3px rgba(197, 160, 89, 0.1);
+  background-color: white;
+  outline: none;
+}
+
+.form-control::placeholder {
+  color: #bbb;
+  font-size: 0.88rem;
+}
+
+/* Send Button */
+.btn-dark[style] {
+  background: var(--gold) !important;
+  border: none !important;
+  border-radius: 12px !important;
+  padding: 15px !important;
+  font-weight: 700 !important;
+  font-size: 0.8rem !important;
+  letter-spacing: 1.5px !important;
+  text-transform: uppercase !important;
+  transition: all 0.35s ease !important;
+  color: var(--navy) !important;
+}
+
+.btn-dark[style]:hover {
+  background: var(--gold-hover) !important;
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(197, 160, 89, 0.3) !important;
 }
 
 .btn-gold {
   background: var(--gold);
-  color: white;
-  border-radius: 15px;
-  transition: 0.4s;
+  color: var(--navy);
+  border-radius: 12px;
+  transition: all 0.35s ease;
   border: none;
+  font-weight: 700;
+  font-size: 0.8rem;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  padding: 15px;
 }
 
 .btn-gold:hover {
-  background: var(--navy);
-  transform: translateY(-5px);
+  background: var(--gold-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(197, 160, 89, 0.3);
+  color: var(--navy);
 }
-/* --- LUXE PRELOADER STYLES --- */
+
+/* ============================================================
+   PRELOADER
+   ============================================================ */
 #preloader {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: #0b0e17; /* Derin Gece Mavisi */
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background-color: #080b12;
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 999999; /* İmleçten bile üstte olmalı */
-  transition:
-    opacity 1s cubic-bezier(0.65, 0, 0.35, 1),
-    visibility 1s;
+  z-index: 999999;
+  transition: opacity 1s cubic-bezier(0.65, 0, 0.35, 1), visibility 1s;
 }
 
-.preloader-content {
-  text-align: center;
-}
+.preloader-content { text-align: center; }
 
 .preloader-logo {
   font-family: "Playfair Display", serif;
-  font-size: 3rem;
+  font-size: 2.8rem;
   color: #ffffff;
-  letter-spacing: 8px;
+  letter-spacing: 10px;
   text-transform: uppercase;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
   animation: luxeFadePulse 2.5s ease-in-out infinite;
 }
 
-.preloader-logo span {
-  color: var(--gold);
-}
+.preloader-logo span { color: var(--gold); }
 
 .preloader-bar {
-  width: 150px;
+  width: 140px;
   height: 1px;
-  background: rgba(197, 160, 89, 0.1);
+  background: rgba(197, 160, 89, 0.12);
   margin: 0 auto 15px;
   position: relative;
   overflow: hidden;
@@ -138,36 +218,20 @@ body {
 }
 
 .preloader-text {
-  color: rgba(255, 255, 255, 0.4);
-  font-size: 0.7rem;
-  letter-spacing: 2px;
+  color: rgba(255, 255, 255, 0.35);
+  font-size: 0.65rem;
+  letter-spacing: 3px;
   text-transform: uppercase;
 }
 
-/* Animasyon Tanımları */
 @keyframes loadingSlide {
-  0% {
-    left: -60px;
-  }
-  100% {
-    left: 100%;
-  }
+  0%   { left: -60px; }
+  100% { left: 100%; }
 }
 
 @keyframes luxeFadePulse {
-  0%,
-  100% {
-    opacity: 0.4;
-    transform: scale(0.98);
-  }
-  50% {
-    opacity: 1;
-    transform: scale(1);
-  }
+  0%, 100% { opacity: 0.35; transform: scale(0.98); }
+  50%       { opacity: 1;    transform: scale(1); }
 }
 
-/* Yükleme bittiğinde eklenecek gizleme klası */
-.preloader-hidden {
-  opacity: 0;
-  visibility: hidden;
-}
+.preloader-hidden { opacity: 0; visibility: hidden; }
