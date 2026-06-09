@@ -1,26 +1,33 @@
 /**
- * LUXE BERLIN — MASTER ADMIN STYLES | MODERNIZED
+ * LUXE BERLIN — MASTER ADMIN STYLES | SECOND-ROUND REDESIGN
  */
 
 :root {
-  --gold: #c5a059;
-  --gold-hover: #b38f4d;
-  --gold-shadow: rgba(197, 160, 89, 0.2);
-  --navy: #1c2541;
-  --navy-light: #2a3a5c;
-  --light-grey: #f7f6f4;
-  --border-color: #eeeeee;
+  --gold:        #b8913a;
+  --gold-hover:  #9a7830;
+  --gold-light:  #c9a84c;
+  --gold-shadow: rgba(184, 145, 58, 0.22);
+  --ink:         #0a0a0a;
+  --charcoal:    #1e1e1e;
+  --graphite:    #3a3a3a;
+  --warm-white:  #faf9f7;
+  --bg:          #f5f5f2;
+  --card-bg:     #ffffff;
+  --border:      #e8e6e0;
+  --text-muted:  #8a8a8a;
   --card-radius: 18px;
-  --text-navy: #1c2541;
+  --shadow-sm:   0 2px 10px rgba(0,0,0,0.05);
+  --shadow-md:   0 8px 30px rgba(0,0,0,0.08);
+  --shadow-lg:   0 20px 60px rgba(0,0,0,0.12);
 }
 
 /* ============================================================
    GLOBAL
    ============================================================ */
 body {
-  background-color: #f0f2f5;
+  background-color: var(--bg);
   font-family: "Montserrat", sans-serif;
-  color: var(--navy);
+  color: var(--ink);
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
 }
@@ -32,27 +39,6 @@ body {
     transform: none !important;
     transition: none !important;
   }
-}
-
-/* ============================================================
-   NAVBAR
-   ============================================================ */
-.navbar {
-  background-color: var(--navy);
-  border-bottom: 2px solid var(--gold);
-  padding: 0.9rem 0;
-}
-
-.navbar-brand {
-  font-family: "Playfair Display", serif;
-  font-size: 1.2rem;
-  font-weight: 700;
-  letter-spacing: 2.5px;
-  text-transform: uppercase;
-}
-
-.navbar-brand span {
-  color: var(--gold);
 }
 
 /* ============================================================
@@ -83,9 +69,8 @@ body {
 .preloader-logo span { color: var(--gold); }
 
 .preloader-bar {
-  width: 140px;
-  height: 1px;
-  background: rgba(197, 160, 89, 0.12);
+  width: 140px; height: 1px;
+  background: rgba(184, 145, 58, 0.12);
   margin: 0 auto 15px;
   position: relative;
   overflow: hidden;
@@ -94,8 +79,7 @@ body {
 .preloader-bar::after {
   content: "";
   display: block;
-  width: 60px;
-  height: 100%;
+  width: 60px; height: 100%;
   background: var(--gold);
   position: absolute;
   left: -60px;
@@ -109,11 +93,7 @@ body {
   text-transform: uppercase;
 }
 
-@keyframes loadingSlide {
-  0%   { left: -60px; }
-  100% { left: 100%; }
-}
-
+@keyframes loadingSlide { 0% { left: -60px; } 100% { left: 100%; } }
 @keyframes luxeFadePulse {
   0%, 100% { opacity: 0.35; transform: scale(0.98); }
   50%       { opacity: 1;    transform: scale(1); }
@@ -122,59 +102,161 @@ body {
 .preloader-hidden { opacity: 0; visibility: hidden; }
 
 /* ============================================================
+   NAVBAR
+   ============================================================ */
+.navbar {
+  background-color: var(--ink);
+  border-bottom: 1px solid rgba(184, 145, 58, 0.25);
+  padding: 0.85rem 0;
+  box-shadow: 0 2px 20px rgba(0,0,0,0.25);
+}
+
+.navbar-brand {
+  font-family: "Playfair Display", serif;
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: white !important;
+}
+
+.navbar-brand span { color: var(--gold); }
+
+/* ADMIN badge label */
+.admin-label {
+  display: inline-block;
+  font-size: 0.52rem;
+  font-weight: 700;
+  letter-spacing: 1.8px;
+  text-transform: uppercase;
+  color: var(--gold);
+  border: 1px solid rgba(184,145,58,0.4);
+  border-radius: 3px;
+  padding: 2px 7px;
+  vertical-align: middle;
+  margin-left: 10px;
+  opacity: 0.85;
+}
+
+/* Navbar action buttons */
+.admin-btn-logout {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.65) !important;
+  border: 1px solid rgba(255,255,255,0.15) !important;
+  border-radius: 6px !important;
+  padding: 7px 16px !important;
+  background: transparent !important;
+  transition: all 0.25s ease;
+}
+
+.admin-btn-logout:hover {
+  color: #ff6b6b !important;
+  border-color: rgba(255, 107, 107, 0.4) !important;
+  background: rgba(255, 107, 107, 0.06) !important;
+}
+
+.admin-btn-store {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: var(--ink) !important;
+  background: var(--gold) !important;
+  border: none !important;
+  border-radius: 6px !important;
+  padding: 7px 16px !important;
+  transition: all 0.25s ease;
+}
+
+.admin-btn-store:hover {
+  background: var(--gold-light) !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px var(--gold-shadow);
+}
+
+/* ============================================================
+   SECTION TITLES
+   ============================================================ */
+.admin-section-title {
+  position: relative;
+  padding-left: 14px;
+  font-weight: 700;
+  color: var(--ink);
+  font-size: 1.05rem;
+  letter-spacing: -0.01em;
+}
+
+.admin-section-title::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 70%;
+  background: var(--gold);
+  border-radius: 2px;
+}
+
+/* ============================================================
    STAT CARDS
    ============================================================ */
 .stat-card {
-  padding: 28px 24px;
+  padding: 32px 28px;
   border-radius: var(--card-radius);
   color: white;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-md);
   transition: transform 0.3s ease, box-shadow 0.3s ease;
   position: relative;
   overflow: hidden;
 }
 
-.stat-card::before {
+.stat-card::after {
   content: '';
   position: absolute;
-  top: -30px;
-  right: -20px;
-  width: 100px;
-  height: 100px;
+  top: -40px;
+  right: -30px;
+  width: 130px;
+  height: 130px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.05);
+  pointer-events: none;
 }
 
 .stat-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.15);
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
 }
 
 .bg-navy {
-  background: linear-gradient(135deg, #1c2541 0%, #2d4373 100%);
+  background: linear-gradient(145deg, #0a0a0a 0%, #1e1e1e 100%);
 }
 
 .bg-gold {
-  background: linear-gradient(135deg, #c5a059 0%, #e2c080 100%);
+  background: linear-gradient(145deg, #b8913a 0%, #d4aa5a 100%);
 }
 
 .bg-dark-grey {
-  background: linear-gradient(135deg, #2d3436 0%, #525c62 100%);
+  background: linear-gradient(145deg, #1c1c1c 0%, #3a3a3a 100%);
 }
 
 .stat-card p {
-  opacity: 0.75;
-  font-size: 0.7rem;
-  margin-bottom: 6px;
+  opacity: 0.65;
+  font-size: 0.68rem;
+  margin-bottom: 10px;
   text-transform: uppercase;
-  letter-spacing: 1.5px;
+  letter-spacing: 2px;
   font-weight: 600;
 }
 
 .stat-card h2 {
-  font-size: 2rem;
+  font-size: 2.2rem;
   font-weight: 700;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.03em;
+  line-height: 1;
 }
 
 /* ============================================================
@@ -183,7 +265,8 @@ body {
 .card {
   border-radius: var(--card-radius) !important;
   border: none !important;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06) !important;
+  box-shadow: var(--shadow-sm) !important;
+  background: var(--card-bg) !important;
 }
 
 /* ============================================================
@@ -194,7 +277,7 @@ body {
   overflow-y: auto;
   overflow-x: auto;
   border-radius: 12px;
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--border);
   background: white;
   -webkit-overflow-scrolling: touch;
   margin-bottom: 1rem;
@@ -203,46 +286,39 @@ body {
 .table thead th {
   position: sticky;
   top: 0;
-  background-color: #f8f8f8;
+  background-color: #f8f7f5;
   z-index: 10;
-  border-bottom: 1px solid #ebebeb;
-  color: #999;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-muted);
   padding: 14px 16px;
-  font-size: 0.68rem;
-  letter-spacing: 1px;
+  font-size: 0.66rem;
+  letter-spacing: 1.2px;
   text-transform: uppercase;
   font-weight: 700;
 }
 
-.table tbody tr {
-  transition: background-color 0.2s ease;
-}
+.table tbody tr { transition: background-color 0.18s ease; }
 
-.table tbody tr:hover {
-  background-color: #fafaf8;
-}
+.table tbody tr:hover { background-color: #faf9f7; }
 
 .table tbody td {
-  padding: 16px 16px;
-  border-bottom: 1px solid var(--border-color);
+  padding: 16px;
+  border-bottom: 1px solid var(--border);
   font-size: 0.84rem;
   vertical-align: middle;
 }
 
-.table tbody tr:last-child td {
-  border-bottom: none;
-}
+.table tbody tr:last-child td { border-bottom: none; }
 
 .customer-name,
 .product-name {
   font-weight: 700;
-  color: var(--navy);
+  color: var(--ink);
 }
 
-.text-navy { color: var(--navy) !important; }
+.text-navy { color: var(--ink) !important; }
 .text-gold { color: var(--gold) !important; }
 
-/* Review text fix */
 .review-text {
   white-space: normal !important;
   min-width: 240px;
@@ -261,12 +337,12 @@ body {
   font-size: 0.78rem;
   font-weight: 600;
   padding: 6px 14px;
-  border: 1.5px solid #e0e0e0;
+  border: 1.5px solid var(--border);
   background-color: white;
   width: 170px;
   cursor: pointer;
   transition: all 0.2s ease;
-  color: var(--navy);
+  color: var(--ink);
 }
 
 .status-select:focus {
@@ -282,8 +358,7 @@ body {
   color: #e53e3e;
   background: #fff5f5;
   border: 1px solid #fed7d7;
-  width: 32px;
-  height: 32px;
+  width: 32px; height: 32px;
   border-radius: 8px;
   display: flex;
   align-items: center;
@@ -302,22 +377,17 @@ body {
    PRODUCT IMAGE THUMBNAIL
    ============================================================ */
 .product-img-box-small {
-  width: 46px;
-  height: 46px;
+  width: 46px; height: 46px;
   overflow: hidden;
   border-radius: 10px;
-  border: 1px solid #eee;
+  border: 1px solid var(--border);
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #f8f8f8;
+  background: #f8f7f5;
 }
 
-.product-img-box-small img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
+.product-img-box-small img { width: 100%; height: 100%; object-fit: cover; }
 
 /* ============================================================
    STATUS CONFIRM MODAL
@@ -330,24 +400,23 @@ body {
 
 @keyframes luxeSlideUp {
   from { opacity: 0; transform: translateY(30px) scale(0.95); }
-  to   { opacity: 1; transform: translateY(0)   scale(1); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 .status-change-box {
   background: #fdfaf3;
-  border: 1px solid rgba(197, 160, 89, 0.25);
+  border: 1px solid rgba(184, 145, 58, 0.22);
   border-radius: 14px;
 }
 
 .status-icon-circle {
-  width: 68px;
-  height: 68px;
+  width: 68px; height: 68px;
   background: white;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.07);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.07);
   margin: 0 auto 20px;
   color: var(--gold);
 }
@@ -361,7 +430,7 @@ body {
   color: white !important;
   font-weight: 700;
   border-radius: 50px;
-  letter-spacing: 0.3px;
+  letter-spacing: 0.5px;
   transition: all 0.3s ease;
 }
 
@@ -369,24 +438,24 @@ body {
   background: var(--gold-hover) !important;
   border-color: var(--gold-hover) !important;
   transform: translateY(-1px);
-  box-shadow: 0 6px 16px rgba(197, 160, 89, 0.3) !important;
+  box-shadow: 0 6px 16px var(--gold-shadow) !important;
 }
 
 .btn-outline-primary {
-  color: var(--navy) !important;
-  border-color: var(--navy) !important;
+  color: var(--ink) !important;
+  border-color: var(--ink) !important;
   border-radius: 50px;
   font-weight: 600;
 }
 
 .btn-outline-primary:hover {
-  background: var(--navy) !important;
+  background: var(--ink) !important;
   color: white !important;
 }
 
 .btn-dark {
-  background: var(--navy) !important;
-  border-color: var(--navy) !important;
+  background: var(--ink) !important;
+  border-color: var(--ink) !important;
   border-radius: 50px !important;
   font-weight: 600;
   letter-spacing: 0.3px;
@@ -394,7 +463,7 @@ body {
 }
 
 .btn-dark:hover {
-  background: var(--navy-light) !important;
+  background: var(--charcoal) !important;
   transform: translateY(-1px);
 }
 
@@ -410,22 +479,22 @@ body {
 }
 
 .btn-chart-toggle.active {
-  background: var(--navy) !important;
+  background: var(--ink) !important;
   color: white !important;
-  border-color: var(--navy) !important;
+  border-color: var(--ink) !important;
 }
 
 /* ============================================================
    FORM INPUTS
    ============================================================ */
 .form-control, .form-select {
-  border: 1.5px solid #e8e8e8;
+  border: 1.5px solid var(--border);
   border-radius: 10px;
   padding: 10px 14px;
   font-size: 0.88rem;
   transition: all 0.25s ease;
-  color: var(--navy);
-  background-color: #fafafa;
+  color: var(--ink);
+  background-color: #fafaf8;
 }
 
 .form-control:focus, .form-select:focus {
@@ -447,20 +516,17 @@ body {
 }
 
 @media (max-width: 991px) {
-  .sticky-card {
-    position: static;
-    max-height: none;
-  }
+  .sticky-card { position: static; max-height: none; }
 }
 
 /* ============================================================
    ACTIVITY LOG
    ============================================================ */
 .sticky-log-header th {
-  background-color: #f8f8f8 !important;
+  background-color: #f8f7f5 !important;
   font-size: 0.68rem;
   letter-spacing: 0.8px;
-  color: #999;
+  color: var(--text-muted);
   text-transform: uppercase;
   font-weight: 700;
 }
@@ -469,15 +535,15 @@ body {
    SCROLLBAR
    ============================================================ */
 ::-webkit-scrollbar        { width: 5px; height: 5px; }
-::-webkit-scrollbar-track  { background: #f1f1f1; border-radius: 10px; }
-::-webkit-scrollbar-thumb  { background: #d0d0d0; border-radius: 10px; }
+::-webkit-scrollbar-track  { background: #f1f0ee; border-radius: 10px; }
+::-webkit-scrollbar-thumb  { background: #d0cdc8; border-radius: 10px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--gold); }
 
 /* ============================================================
    ORDER DETAIL MODAL
    ============================================================ */
 #orderDetailModal .modal-header {
-  background: var(--navy);
+  background: var(--ink);
   border-radius: 18px 18px 0 0;
 }
 
@@ -490,7 +556,7 @@ body {
    REPLY MODAL
    ============================================================ */
 #replyModal .modal-header {
-  background: var(--navy);
+  background: var(--ink);
   border-radius: 18px 18px 0 0;
 }
 
